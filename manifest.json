@@ -1,0 +1,11 @@
+{
+  "name": "Carrom Tournament Manager",
+  "short_name": "Carrom TM",
+  "description": "Professional Carrom Doubles Tournament management dashboard",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0F172A",
+  "theme_color": "#0F172A",
+  "orientation": "any",
+  "icons": []
+}

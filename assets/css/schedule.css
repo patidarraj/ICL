@@ -1,0 +1,7 @@
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+.calendar-day-card .card-header { font-weight: 600; }
+.calendar-match:last-child { border-bottom: none !important; margin-bottom: 0 !important; padding-bottom: 0 !important; }

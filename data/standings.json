@@ -1,0 +1,377 @@
+[
+  {
+    "id": "T01",
+    "name": "Thunder 1",
+    "players": [
+      "Arjun",
+      "Rohan"
+    ],
+    "pool": "Pool A",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0
+  },
+  {
+    "id": "T02",
+    "name": "Blaze 2",
+    "players": [
+      "Vikram",
+      "Karan"
+    ],
+    "pool": "Pool A",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0
+  },
+  {
+    "id": "T03",
+    "name": "Titans 3",
+    "players": [
+      "Aditya",
+      "Suresh"
+    ],
+    "pool": "Pool A",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0
+  },
+  {
+    "id": "T04",
+    "name": "Strikers 4",
+    "players": [
+      "Ramesh",
+      "Nikhil"
+    ],
+    "pool": "Pool A",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0
+  },
+  {
+    "id": "T05",
+    "name": "Warriors 5",
+    "players": [
+      "Sanjay",
+      "Manoj"
+    ],
+    "pool": "Pool A",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0
+  },
+  {
+    "id": "T06",
+    "name": "Falcons 6",
+    "players": [
+      "Rahul",
+      "Deepak"
+    ],
+    "pool": "Pool B",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0
+  },
+  {
+    "id": "T07",
+    "name": "Panthers 7",
+    "players": [
+      "Ashok",
+      "Anil"
+    ],
+    "pool": "Pool B",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0
+  },
+  {
+    "id": "T08",
+    "name": "Eagles 8",
+    "players": [
+      "Vijay",
+      "Sandeep"
+    ],
+    "pool": "Pool B",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0
+  },
+  {
+    "id": "T09",
+    "name": "Sharks 9",
+    "players": [
+      "Amit",
+      "Rajesh"
+    ],
+    "pool": "Pool B",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0
+  },
+  {
+    "id": "T10",
+    "name": "Wolves 10",
+    "players": [
+      "Vinod",
+      "Prakash"
+    ],
+    "pool": "Pool B",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0
+  },
+  {
+    "id": "T11",
+    "name": "Cobras 11",
+    "players": [
+      "Gaurav",
+      "Naveen"
+    ],
+    "pool": "Pool C",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0
+  },
+  {
+    "id": "T12",
+    "name": "Vipers 12",
+    "players": [
+      "Harish",
+      "Mahesh"
+    ],
+    "pool": "Pool C",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0
+  },
+  {
+    "id": "T13",
+    "name": "Knights 13",
+    "players": [
+      "Yogesh",
+      "Dinesh"
+    ],
+    "pool": "Pool C",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0
+  },
+  {
+    "id": "T14",
+    "name": "Rangers 14",
+    "players": [
+      "Kunal",
+      "Tarun"
+    ],
+    "pool": "Pool C",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0
+  },
+  {
+    "id": "T15",
+    "name": "Raptors 15",
+    "players": [
+      "Vivek",
+      "Ankit"
+    ],
+    "pool": "Pool C",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0
+  },
+  {
+    "id": "T16",
+    "name": "Spartans 16",
+    "players": [
+      "Siddharth",
+      "Pranav"
+    ],
+    "pool": "Pool D",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0
+  },
+  {
+    "id": "T17",
+    "name": "Gladiators 17",
+    "players": [
+      "Abhishek",
+      "Rakesh"
+    ],
+    "pool": "Pool D",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0
+  },
+  {
+    "id": "T18",
+    "name": "Phoenix 18",
+    "players": [
+      "Sunil",
+      "Manish"
+    ],
+    "pool": "Pool D",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0
+  },
+  {
+    "id": "T19",
+    "name": "Storm 19",
+    "players": [
+      "Ravi",
+      "Kiran"
+    ],
+    "pool": "Pool D",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0
+  },
+  {
+    "id": "T20",
+    "name": "Legends 20",
+    "players": [
+      "Sameer",
+      "Yash"
+    ],
+    "pool": "Pool D",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0
+  },
+  {
+    "id": "T21",
+    "name": "Rebels 21",
+    "players": [
+      "Aakash",
+      "Ishaan"
+    ],
+    "pool": "Pool E",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0
+  },
+  {
+    "id": "T22",
+    "name": "Hunters 22",
+    "players": [
+      "Rohit",
+      "Varun"
+    ],
+    "pool": "Pool E",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0
+  },
+  {
+    "id": "T23",
+    "name": "Vikings 23",
+    "players": [
+      "Nitin",
+      "Alok"
+    ],
+    "pool": "Pool E",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0
+  },
+  {
+    "id": "T24",
+    "name": "Dragons 24",
+    "players": [
+      "Sachin",
+      "Gopal"
+    ],
+    "pool": "Pool E",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0
+  },
+  {
+    "id": "T25",
+    "name": "Bulls 25",
+    "players": [
+      "Shyam",
+      "Mohan"
+    ],
+    "pool": "Pool E",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0
+  }
+]

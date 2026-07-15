@@ -1,0 +1,29 @@
+@media (max-width: 991.98px) {
+  .sidebar {
+    position: fixed;
+    top: 60px;
+    left: -280px;
+    height: calc(100vh - 60px);
+    z-index: 1035;
+    transition: left 0.25s ease;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.4);
+  }
+  .sidebar.show { left: 0; }
+  .app-outlet { padding: 1rem; padding-bottom: 4.5rem; }
+  .bottom-nav { display: flex; }
+  .hero-section { padding: 1.25rem; }
+  .hero-content h1 { font-size: 1.4rem; }
+}
+
+@media (max-width: 575.98px) {
+  .stat-value { font-size: 1.35rem; }
+  .stat-icon { font-size: 1.35rem; }
+  .table { font-size: 0.85rem; }
+  .chart-box { height: 220px; }
+}
+
+.table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+@media (min-width: 992px) {
+  #sidebar-toggle { display: none; }
+}
