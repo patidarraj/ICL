@@ -94,14 +94,17 @@ export async function renderRules(outlet) {
       </div>`)}
 
     ${section('fa-calculator', 'How the Match Is Won', `
-      <p class="mb-2">Each match is just <strong>one game</strong> — there's no best-of-3, whoever wins this single game wins the match.</p>
+      <p class="mb-2">Each match is a single game.</p>
       <ul class="mb-0">
-        <li>If a team pockets the Queen and covers it (see above), they win the match right away — even if the other team still has coins left on the table.</li>
-        <li>If nobody pockets the Queen and the game ends another way (for example, time runs out), whichever team has <strong>fewer of their own coins left</strong> on the table wins the match.</li>
+        <li>To win outright, a team must pocket <strong>all of their own coins</strong> AND then pocket and cover the Queen (see above).</li>
+        <li>If the 20-minute time limit runs out and neither team has finished (i.e. nobody has completed the win condition above), whichever team has <strong>fewer of their own coins left</strong> on the table wins the match.</li>
       </ul>`)}
 
-    ${section('fa-hourglass-half', 'Time Limit', `
-      <p class="mb-0">Max 30 seconds per shot. After that, a foul warning is issued.</p>`)}
+    ${section('fa-hourglass-half', 'Time Limits', `
+      <ul class="mb-0">
+        <li><strong>Per shot:</strong> max 30 seconds to play your turn. After that, a foul warning is issued.</li>
+        <li><strong>Per match:</strong> max 20 minutes total. If time runs out before anyone finishes, the team with fewer of their own coins left wins (see above).</li>
+      </ul>`)}
 
     ${section('fa-flag-checkered', 'Referee', `
       <p class="mb-0">All matches are monitored by a referee.</p>`)}
