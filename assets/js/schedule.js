@@ -1,5 +1,5 @@
 import { getTeams, getFixtures } from './storage.js';
-import { formatDate, POOL_NAMES, toCSV, downloadFile } from './utilities.js';
+import { formatDate, POOL_NAMES, toCSV, downloadFile, teamLogoHtml, isoDate } from './utilities.js';
 import { notify } from './notifications.js';
 
 let viewMode = 'list';
@@ -26,6 +26,11 @@ function filterFixtures(fixtures, teamsById, filters) {
   });
 }
 
+function teamCell(teamId, teamsById) {
+  const team = teamsById[teamId];
+  return `<span class="d-inline-flex align-items-center gap-2">${teamLogoHtml(team, 'team-logo-sm')}${team?.name || teamId}</span>`;
+}
+
 function listTable(fixtures, teamsById) {
   return `<div class="table-responsive">
     <table class="table table-dark table-hover align-middle" id="schedule-table">
@@ -35,7 +40,7 @@ function listTable(fixtures, teamsById) {
       <tbody>
         ${fixtures.map((f) => `<tr>
           <td>${formatDate(f.date)}</td><td>${f.day}</td><td>${f.pool}</td><td>${f.matchNumber}</td>
-          <td>${teamsById[f.teamA]?.name || f.teamA}</td><td>vs</td><td>${teamsById[f.teamB]?.name || f.teamB}</td>
+          <td>${teamCell(f.teamA, teamsById)}</td><td>vs</td><td>${teamCell(f.teamB, teamsById)}</td>
           <td>${f.time}</td><td>${f.venue}</td><td>${statusBadge(f)}</td>
           <td>${f.winner ? (teamsById[f.winner]?.name || '') : '-'}</td>
         </tr>`).join('') || '<tr><td colspan="11" class="text-center text-muted">No matches found</td></tr>'}
@@ -44,23 +49,57 @@ function listTable(fixtures, teamsById) {
   </div>`;
 }
 
+function matchTimelineCard(f, teamsById) {
+  const teamA = teamsById[f.teamA];
+  const teamB = teamsById[f.teamB];
+  const done = f.status === 'completed';
+  const aWon = done && f.winner === f.teamA;
+  const bWon = done && f.winner === f.teamB;
+  return `
+    <div class="schedule-match-card ${done ? 'schedule-match-done' : ''}">
+      <div class="schedule-match-meta">
+        <span class="badge bg-primary">${f.pool}</span>
+        <span class="small text-muted">#${f.matchNumber}</span>
+        <span class="small text-muted"><i class="fa-regular fa-clock me-1"></i>${f.time}</span>
+        ${statusBadge(f)}
+      </div>
+      <div class="schedule-match-teams">
+        <div class="schedule-team ${aWon ? 'winner' : ''}">
+          ${teamLogoHtml(teamA, 'team-logo')}
+          <span>${teamA?.name || f.teamA}</span>
+          ${done ? `<span class="score">${f.scoreA}</span>` : ''}
+        </div>
+        <span class="schedule-vs">VS</span>
+        <div class="schedule-team ${bWon ? 'winner' : ''}">
+          ${teamLogoHtml(teamB, 'team-logo')}
+          <span>${teamB?.name || f.teamB}</span>
+          ${done ? `<span class="score">${f.scoreB}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
 function calendarView(fixtures, teamsById) {
   const byDate = {};
   fixtures.forEach((f) => { (byDate[f.date] = byDate[f.date] || []).push(f); });
   const dates = Object.keys(byDate).sort();
-  return `<div class="calendar-grid">${dates.map((d) => `
-    <div class="calendar-day-card card mb-3">
-      <div class="card-header">${formatDate(d)}</div>
-      <div class="card-body">
-        ${byDate[d].map((f) => `<div class="calendar-match mb-2 pb-2 border-bottom border-secondary-subtle">
-          <div class="d-flex justify-content-between">
-            <strong>${f.pool}</strong> ${statusBadge(f)}
-          </div>
-          <div>${teamsById[f.teamA]?.name} <span class="text-muted">vs</span> ${teamsById[f.teamB]?.name}</div>
-          <div class="small text-muted">${f.time} &middot; ${f.venue}</div>
-        </div>`).join('')}
+  const todayIso = isoDate(new Date());
+
+  if (!dates.length) return '<p class="text-muted mb-0">No matches found</p>';
+
+  return `<div class="schedule-timeline">${dates.map((d) => {
+    const isToday = d === todayIso;
+    return `
+    <div class="schedule-day-card ${isToday ? 'schedule-day-today' : ''}">
+      <div class="schedule-day-header">
+        <span>${formatDate(d)}</span>
+        ${isToday ? '<span class="badge bg-warning text-dark ms-2">Today</span>' : ''}
       </div>
-    </div>`).join('')}</div>`;
+      <div class="schedule-day-matches">
+        ${byDate[d].map((f) => matchTimelineCard(f, teamsById)).join('')}
+      </div>
+    </div>`;
+  }).join('')}</div>`;
 }
 
 export async function renderSchedule(outlet) {
@@ -113,8 +152,8 @@ export async function renderSchedule(outlet) {
     </div>
     <div class="d-flex justify-content-end mb-2">
       <div class="btn-group btn-group-sm" role="group">
-        <button class="btn btn-outline-primary ${viewMode === 'list' ? 'active' : ''}" id="view-list">List View</button>
-        <button class="btn btn-outline-primary ${viewMode === 'calendar' ? 'active' : ''}" id="view-calendar">Calendar View</button>
+        <button class="btn btn-outline-primary ${viewMode === 'list' ? 'active' : ''}" id="view-list"><i class="fa-solid fa-table-list me-1"></i>List View</button>
+        <button class="btn btn-outline-primary ${viewMode === 'calendar' ? 'active' : ''}" id="view-calendar"><i class="fa-solid fa-timeline me-1"></i>Timeline View</button>
       </div>
     </div>
     <div class="card"><div class="card-body" id="schedule-container"></div></div>`;
