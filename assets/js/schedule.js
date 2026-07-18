@@ -26,27 +26,52 @@ function filterFixtures(fixtures, teamsById, filters) {
   });
 }
 
-function teamCell(teamId, teamsById) {
-  const team = teamsById[teamId];
-  return `<span class="d-inline-flex align-items-center gap-2">${teamLogoHtml(team, 'team-logo-sm')}${team?.name || teamId}</span>`;
+const POOL_ACCENTS = ['#3B82F6', '#22C55E', '#F97316', '#A855F7', '#EC4899'];
+
+function poolAccent(pool) {
+  const idx = POOL_NAMES.indexOf(pool);
+  return POOL_ACCENTS[idx >= 0 ? idx % POOL_ACCENTS.length : 0];
+}
+
+function matchListRow(f, teamsById) {
+  const teamA = teamsById[f.teamA];
+  const teamB = teamsById[f.teamB];
+  const done = f.status === 'completed';
+  const aWon = done && f.winner === f.teamA;
+  const bWon = done && f.winner === f.teamB;
+  return `
+    <div class="schedule-list-row ${done ? 'schedule-list-row-done' : ''}" style="--pool-accent:${poolAccent(f.pool)};">
+      <div class="schedule-list-date">
+        <div class="fw-semibold">${formatDate(f.date)}</div>
+        <div class="small text-muted"><i class="fa-regular fa-clock me-1"></i>${f.time}</div>
+      </div>
+      <div class="schedule-list-meta">
+        <span class="badge" style="background:${poolAccent(f.pool)};">${f.pool}</span>
+        <span class="small text-muted">#${f.matchNumber}</span>
+      </div>
+      <div class="schedule-list-teams">
+        <div class="schedule-team ${aWon ? 'winner' : ''}">
+          ${teamLogoHtml(teamA, 'team-logo')}
+          <span>${teamA?.name || f.teamA}</span>
+          ${done ? `<span class="score">${f.scoreA}</span>` : ''}
+        </div>
+        <span class="schedule-vs">VS</span>
+        <div class="schedule-team ${bWon ? 'winner' : ''}">
+          ${teamLogoHtml(teamB, 'team-logo')}
+          <span>${teamB?.name || f.teamB}</span>
+          ${done ? `<span class="score">${f.scoreB}</span>` : ''}
+        </div>
+      </div>
+      <div class="schedule-list-status">
+        ${statusBadge(f)}
+        <div class="small text-muted text-truncate"><i class="fa-solid fa-location-dot me-1"></i>${f.venue}</div>
+      </div>
+    </div>`;
 }
 
 function listTable(fixtures, teamsById) {
-  return `<div class="table-responsive">
-    <table class="table table-dark table-hover align-middle" id="schedule-table">
-      <thead><tr>
-        <th>Date</th><th>Day</th><th>Pool</th><th>#</th><th>Team A</th><th></th><th>Team B</th><th>Time</th><th>Venue</th><th>Status</th><th>Winner</th>
-      </tr></thead>
-      <tbody>
-        ${fixtures.map((f) => `<tr>
-          <td>${formatDate(f.date)}</td><td>${f.day}</td><td>${f.pool}</td><td>${f.matchNumber}</td>
-          <td>${teamCell(f.teamA, teamsById)}</td><td>vs</td><td>${teamCell(f.teamB, teamsById)}</td>
-          <td>${f.time}</td><td>${f.venue}</td><td>${statusBadge(f)}</td>
-          <td>${f.winner ? (teamsById[f.winner]?.name || '') : '-'}</td>
-        </tr>`).join('') || '<tr><td colspan="11" class="text-center text-muted">No matches found</td></tr>'}
-      </tbody>
-    </table>
-  </div>`;
+  if (!fixtures.length) return '<p class="text-muted mb-0 text-center py-4">No matches found</p>';
+  return `<div class="schedule-list" id="schedule-table">${fixtures.map((f) => matchListRow(f, teamsById)).join('')}</div>`;
 }
 
 function matchTimelineCard(f, teamsById) {
