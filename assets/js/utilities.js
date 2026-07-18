@@ -280,8 +280,8 @@ export function generateFixtures(teams) {
 
 export function generateSettings() {
   return {
-    tournamentName: 'Carrom Doubles Championship 2026',
-    organizer: 'City Carrom Association',
+    tournamentName: 'Infytrix Carrom League Season 3',
+    organizer: 'Infytrix Carrom Association',
     venue: VENUE,
     status: 'Upcoming',
     startDate: isoDate(tournamentStartDate()),

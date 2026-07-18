@@ -3,8 +3,8 @@
     "id": "T01",
     "name": "Thunder 1",
     "players": [
-      "Pramithashree",
-      "Sahil"
+      "Shasank",
+      "Raj"
     ],
     "pool": "Pool A",
     "played": 0,
@@ -13,14 +13,14 @@
     "points": 0,
     "scoreFor": 0,
     "scoreAgainst": 0,
-    "logoCode": "4YR9A6"
+    "logoCode": "GFFBN3"
   },
   {
     "id": "T02",
     "name": "Blaze 2",
     "players": [
-      "Suresh",
-      "Jayshree"
+      "Yash",
+      "Mehek"
     ],
     "pool": "Pool A",
     "played": 0,
@@ -29,14 +29,14 @@
     "points": 0,
     "scoreFor": 0,
     "scoreAgainst": 0,
-    "logoCode": "6F4VXH"
+    "logoCode": "69MEN3"
   },
   {
     "id": "T03",
     "name": "Titans 3",
     "players": [
-      "Aditya",
-      "Sayli"
+      "Esha",
+      "Ruchi"
     ],
     "pool": "Pool A",
     "played": 0,
@@ -45,14 +45,14 @@
     "points": 0,
     "scoreFor": 0,
     "scoreAgainst": 0,
-    "logoCode": "D9VXJ3"
+    "logoCode": "Y7X9P4"
   },
   {
     "id": "T04",
     "name": "Strikers 4",
     "players": [
-      "Ashish",
-      "Shreyas"
+      "Prasad",
+      "Siddhi"
     ],
     "pool": "Pool A",
     "played": 0,
@@ -61,14 +61,14 @@
     "points": 0,
     "scoreFor": 0,
     "scoreAgainst": 0,
-    "logoCode": "6NG9ZN"
+    "logoCode": "PYJGYB"
   },
   {
     "id": "T05",
     "name": "Warriors 5",
     "players": [
-      "Harshal",
-      "Vaibhav"
+      "Animesh",
+      "Sudarshan"
     ],
     "pool": "Pool A",
     "played": 0,
@@ -77,14 +77,14 @@
     "points": 0,
     "scoreFor": 0,
     "scoreAgainst": 0,
-    "logoCode": "Z66CGW"
+    "logoCode": "PAGDTR"
   },
   {
     "id": "T06",
     "name": "Falcons 6",
     "players": [
-      "Mahi",
-      "Swapnil"
+      "Mayur",
+      "Tejas Wani"
     ],
     "pool": "Pool B",
     "played": 0,
@@ -93,14 +93,14 @@
     "points": 0,
     "scoreFor": 0,
     "scoreAgainst": 0,
-    "logoCode": "JZXPXF"
+    "logoCode": "B5QCDY"
   },
   {
     "id": "T07",
     "name": "Panthers 7",
     "players": [
-      "Nilesh",
-      "Hetvi"
+      "Om W",
+      "Riya"
     ],
     "pool": "Pool B",
     "played": 0,
@@ -109,14 +109,14 @@
     "points": 0,
     "scoreFor": 0,
     "scoreAgainst": 0,
-    "logoCode": "4S73AH"
+    "logoCode": "8XNSSK"
   },
   {
     "id": "T08",
     "name": "Eagles 8",
     "players": [
-      "Ankit",
-      "Megan"
+      "Manish",
+      "Kishan"
     ],
     "pool": "Pool B",
     "played": 0,
@@ -125,27 +125,11 @@
     "points": 0,
     "scoreFor": 0,
     "scoreAgainst": 0,
-    "logoCode": "YPVDNS"
+    "logoCode": "G3NPZV"
   },
   {
     "id": "T09",
     "name": "Sharks 9",
-    "players": [
-      "Pratham",
-      "Monika"
-    ],
-    "pool": "Pool B",
-    "played": 0,
-    "won": 0,
-    "lost": 0,
-    "points": 0,
-    "scoreFor": 0,
-    "scoreAgainst": 0,
-    "logoCode": "X4D95P"
-  },
-  {
-    "id": "T10",
-    "name": "Wolves 10",
     "players": [
       "Vinay",
       "Soniya"
@@ -157,14 +141,30 @@
     "points": 0,
     "scoreFor": 0,
     "scoreAgainst": 0,
-    "logoCode": "FMQGMF"
+    "logoCode": "Z8VQQZ"
+  },
+  {
+    "id": "T10",
+    "name": "Wolves 10",
+    "players": [
+      "Hemali",
+      "Nitish"
+    ],
+    "pool": "Pool B",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0,
+    "logoCode": "9DT4YJ"
   },
   {
     "id": "T11",
     "name": "Cobras 11",
     "players": [
-      "Prasad",
-      "Siddhi"
+      "Pratham",
+      "Monika"
     ],
     "pool": "Pool C",
     "played": 0,
@@ -173,59 +173,11 @@
     "points": 0,
     "scoreFor": 0,
     "scoreAgainst": 0,
-    "logoCode": "ZN6ZJX"
+    "logoCode": "SHQ6YN"
   },
   {
     "id": "T12",
     "name": "Vipers 12",
-    "players": [
-      "Nitin",
-      "Harsh"
-    ],
-    "pool": "Pool C",
-    "played": 0,
-    "won": 0,
-    "lost": 0,
-    "points": 0,
-    "scoreFor": 0,
-    "scoreAgainst": 0,
-    "logoCode": "GJ8TVX"
-  },
-  {
-    "id": "T13",
-    "name": "Knights 13",
-    "players": [
-      "Awadhesh",
-      "Disha"
-    ],
-    "pool": "Pool C",
-    "played": 0,
-    "won": 0,
-    "lost": 0,
-    "points": 0,
-    "scoreFor": 0,
-    "scoreAgainst": 0,
-    "logoCode": "BU44Y6"
-  },
-  {
-    "id": "T14",
-    "name": "Rangers 14",
-    "players": [
-      "Darshan",
-      "Suryamani"
-    ],
-    "pool": "Pool C",
-    "played": 0,
-    "won": 0,
-    "lost": 0,
-    "points": 0,
-    "scoreFor": 0,
-    "scoreAgainst": 0,
-    "logoCode": "YRXQ5S"
-  },
-  {
-    "id": "T15",
-    "name": "Raptors 15",
     "players": [
       "Alisha",
       "Harshita"
@@ -237,14 +189,62 @@
     "points": 0,
     "scoreFor": 0,
     "scoreAgainst": 0,
-    "logoCode": "C66CR9"
+    "logoCode": "7ERSR7"
+  },
+  {
+    "id": "T13",
+    "name": "Knights 13",
+    "players": [
+      "Shubham",
+      "Tejas Hiwarde"
+    ],
+    "pool": "Pool C",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0,
+    "logoCode": "3XYK2P"
+  },
+  {
+    "id": "T14",
+    "name": "Rangers 14",
+    "players": [
+      "Nitin",
+      "Harsh"
+    ],
+    "pool": "Pool C",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0,
+    "logoCode": "JUZTYD"
+  },
+  {
+    "id": "T15",
+    "name": "Raptors 15",
+    "players": [
+      "Darshan",
+      "Suryamani"
+    ],
+    "pool": "Pool C",
+    "played": 0,
+    "won": 0,
+    "lost": 0,
+    "points": 0,
+    "scoreFor": 0,
+    "scoreAgainst": 0,
+    "logoCode": "CDAU47"
   },
   {
     "id": "T16",
     "name": "Spartans 16",
     "players": [
-      "Hemali",
-      "Nitish"
+      "Harshal",
+      "Vaibhav"
     ],
     "pool": "Pool D",
     "played": 0,
@@ -253,14 +253,14 @@
     "points": 0,
     "scoreFor": 0,
     "scoreAgainst": 0,
-    "logoCode": "ZPMCVA"
+    "logoCode": "6JZY6D"
   },
   {
     "id": "T17",
     "name": "Gladiators 17",
     "players": [
-      "Mayur",
-      "Tejas Wani"
+      "Awadhesh",
+      "Disha"
     ],
     "pool": "Pool D",
     "played": 0,
@@ -269,14 +269,14 @@
     "points": 0,
     "scoreFor": 0,
     "scoreAgainst": 0,
-    "logoCode": "N6NA9U"
+    "logoCode": "RE9SBN"
   },
   {
     "id": "T18",
     "name": "Phoenix 18",
     "players": [
-      "Esha",
-      "Ruchi"
+      "Aditya",
+      "Sayli"
     ],
     "pool": "Pool D",
     "played": 0,
@@ -285,14 +285,14 @@
     "points": 0,
     "scoreFor": 0,
     "scoreAgainst": 0,
-    "logoCode": "ER6BAU"
+    "logoCode": "PWPFSK"
   },
   {
     "id": "T19",
     "name": "Storm 19",
     "players": [
-      "Yash",
-      "Mehek"
+      "Nilesh",
+      "Hetvi"
     ],
     "pool": "Pool D",
     "played": 0,
@@ -301,14 +301,14 @@
     "points": 0,
     "scoreFor": 0,
     "scoreAgainst": 0,
-    "logoCode": "4HZ6AU"
+    "logoCode": "TMJMW7"
   },
   {
     "id": "T20",
     "name": "Legends 20",
     "players": [
-      "Om W",
-      "Riya"
+      "Satyam",
+      "Aman"
     ],
     "pool": "Pool D",
     "played": 0,
@@ -317,14 +317,14 @@
     "points": 0,
     "scoreFor": 0,
     "scoreAgainst": 0,
-    "logoCode": "WSUHHZ"
+    "logoCode": "NZFF37"
   },
   {
     "id": "T21",
     "name": "Rebels 21",
     "players": [
-      "Animesh",
-      "Sudarshan"
+      "Suresh",
+      "Jayshree"
     ],
     "pool": "Pool E",
     "played": 0,
@@ -333,14 +333,14 @@
     "points": 0,
     "scoreFor": 0,
     "scoreAgainst": 0,
-    "logoCode": "CUSJ97"
+    "logoCode": "8DCSDA"
   },
   {
     "id": "T22",
     "name": "Hunters 22",
     "players": [
-      "Shasank",
-      "Raj"
+      "Mahi",
+      "Swapnil"
     ],
     "pool": "Pool E",
     "played": 0,
@@ -349,14 +349,14 @@
     "points": 0,
     "scoreFor": 0,
     "scoreAgainst": 0,
-    "logoCode": "65395A"
+    "logoCode": "WK7ED7"
   },
   {
     "id": "T23",
     "name": "Vikings 23",
     "players": [
-      "Shubham",
-      "Tejas Hiwarde"
+      "Ankit",
+      "Megan"
     ],
     "pool": "Pool E",
     "played": 0,
@@ -365,14 +365,14 @@
     "points": 0,
     "scoreFor": 0,
     "scoreAgainst": 0,
-    "logoCode": "MUXQSC"
+    "logoCode": "F33MJS"
   },
   {
     "id": "T24",
     "name": "Dragons 24",
     "players": [
-      "Satyam",
-      "Aman"
+      "Pramithashree",
+      "Sahil"
     ],
     "pool": "Pool E",
     "played": 0,
@@ -381,14 +381,14 @@
     "points": 0,
     "scoreFor": 0,
     "scoreAgainst": 0,
-    "logoCode": "SR39BJ"
+    "logoCode": "5VBXNJ"
   },
   {
     "id": "T25",
     "name": "Bulls 25",
     "players": [
-      "Manish",
-      "Kishan"
+      "Ashish",
+      "Shreyas"
     ],
     "pool": "Pool E",
     "played": 0,
@@ -397,6 +397,6 @@
     "points": 0,
     "scoreFor": 0,
     "scoreAgainst": 0,
-    "logoCode": "8MNWTD"
+    "logoCode": "F8FGJ4"
   }
 ]

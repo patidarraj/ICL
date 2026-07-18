@@ -1,4 +1,4 @@
-# Carrom Tournament Manager
+# Carrom Tournament
 
 A production-ready, single-page Carrom Doubles Tournament management dashboard. Pure HTML5, CSS3, Bootstrap 5, and vanilla ES6 modules — no build step, no custom backend server. Live data is shared across every visitor via a free **Firebase Firestore** project (see setup below).
 

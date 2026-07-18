@@ -1,5 +1,5 @@
 import {
-  getTeams, saveTeams, getFixtures, saveFixtures, getSettings,
+  getTeams, saveTeams, getFixtures, saveFixtures, getSettings, saveSettings,
   isAdminAuthed, loginAdmin, logoutAdmin, refreshStandings, resetTournament, exportBackup, restoreBackup,
 } from './storage.js';
 import { uid, downloadFile, escapeHtml, POOL_NAMES, isoDate, VENUE, generateLogoCode } from './utilities.js';
@@ -107,6 +107,33 @@ function adminPanel(outlet) {
             </label>
           </div>
         </div></div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header"><i class="fa-solid fa-circle-info me-2"></i>Tournament Info</div>
+      <div class="card-body row g-2">
+        <div class="col-md-6">
+          <label class="form-label small">Tournament Name</label>
+          <input class="form-control form-control-sm" id="ti-name" value="${escapeHtml(settings.tournamentName || '')}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small">Organizer</label>
+          <input class="form-control form-control-sm" id="ti-organizer" value="${escapeHtml(settings.organizer || '')}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small">Venue</label>
+          <input class="form-control form-control-sm" id="ti-venue" value="${escapeHtml(settings.venue || '')}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small">Status</label>
+          <select class="form-select form-select-sm" id="ti-status">
+            ${['Upcoming', 'Ongoing', 'Completed'].map((s) => `<option ${settings.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+          <button class="btn btn-primary btn-sm w-100" id="btn-save-tournament-info"><i class="fa-solid fa-floppy-disk me-1"></i>Save</button>
+        </div>
       </div>
     </div>
 
@@ -302,6 +329,18 @@ function adminPanel(outlet) {
       refreshMatchesBody(fx);
       notify.success('Match created');
     });
+  });
+
+  outlet.querySelector('#btn-save-tournament-info').addEventListener('click', async () => {
+    const updated = {
+      ...getSettings(),
+      tournamentName: outlet.querySelector('#ti-name').value.trim(),
+      organizer: outlet.querySelector('#ti-organizer').value.trim(),
+      venue: outlet.querySelector('#ti-venue').value.trim(),
+      status: outlet.querySelector('#ti-status').value,
+    };
+    await saveSettings(updated);
+    notify.success('Tournament info updated');
   });
 
   outlet.querySelector('#btn-generate-knockout').addEventListener('click', async () => {

@@ -1,6 +1,6 @@
 {
-  "name": "Carrom Tournament Manager",
-  "short_name": "Carrom TM",
+  "name": "Carrom Tournament",
+  "short_name": "Carrom",
   "description": "Professional Carrom Doubles Tournament management dashboard",
   "start_url": "./index.html",
   "display": "standalone",
