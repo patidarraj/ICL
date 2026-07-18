@@ -1,5 +1,5 @@
 import { getTeams, getFixtures, getSettings } from './storage.js';
-import { formatDate, POOL_NAMES, teamLogoUrl } from './utilities.js';
+import { formatDate, POOL_NAMES, teamLogoHtml } from './utilities.js';
 import { goTo } from './router.js';
 
 function progressCard(fixtures) {
@@ -61,9 +61,9 @@ function nextMatchCard(fixtures, teamsById) {
       <div class="card-body text-center">
         <div class="text-uppercase small text-muted mb-2">Next Match &middot; ${next.pool}</div>
         <div class="d-flex align-items-center justify-content-center gap-3 flex-wrap">
-          <div class="fw-bold fs-5 d-flex align-items-center gap-2"><img src="${teamLogoUrl(next.teamA)}" alt="" class="team-logo" onerror="this.style.display='none'">${teamsById[next.teamA]?.name}</div>
+          <div class="fw-bold fs-5 d-flex align-items-center gap-2">${teamLogoHtml(teamsById[next.teamA])}${teamsById[next.teamA]?.name}</div>
           <span class="badge bg-primary">VS</span>
-          <div class="fw-bold fs-5 d-flex align-items-center gap-2"><img src="${teamLogoUrl(next.teamB)}" alt="" class="team-logo" onerror="this.style.display='none'">${teamsById[next.teamB]?.name}</div>
+          <div class="fw-bold fs-5 d-flex align-items-center gap-2">${teamLogoHtml(teamsById[next.teamB])}${teamsById[next.teamB]?.name}</div>
         </div>
         <div class="text-muted mt-2"><i class="fa-regular fa-clock me-1"></i>${formatDate(next.date)} &middot; ${next.time}</div>
       </div>

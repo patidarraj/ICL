@@ -1,5 +1,4 @@
 // Shared utility & data-generation helpers used across the app.
-import { firebaseConfig } from './firebase-config.js';
 
 export const FIRST_NAMES = [
   'Arjun','Rohan','Vikram','Karan','Aditya','Suresh','Ramesh','Nikhil','Sanjay','Manoj',
@@ -100,10 +99,12 @@ export function generateLogoCode(len = 6) {
   return code;
 }
 
-/** Deterministic public URL for a team's uploaded logo (no Firestore field needed). */
-export function teamLogoUrl(teamId) {
-  const bucket = firebaseConfig.storageBucket;
-  return `https://firebasestorage.googleapis.com/v0/b/${encodeURIComponent(bucket)}/o/team-logos%2F${encodeURIComponent(teamId)}?alt=media`;
+/** Renders a team's logo (a small base64 data URL stored on the team) or a placeholder badge. */
+export function teamLogoHtml(team, sizeClass = 'team-logo') {
+  if (team && team.logoBase64) {
+    return `<img src="${team.logoBase64}" alt="" class="${sizeClass}">`;
+  }
+  return `<span class="${sizeClass} team-logo-placeholder"><i class="fa-solid fa-shield-halved"></i></span>`;
 }
 
 export function generateTeams() {

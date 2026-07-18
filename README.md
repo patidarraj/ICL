@@ -11,7 +11,8 @@ A production-ready, single-page Carrom Doubles Tournament management dashboard. 
 - **Knockout Bracket** — auto-generated from standings once all 50 pool matches are complete (5 pool winners + best 3 runner-ups = 8 teams): Quarter Finals → Semi Finals → Final + 3rd Place, with champion celebration.
 - **Statistics** — Chart.js dashboards: completion doughnut, pool wins, cumulative progress, matches/day, win-percentage, pool comparison radar, and a most-wins leaderboard.
 - **Admin Panel** — protected by real Firebase Authentication (email/password): create/edit/delete teams, create matches, enter/undo results, generate the knockout bracket, reset the tournament, export standings to Excel/PDF, and backup/restore the full dataset as JSON.
-- **Live shared data** — every visitor reads the same Firestore document in real time. Anyone with the link sees the same up-to-the-second standings/schedule/bracket; only the signed-in admin can write.
+- **Team Logos** — each team gets a short access code (visible to the admin in the Teams table); anyone with a team's code can upload that team's logo from the public "Team Logo" tab, no login needed. Images are compressed client-side and stored directly in Firestore — no Firebase Storage/billing plan required.
+- **Live shared data** — every visitor reads the same Firestore data in real time. Anyone with the link sees the same up-to-the-second standings/schedule/bracket; only the signed-in admin can write scores and settings.
 - **Responsive** — collapsible sidebar on desktop, bottom nav bar on mobile, horizontally scrollable bracket and tables.
 
 ## Setting up the shared live backend (Firebase)
@@ -25,7 +26,7 @@ This is a one-time, ~5 minute setup. It's required before the app will load — 
 5. **Enable Authentication**: left sidebar → Build → Authentication → Get started → Sign-in method → enable **Email/Password**.
 6. **Create your admin account**: Authentication → Users tab → Add user → enter an email (e.g. `admin@your-tournament.local`) and a password. This password is what you'll type into the app's Admin tab.
 7. Update `ADMIN_EMAIL` in `firebase-config.js` to match the email you just used.
-8. **Set Firestore security rules** so anyone can read live data, but only your signed-in admin account can write. Go to Firestore Database → Rules and paste:
+8. **Set Firestore security rules** so anyone can read live data, but only your signed-in admin account can write scores/settings — with one narrow exception letting anyone update just a team's logo field (see note below). Go to Firestore Database → Rules and paste:
 
    ```
    rules_version = '2';
@@ -35,15 +36,24 @@ This is a one-time, ~5 minute setup. It's required before the app will load — 
          allow read: if true;
          allow write: if request.auth != null;
        }
+       match /teams/{teamId} {
+         allow read: if true;
+         allow create: if !exists(/databases/$(database)/documents/teams/$(teamId));
+         allow delete: if request.auth != null;
+         allow update: if request.auth != null
+           || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['logoBase64']);
+       }
      }
    }
    ```
 
-   Since you created exactly one Authentication user (your admin), any signed-in request is trusted. If you ever add more Firebase Auth users, tighten this to `request.auth.token.email == 'admin@your-tournament.local'`.
+   Since you created exactly one Authentication user (your admin), any signed-in request is trusted. If you ever add more Firebase Auth users, tighten the `request.auth != null` checks to `request.auth.token.email == 'admin@your-tournament.local'`.
+
+   **On the logo access code:** the code entered on the Team Logo page is checked client-side against the team's public data before uploading — it's a light social gate to stop casual visitors from changing a team's logo by accident, not cryptographic security (since `teams` is public-read, a technically determined person could bypass it). The rule above only limits the *blast radius*: even without the code, the absolute most a non-admin write can ever touch is a team's `logoBase64` field — never scores, points, or any other data. That tradeoff was chosen deliberately to avoid needing Firebase Storage (which now requires a paid Blaze plan just to enable, even within the free-usage tier).
 
 9. Open the app (see **Running locally** below, or your deployed URL) — the first load auto-generates the 25 teams / 50-match schedule into Firestore, and every subsequent visitor shares that same live data.
 
-**Firestore free tier** comfortably covers a single tournament's traffic (50k reads / 20k writes per day) at no cost.
+**Firestore free tier** comfortably covers a single tournament's traffic (50k reads / 20k writes per day) at no cost — and this app never needs Firebase Storage or the Blaze plan.
 
 ## Running locally
 

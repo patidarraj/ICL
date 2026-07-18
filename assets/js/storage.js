@@ -1,23 +1,23 @@
-// Firestore-backed persistence layer. Every visitor reads the same live document;
-// only an authenticated admin can write (enforced by Firestore security rules).
+// Firestore-backed persistence layer. Every visitor reads the same live data;
+// only an authenticated admin can write most fields (enforced by security rules).
+// Teams live in their own subcollection (one doc per team) so that a team's logo
+// field can be updated by anyone with that team's access code, without opening up
+// the rest of the team's data (scores, points) to non-admin writes.
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js';
 import {
-  getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot,
+  getFirestore, doc, collection, getDoc, getDocs, setDoc, updateDoc, writeBatch, onSnapshot,
 } from 'https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js';
 import {
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
 } from 'https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js';
-import {
-  getStorage, ref, uploadBytes,
-} from 'https://www.gstatic.com/firebasejs/10.13.1/firebase-storage.js';
 import { firebaseConfig, ADMIN_EMAIL } from './firebase-config.js';
 import { generateTeams, generateFixtures, generateSettings, recomputeStandingsForTeams, sortStandings } from './utilities.js';
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
-const fileStorage = getStorage(app);
 const stateRef = doc(db, 'tournaments', 'main');
+const teamsColRef = collection(db, 'teams');
 
 let cache = { teams: [], fixtures: [], settings: {}, bracket: null };
 let currentUser = null;
@@ -35,9 +35,15 @@ export function onDataChange(fn) {
 
 onSnapshot(stateRef, (snap) => {
   if (snap.exists()) {
-    cache = snap.data();
+    const { fixtures, settings, bracket } = snap.data();
+    cache = { ...cache, fixtures, settings, bracket };
     notifyChange();
   }
+});
+
+onSnapshot(teamsColRef, (snap) => {
+  cache = { ...cache, teams: snap.docs.map((d) => ({ id: d.id, ...d.data() })) };
+  notifyChange();
 });
 
 onAuthStateChanged(auth, (user) => {
@@ -45,23 +51,50 @@ onAuthStateChanged(auth, (user) => {
   notifyChange();
 });
 
-/** Creates the shared tournament document once, if it doesn't exist yet. Safe to call on every load. */
+async function seedTeams(teams) {
+  const batch = writeBatch(db);
+  teams.forEach((t) => batch.set(doc(teamsColRef, t.id), t));
+  await batch.commit();
+}
+
+async function clearTeams() {
+  const snap = await getDocs(teamsColRef);
+  const batch = writeBatch(db);
+  snap.docs.forEach((d) => batch.delete(d.ref));
+  await batch.commit();
+}
+
+/** Creates the shared tournament data once, if it doesn't exist yet. Safe to call on every load. */
 export async function initData() {
-  const snap = await getDoc(stateRef);
-  if (!snap.exists()) {
+  const [stateSnap, teamsSnap] = await Promise.all([getDoc(stateRef), getDocs(teamsColRef)]);
+  if (!stateSnap.exists() || teamsSnap.empty) {
     const teams = generateTeams();
     const fixtures = generateFixtures(teams);
     const settings = generateSettings();
-    const initial = { teams, fixtures, settings, bracket: null };
-    await setDoc(stateRef, initial);
-    cache = initial;
+    await setDoc(stateRef, { fixtures, settings, bracket: null });
+    await seedTeams(teams);
+    cache = { teams, fixtures, settings, bracket: null };
   } else {
-    cache = snap.data();
+    cache = { teams: teamsSnap.docs.map((d) => ({ id: d.id, ...d.data() })), ...stateSnap.data() };
   }
 }
 
 export function getTeams() { return cache.teams || []; }
-export function saveTeams(teams) { return updateDoc(stateRef, { teams }); }
+
+/** Upserts every team in the array and deletes any team docs no longer present. */
+export async function saveTeams(teams) {
+  const currentIds = new Set(getTeams().map((t) => t.id));
+  const newIds = new Set(teams.map((t) => t.id));
+  const batch = writeBatch(db);
+  teams.forEach((t) => batch.set(doc(teamsColRef, t.id), t));
+  currentIds.forEach((id) => { if (!newIds.has(id)) batch.delete(doc(teamsColRef, id)); });
+  await batch.commit();
+}
+
+/** Narrow, rules-friendly update touching only a team's logo — usable by non-admins. */
+export function updateTeamLogo(teamId, logoBase64) {
+  return updateDoc(doc(teamsColRef, teamId), { logoBase64 });
+}
 
 export function getFixtures() { return cache.fixtures || []; }
 export function saveFixtures(fixtures) { return updateDoc(stateRef, { fixtures }); }
@@ -95,7 +128,9 @@ export async function resetTournament() {
   const teams = generateTeams();
   const fixtures = generateFixtures(teams);
   const settings = generateSettings();
-  await setDoc(stateRef, { teams, fixtures, settings, bracket: null });
+  await clearTeams();
+  await seedTeams(teams);
+  await setDoc(stateRef, { fixtures, settings, bracket: null });
 }
 
 export function exportBackup() {
@@ -105,21 +140,9 @@ export function exportBackup() {
 export async function restoreBackup(json) {
   const data = JSON.parse(json);
   if (!data.teams || !data.fixtures || !data.settings) throw new Error('Invalid backup file');
+  await clearTeams();
+  await seedTeams(data.teams);
   await setDoc(stateRef, {
-    teams: data.teams, fixtures: data.fixtures, settings: data.settings, bracket: data.bracket || null,
-  });
-}
-
-/**
- * Uploads a team's logo image to Firebase Storage. Storage security rules verify `code`
- * against that team's `logoCode` in Firestore, so anyone with the right code can upload —
- * admins bypass the code check entirely since they're authenticated.
- */
-export async function uploadTeamLogo(teamId, file, code) {
-  const storageRef = ref(fileStorage, `team-logos/${teamId}`);
-  await uploadBytes(storageRef, file, {
-    contentType: file.type,
-    cacheControl: 'public, max-age=300',
-    customMetadata: { code: code || '' },
+    fixtures: data.fixtures, settings: data.settings, bracket: data.bracket || null,
   });
 }

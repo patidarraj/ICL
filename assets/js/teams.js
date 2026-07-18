@@ -1,5 +1,5 @@
 import { getTeams, getFixtures } from './storage.js';
-import { POOL_NAMES, teamLogoUrl } from './utilities.js';
+import { POOL_NAMES, teamLogoHtml } from './utilities.js';
 import { goTo } from './router.js';
 
 let filters = { search: '', pool: '' };
@@ -12,7 +12,7 @@ function teamCard(team, fixtures) {
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-start mb-2">
             <div class="d-flex align-items-center gap-2">
-              <img src="${teamLogoUrl(team.id)}" alt="" class="team-logo team-logo-lg" onerror="this.style.display='none'">
+              ${teamLogoHtml(team, 'team-logo team-logo-lg')}
               <h5 class="card-title mb-0">${team.name}</h5>
             </div>
             <span class="badge bg-primary">${team.pool}</span>
