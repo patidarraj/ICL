@@ -93,20 +93,18 @@ export async function renderRules(outlet) {
         </table>
       </div>`)}
 
-    ${section('fa-calculator', 'Scoring', `
+    ${section('fa-calculator', 'How the Match Is Won', `
+      <p class="mb-2">Each match is just <strong>one game</strong> — there's no best-of-3, whoever wins this single game wins the match.</p>
       <ul class="mb-0">
-        <li>Game ends when a player/team finishes all coins <strong>and</strong> covers the Queen (red).</li>
-        <li>Winning team gets 1 match point.</li>
+        <li>If a team pockets the Queen and covers it (see above), they win the match right away — even if the other team still has coins left on the table.</li>
+        <li>If nobody pockets the Queen and the game ends another way (for example, time runs out), whichever team has <strong>fewer of their own coins left</strong> on the table wins the match.</li>
       </ul>`)}
 
     ${section('fa-hourglass-half', 'Time Limit', `
       <p class="mb-0">Max 30 seconds per shot. After that, a foul warning is issued.</p>`)}
 
-    ${section('fa-flag-checkered', 'Winning the Match', `
-      <ul class="mb-0">
-        <li>Best of 3 boards, or points-based (as per schedule).</li>
-        <li>All matches will be monitored by a referee.</li>
-      </ul>`)}
+    ${section('fa-flag-checkered', 'Referee', `
+      <p class="mb-0">All matches are monitored by a referee.</p>`)}
 
     ${section('fa-note-sticky', 'Final Notes', `
       <ul class="mb-0">
