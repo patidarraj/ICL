@@ -167,7 +167,7 @@ a { text-decoration: none; }
   border: 1px solid var(--border);
   vertical-align: middle;
 }
-.team-logo-lg { width: 56px; height: 56px; }
+.team-logo-lg { width: 72px; height: 72px; }
 .team-logo-sm { width: 20px; height: 20px; }
 .team-logo-preview {
   width: 120px;
@@ -185,6 +185,17 @@ a { text-decoration: none; }
   font-size: 0.9em;
 }
 .team-logo-placeholder.team-logo-preview { font-size: 2.5rem; }
+
+.team-logo-gallery {
+  width: 120px;
+  height: 120px;
+  border-radius: 16px;
+  object-fit: contain;
+  background: var(--card-bg-2);
+  border: 1px solid var(--border);
+  padding: 10px;
+}
+.team-logo-placeholder.team-logo-gallery { font-size: 3rem; }
 
 .toast {
   background: var(--card-bg);

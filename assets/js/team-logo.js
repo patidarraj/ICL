@@ -28,14 +28,36 @@ function compressImage(file) {
   });
 }
 
+function galleryTile(team) {
+  return `
+    <div class="col-6 col-sm-4 col-md-3 col-lg-2 text-center">
+      <div class="logo-gallery-tile">
+        ${teamLogoHtml(team, 'team-logo-gallery')}
+        <div class="fw-semibold mt-2 text-truncate">${team.name}</div>
+        <div class="small text-muted text-truncate">${team.players.join(' & ')}</div>
+      </div>
+    </div>`;
+}
+
 export async function renderTeamLogo(outlet) {
   const teams = getTeams();
 
   outlet.innerHTML = `
-    <h2 class="page-title"><i class="fa-solid fa-image me-2"></i>Upload Team Logo</h2>
+    <h2 class="page-title"><i class="fa-solid fa-image me-2"></i>Team Logos</h2>
+
+    <div class="card mb-4">
+      <div class="card-header"><i class="fa-solid fa-images me-2"></i>All Teams</div>
+      <div class="card-body">
+        <div class="row g-3">
+          ${teams.map(galleryTile).join('')}
+        </div>
+      </div>
+    </div>
+
     <div class="row justify-content-center">
       <div class="col-lg-6">
         <div class="card">
+          <div class="card-header"><i class="fa-solid fa-upload me-2"></i>Upload Your Team Logo</div>
           <div class="card-body">
             <p class="text-muted small">Enter your team and the access code given to you by the tournament organizer, then choose an image to upload as your team's logo. Images are resized automatically.</p>
             <label class="form-label">Team</label>
