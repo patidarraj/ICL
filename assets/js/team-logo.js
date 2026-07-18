@@ -2,8 +2,8 @@ import { getTeams, updateTeamLogo } from './storage.js';
 import { teamLogoHtml } from './utilities.js';
 import { notify } from './notifications.js';
 
-const MAX_DIMENSION = 200;
-const JPEG_QUALITY = 0.7;
+const MAX_DIMENSION = 480;
+const JPEG_QUALITY = 0.9;
 
 function compressImage(file) {
   return new Promise((resolve, reject) => {
@@ -20,8 +20,14 @@ function compressImage(file) {
       const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
-      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', JPEG_QUALITY));
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, width, height);
+      // PNG keeps logo artwork (flat colors, sharp edges, text) crisp; JPEG introduces
+      // blur/ringing artifacts on that kind of graphic that made uploaded logos look fuzzy.
+      const isPhotographic = /\.(jpe?g)$/i.test(file.name) && !file.type.includes('png');
+      resolve(isPhotographic ? canvas.toDataURL('image/jpeg', JPEG_QUALITY) : canvas.toDataURL('image/png'));
     };
     img.onerror = () => reject(new Error('Could not read image'));
     img.src = URL.createObjectURL(file);
