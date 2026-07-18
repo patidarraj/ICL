@@ -64,18 +64,33 @@ async function clearTeams() {
   await batch.commit();
 }
 
-/** Creates the shared tournament data once, if it doesn't exist yet. Safe to call on every load. */
+/**
+ * Creates the shared tournament data once, if it doesn't exist yet. Safe to call on every load.
+ * Only ever CREATES brand-new documents (never overwrites an existing tournaments/main), since
+ * anonymous visitors are only allowed to create docs, not update pre-existing ones — that keeps
+ * this safe to run for every visitor, not just the signed-in admin.
+ */
 export async function initData() {
-  const [stateSnap, teamsSnap] = await Promise.all([getDoc(stateRef), getDocs(teamsColRef)]);
-  if (!stateSnap.exists() || teamsSnap.empty) {
-    const teams = generateTeams();
-    const fixtures = generateFixtures(teams);
-    const settings = generateSettings();
-    await setDoc(stateRef, { fixtures, settings, bracket: null });
-    await seedTeams(teams);
-    cache = { teams, fixtures, settings, bracket: null };
-  } else {
-    cache = { teams: teamsSnap.docs.map((d) => ({ id: d.id, ...d.data() })), ...stateSnap.data() };
+  try {
+    const [stateSnap, teamsSnap] = await Promise.all([getDoc(stateRef), getDocs(teamsColRef)]);
+
+    if (teamsSnap.empty) {
+      const teams = generateTeams();
+      await seedTeams(teams);
+      if (!stateSnap.exists()) {
+        const fixtures = generateFixtures(teams);
+        const settings = generateSettings();
+        await setDoc(stateRef, { fixtures, settings, bracket: null });
+        cache = { teams, fixtures, settings, bracket: null };
+        return;
+      }
+      cache = { teams, ...stateSnap.data() };
+      return;
+    }
+
+    cache = { teams: teamsSnap.docs.map((d) => ({ id: d.id, ...d.data() })), ...(stateSnap.exists() ? stateSnap.data() : {}) };
+  } catch (err) {
+    console.error('initData failed, app will load with whatever cached data is available', err);
   }
 }
 
