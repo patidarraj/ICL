@@ -21,26 +21,31 @@ export const MATCHES_PER_DAY = 2;
 export const VENUE = 'Carrom Championship Arena';
 export const MATCH_TIMES = ['06:00 PM', '06:30 PM'];
 
-/** Fixed real player roster, one pair per team, in T01..T25 order. */
+/**
+ * Fixed real player roster, one pair per team. Indices 0, 1, 8, 10 (Aditya, Esha,
+ * Shubham/Tejas Hiwarde, Ankit/Megan) are treated as priority teams by generateTeams() —
+ * their pool draw guarantees they finish their round-robin matches a round earlier
+ * than everyone else, without skipping the tournament's opening rounds.
+ */
 export const PLAYER_PAIRS = [
   ['Aditya', 'Sayli'],
-  ['Esha', 'Rushi'],
+  ['Esha', 'Ruchi'],
   ['Hemali', 'Nitish'],
   ['Ashish', 'Shreyas'],
   ['Animesh', 'Sudarshan'],
   ['Om W', 'Riya'],
   ['Pratham', 'Monika'],
   ['Suresh', 'Jayshree'],
-  ['Shubham', 'Tejas'],
+  ['Shubham', 'Tejas Hiwarde'],
   ['Vinay', 'Soniya'],
-  ['Ankit', 'Migan'],
-  ['Pramitashre', 'Sahil'],
-  ['Awdesh', 'Disha'],
+  ['Ankit', 'Megan'],
+  ['Pramithashree', 'Sahil'],
+  ['Awadhesh', 'Disha'],
   ['Darshan', 'Suryamani'],
-  ['Prasad', 'Sidhi'],
+  ['Prasad', 'Siddhi'],
   ['Mayur', 'Tejas Wani'],
   ['Nilesh', 'Hetvi'],
-  ['Sattyam', 'Aman'],
+  ['Satyam', 'Aman'],
   ['Alisha', 'Harshita'],
   ['Mahi', 'Swapnil'],
   ['Yash', 'Mehek'],
@@ -136,26 +141,66 @@ export function teamLogoHtml(team, sizeClass = 'team-logo') {
   return `<span class="${sizeClass} team-logo-placeholder"><i class="fa-solid fa-shield-halved"></i></span>`;
 }
 
-export function generateTeams() {
-  const teams = [];
-  for (let i = 1; i <= TOTAL_TEAMS; i++) {
-    const poolIndex = Math.floor((i - 1) / TEAMS_PER_POOL);
-    const [p1, p2] = PLAYER_PAIRS[i - 1] || FIRST_NAMES.slice(0, 2);
-    teams.push({
-      id: `T${pad(i, 2)}`,
-      name: `${TEAM_ADJECTIVES[(i - 1) % TEAM_ADJECTIVES.length]} ${i}`,
-      players: [p1, p2],
-      pool: POOL_NAMES[poolIndex],
-      played: 0,
-      won: 0,
-      lost: 0,
-      points: 0,
-      scoreFor: 0,
-      scoreAgainst: 0,
-      logoCode: generateLogoCode(),
-    });
+const PRIORITY_PAIR_INDEXES = new Set([0, 1, 8, 10]); // Aditya, Esha, Shubham/Tejas Hiwarde, Ankit/Megan
+
+export function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
   }
-  return teams;
+  return a;
+}
+
+/**
+ * Random pool draw. Priority teams (see PLAYER_PAIRS) are each dropped into a different,
+ * randomly-chosen pool, then placed at that pool's "index 2" slot before the round-robin
+ * schedule is generated — in our circle-method implementation that slot always draws the
+ * final round's bye, so the team's 4 real matches land in rounds 1-4 and it finishes one
+ * round earlier than the rest of its pool. Everyone else is shuffled in randomly around them,
+ * and since every pool still plays its round 1 in the tournament's opening days, no team is
+ * left waiting idle at the start just because a priority team is finishing early.
+ */
+export function generateTeams() {
+  const draft = PLAYER_PAIRS.map(([p1, p2], idx) => ({
+    players: [p1, p2],
+    priority: PRIORITY_PAIR_INDEXES.has(idx),
+  }));
+
+  const priorityTeams = draft.filter((t) => t.priority);
+  const otherTeams = shuffle(draft.filter((t) => !t.priority));
+  const priorityPools = shuffle([...POOL_NAMES]).slice(0, priorityTeams.length);
+
+  const pools = Object.fromEntries(POOL_NAMES.map((p) => [p, []]));
+  priorityTeams.forEach((team, i) => { pools[priorityPools[i]].push(team); });
+  otherTeams.forEach((team) => {
+    const pool = POOL_NAMES.find((p) => pools[p].length < TEAMS_PER_POOL);
+    pools[pool].push(team);
+  });
+
+  const orderedDraft = [];
+  POOL_NAMES.forEach((poolName) => {
+    const poolTeams = pools[poolName];
+    const priorityPos = poolTeams.findIndex((t) => t.priority);
+    if (priorityPos !== -1 && priorityPos !== 2) {
+      [poolTeams[2], poolTeams[priorityPos]] = [poolTeams[priorityPos], poolTeams[2]];
+    }
+    poolTeams.forEach((t) => orderedDraft.push({ ...t, pool: poolName }));
+  });
+
+  return orderedDraft.map((t, i) => ({
+    id: `T${pad(i + 1, 2)}`,
+    name: `${TEAM_ADJECTIVES[i % TEAM_ADJECTIVES.length]} ${i + 1}`,
+    players: t.players,
+    pool: t.pool,
+    played: 0,
+    won: 0,
+    lost: 0,
+    points: 0,
+    scoreFor: 0,
+    scoreAgainst: 0,
+    logoCode: generateLogoCode(),
+  }));
 }
 
 export function generateFixtures(teams) {
