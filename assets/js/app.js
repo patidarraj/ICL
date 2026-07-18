@@ -7,6 +7,7 @@ import { renderTeams } from './teams.js';
 import { renderBracket } from './bracket.js';
 import { renderStats } from './stats.js';
 import { renderAdmin } from './admin.js';
+import { renderTeamLogo } from './team-logo.js';
 
 await initData();
 
@@ -17,6 +18,7 @@ registerRoute('teams', renderTeams);
 registerRoute('bracket', renderBracket);
 registerRoute('stats', renderStats);
 registerRoute('admin', renderAdmin);
+registerRoute('team-logo', renderTeamLogo);
 
 document.querySelectorAll('[data-route]').forEach((el) => {
   el.addEventListener('click', (e) => {

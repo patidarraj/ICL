@@ -1,5 +1,5 @@
 import { getTeams } from './storage.js';
-import { POOL_NAMES, netDifference, sortStandings } from './utilities.js';
+import { POOL_NAMES, netDifference, sortStandings, teamLogoUrl } from './utilities.js';
 
 function qualificationTag(team, allInPool, poolRank, wildcardIds) {
   if (poolRank === 1) return '<span class="badge bg-success">Qualified</span>';
@@ -37,7 +37,7 @@ export async function renderStandings(outlet) {
                 <tbody>
                   ${poolTeams.map((t, i) => `<tr class="${i === 0 ? 'row-qualified' : wildcardIds.has(t.id) ? 'row-wildcard' : ''}">
                     <td>${i + 1}</td>
-                    <td>${t.name}<div class="small text-muted">${t.players.join(' & ')}</div></td>
+                    <td><div class="d-flex align-items-center gap-2"><img src="${teamLogoUrl(t.id)}" alt="" class="team-logo" onerror="this.style.display='none'"><div>${t.name}<div class="small text-muted">${t.players.join(' & ')}</div></div></div></td>
                     <td>${t.played}</td><td>${t.won}</td><td>${t.lost}</td><td class="fw-bold">${t.points}</td>
                     <td class="${netDifference(t) >= 0 ? 'text-success' : 'text-danger'}">${netDifference(t) >= 0 ? '+' : ''}${netDifference(t)}</td>
                     <td>${qualificationTag(t, poolTeams, i + 1, wildcardIds)}</td>

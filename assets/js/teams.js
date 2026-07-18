@@ -1,5 +1,5 @@
 import { getTeams, getFixtures } from './storage.js';
-import { POOL_NAMES } from './utilities.js';
+import { POOL_NAMES, teamLogoUrl } from './utilities.js';
 import { goTo } from './router.js';
 
 let filters = { search: '', pool: '' };
@@ -11,7 +11,10 @@ function teamCard(team, fixtures) {
       <div class="card team-card h-100">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-start mb-2">
-            <h5 class="card-title mb-0">${team.name}</h5>
+            <div class="d-flex align-items-center gap-2">
+              <img src="${teamLogoUrl(team.id)}" alt="" class="team-logo team-logo-lg" onerror="this.style.display='none'">
+              <h5 class="card-title mb-0">${team.name}</h5>
+            </div>
             <span class="badge bg-primary">${team.pool}</span>
           </div>
           <div class="team-players mb-3">
@@ -39,7 +42,10 @@ export async function renderTeams(outlet) {
   const fixtures = getFixtures();
 
   outlet.innerHTML = `
-    <h2 class="page-title"><i class="fa-solid fa-people-group me-2"></i>Teams</h2>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <h2 class="page-title mb-0"><i class="fa-solid fa-people-group me-2"></i>Teams</h2>
+      <button class="btn btn-outline-primary btn-sm" id="btn-goto-logo"><i class="fa-solid fa-image me-1"></i>Upload Your Team Logo</button>
+    </div>
     <div class="card mb-3">
       <div class="card-body row g-2">
         <div class="col-md-6">
@@ -75,6 +81,7 @@ export async function renderTeams(outlet) {
     });
   }
 
+  outlet.querySelector('#btn-goto-logo').addEventListener('click', () => goTo('team-logo'));
   outlet.querySelector('#team-search').addEventListener('input', (e) => { filters.search = e.target.value; update(); });
   outlet.querySelector('#team-pool-filter').addEventListener('change', (e) => { filters.pool = e.target.value; update(); });
 

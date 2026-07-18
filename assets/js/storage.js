@@ -7,12 +7,16 @@ import {
 import {
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
 } from 'https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js';
+import {
+  getStorage, ref, uploadBytes,
+} from 'https://www.gstatic.com/firebasejs/10.13.1/firebase-storage.js';
 import { firebaseConfig, ADMIN_EMAIL } from './firebase-config.js';
 import { generateTeams, generateFixtures, generateSettings, recomputeStandingsForTeams, sortStandings } from './utilities.js';
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+const fileStorage = getStorage(app);
 const stateRef = doc(db, 'tournaments', 'main');
 
 let cache = { teams: [], fixtures: [], settings: {}, bracket: null };
@@ -103,5 +107,19 @@ export async function restoreBackup(json) {
   if (!data.teams || !data.fixtures || !data.settings) throw new Error('Invalid backup file');
   await setDoc(stateRef, {
     teams: data.teams, fixtures: data.fixtures, settings: data.settings, bracket: data.bracket || null,
+  });
+}
+
+/**
+ * Uploads a team's logo image to Firebase Storage. Storage security rules verify `code`
+ * against that team's `logoCode` in Firestore, so anyone with the right code can upload —
+ * admins bypass the code check entirely since they're authenticated.
+ */
+export async function uploadTeamLogo(teamId, file, code) {
+  const storageRef = ref(fileStorage, `team-logos/${teamId}`);
+  await uploadBytes(storageRef, file, {
+    contentType: file.type,
+    cacheControl: 'public, max-age=300',
+    customMetadata: { code: code || '' },
   });
 }

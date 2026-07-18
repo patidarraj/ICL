@@ -2,7 +2,7 @@ import {
   getTeams, saveTeams, getFixtures, saveFixtures, getSettings,
   isAdminAuthed, loginAdmin, logoutAdmin, refreshStandings, resetTournament, exportBackup, restoreBackup,
 } from './storage.js';
-import { uid, downloadFile, escapeHtml, POOL_NAMES, isoDate, VENUE } from './utilities.js';
+import { uid, downloadFile, escapeHtml, POOL_NAMES, isoDate, VENUE, generateLogoCode } from './utilities.js';
 import { notify } from './notifications.js';
 import { generateBracket } from './bracket.js';
 
@@ -44,6 +44,7 @@ function teamRow(team) {
   return `<tr data-id="${team.id}">
     <td>${team.name}</td><td>${team.players.join(' & ')}</td><td>${team.pool}</td>
     <td>${team.won}/${team.played}</td>
+    <td><code class="text-warning">${team.logoCode || '—'}</code></td>
     <td class="text-nowrap">
       <button class="btn btn-sm btn-outline-primary btn-edit-team" data-id="${team.id}"><i class="fa-solid fa-pen"></i></button>
       <button class="btn btn-sm btn-outline-danger btn-delete-team" data-id="${team.id}"><i class="fa-solid fa-trash"></i></button>
@@ -116,7 +117,7 @@ function adminPanel(outlet) {
       </div>
       <div class="card-body table-responsive">
         <table class="table table-dark table-hover align-middle mb-0">
-          <thead><tr><th>Name</th><th>Players</th><th>Pool</th><th>W/P</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Name</th><th>Players</th><th>Pool</th><th>W/P</th><th>Logo Code</th><th>Actions</th></tr></thead>
           <tbody id="admin-teams-body">${teams.map(teamRow).join('')}</tbody>
         </table>
       </div>
@@ -262,6 +263,7 @@ function adminPanel(outlet) {
       if (!name || !p1 || !p2) { notify.warn('All fields are required'); return; }
       const list = [...getTeams(), {
         id: uid('T'), name, players: [p1, p2], pool, played: 0, won: 0, lost: 0, points: 0, scoreFor: 0, scoreAgainst: 0,
+        logoCode: generateLogoCode(),
       }];
       await saveTeams(list);
       modal.hide();

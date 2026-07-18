@@ -1,5 +1,5 @@
 import { getTeams, getFixtures, getBracket, saveBracket } from './storage.js';
-import { POOL_NAMES, sortStandings } from './utilities.js';
+import { POOL_NAMES, sortStandings, teamLogoUrl } from './utilities.js';
 import { isAdminAuthed } from './storage.js';
 import { notify } from './notifications.js';
 
@@ -83,11 +83,11 @@ function matchCard(match, teamsById, canEdit, onScore) {
     <div class="bracket-match card ${done ? 'bracket-match-done' : ''}" data-match="${match.id}">
       <div class="bracket-match-header">${match.id}</div>
       <div class="bracket-team ${match.winner === match.teamA ? 'winner' : ''}">
-        <span>${teamName(match.teamA, teamsById)}</span>
+        <span class="d-flex align-items-center gap-1">${match.teamA ? `<img src="${teamLogoUrl(match.teamA)}" alt="" class="team-logo" style="width:20px;height:20px;" onerror="this.style.display='none'">` : ''}${teamName(match.teamA, teamsById)}</span>
         ${done ? `<span class="score">${match.scoreA}</span>` : ''}
       </div>
       <div class="bracket-team ${match.winner === match.teamB ? 'winner' : ''}">
-        <span>${teamName(match.teamB, teamsById)}</span>
+        <span class="d-flex align-items-center gap-1">${match.teamB ? `<img src="${teamLogoUrl(match.teamB)}" alt="" class="team-logo" style="width:20px;height:20px;" onerror="this.style.display='none'">` : ''}${teamName(match.teamB, teamsById)}</span>
         ${done ? `<span class="score">${match.scoreB}</span>` : ''}
       </div>
       ${canEdit && !done && match.teamA && match.teamB ? `

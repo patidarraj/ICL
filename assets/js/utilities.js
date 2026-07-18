@@ -1,4 +1,5 @@
 // Shared utility & data-generation helpers used across the app.
+import { firebaseConfig } from './firebase-config.js';
 
 export const FIRST_NAMES = [
   'Arjun','Rohan','Vikram','Karan','Aditya','Suresh','Ramesh','Nikhil','Sanjay','Manoj',
@@ -91,6 +92,20 @@ export function roundRobinPairs(teamIds) {
   return pairs;
 }
 
+const LOGO_CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no ambiguous 0/O/1/I/L
+
+export function generateLogoCode(len = 6) {
+  let code = '';
+  for (let i = 0; i < len; i++) code += LOGO_CODE_CHARS[Math.floor(Math.random() * LOGO_CODE_CHARS.length)];
+  return code;
+}
+
+/** Deterministic public URL for a team's uploaded logo (no Firestore field needed). */
+export function teamLogoUrl(teamId) {
+  const bucket = firebaseConfig.storageBucket;
+  return `https://firebasestorage.googleapis.com/v0/b/${encodeURIComponent(bucket)}/o/team-logos%2F${encodeURIComponent(teamId)}?alt=media`;
+}
+
 export function generateTeams() {
   const teams = [];
   let nameIdx = 0;
@@ -109,6 +124,7 @@ export function generateTeams() {
       points: 0,
       scoreFor: 0,
       scoreAgainst: 0,
+      logoCode: generateLogoCode(),
     });
   }
   return teams;
