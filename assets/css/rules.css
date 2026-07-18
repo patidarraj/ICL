@@ -1,0 +1,30 @@
+.rules-hero {
+  background: linear-gradient(135deg, #7c2d12 0%, #F97316 50%, #FACC15 100%);
+  border-radius: 18px;
+  padding: 1.75rem;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(249,115,22,0.25);
+  color: #fff;
+}
+
+.coin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--card-bg-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem 0.35rem 0.4rem;
+  font-size: 0.9rem;
+}
+
+.coin {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 2px solid rgba(255,255,255,0.2);
+}
+.coin-white { background: #F1F5F9; }
+.coin-black { background: #1E293B; border-color: #475569; }
+.coin-red { background: #EF4444; }

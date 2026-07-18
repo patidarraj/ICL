@@ -12,6 +12,7 @@ const CORE_ASSETS = [
   './assets/css/bracket.css',
   './assets/css/stats.css',
   './assets/css/admin.css',
+  './assets/css/rules.css',
   './assets/js/app.js',
   './assets/js/router.js',
   './assets/js/dashboard.js',
@@ -25,6 +26,8 @@ const CORE_ASSETS = [
   './assets/js/utilities.js',
   './assets/js/charts.js',
   './assets/js/notifications.js',
+  './assets/js/team-logo.js',
+  './assets/js/rules.js',
 ];
 
 self.addEventListener('install', (event) => {
