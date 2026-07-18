@@ -133,12 +133,36 @@ export function generateLogoCode(len = 6) {
   return code;
 }
 
-/** Renders a team's logo (a small base64 data URL stored on the team) or a placeholder badge. */
+const PLACEHOLDER_ICONS = [
+  'fa-shield-halved', 'fa-chess-rook', 'fa-bolt', 'fa-fire', 'fa-star',
+  'fa-crown', 'fa-dragon', 'fa-paw', 'fa-feather-pointed', 'fa-gem',
+];
+const PLACEHOLDER_COLORS = [
+  '#3B82F6', '#22C55E', '#EF4444', '#FACC15', '#A855F7',
+  '#06B6D4', '#F97316', '#EC4899', '#10B981', '#6366F1',
+];
+
+function hashSeed(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+  return hash;
+}
+
+/**
+ * Renders a team's logo (a small base64 data URL stored on the team) once uploaded.
+ * Until then, shows a distinct icon/color placeholder derived from the team id, so a
+ * gallery of all teams looks varied rather than 25 identical grey badges — as soon as
+ * a team uploads a real logo, this swaps to it automatically everywhere it's rendered.
+ */
 export function teamLogoHtml(team, sizeClass = 'team-logo') {
   if (team && team.logoBase64) {
     return `<img src="${team.logoBase64}" alt="" class="${sizeClass}">`;
   }
-  return `<span class="${sizeClass} team-logo-placeholder"><i class="fa-solid fa-shield-halved"></i></span>`;
+  const seed = hashSeed(team?.id || 'x');
+  const scrambled = (seed * 2654435761) >>> 0; // Knuth multiplicative hash, decorrelates near-sequential ids
+  const icon = PLACEHOLDER_ICONS[seed % PLACEHOLDER_ICONS.length];
+  const color = PLACEHOLDER_COLORS[scrambled % PLACEHOLDER_COLORS.length];
+  return `<span class="${sizeClass} team-logo-placeholder" style="color:${color};border-color:${color}40;"><i class="fa-solid ${icon}"></i></span>`;
 }
 
 const PRIORITY_PAIR_INDEXES = new Set([0, 1, 8, 10]); // Aditya, Esha, Shubham/Tejas Hiwarde, Ankit/Megan

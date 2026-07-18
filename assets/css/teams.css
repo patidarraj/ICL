@@ -1,3 +1,6 @@
 .team-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
 .team-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(0,0,0,0.3); }
 .team-players div { margin-bottom: 0.25rem; }
+
+.logo-gallery-tile { padding: 0.5rem; }
+.logo-gallery-tile .team-logo { display: block; margin: 0 auto; }

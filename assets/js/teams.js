@@ -37,6 +37,16 @@ function teamCard(team, fixtures) {
     </div>`;
 }
 
+function logoGalleryTile(team) {
+  return `
+    <div class="col-6 col-sm-4 col-md-3 col-lg-2 text-center">
+      <div class="logo-gallery-tile">
+        ${teamLogoHtml(team, 'team-logo team-logo-lg')}
+        <div class="small mt-1 text-truncate">${team.name}</div>
+      </div>
+    </div>`;
+}
+
 export async function renderTeams(outlet) {
   const teams = getTeams();
   const fixtures = getFixtures();
@@ -45,6 +55,14 @@ export async function renderTeams(outlet) {
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
       <h2 class="page-title mb-0"><i class="fa-solid fa-people-group me-2"></i>Teams</h2>
       <button class="btn btn-outline-primary btn-sm" id="btn-goto-logo"><i class="fa-solid fa-image me-1"></i>Upload Your Team Logo</button>
+    </div>
+    <div class="card mb-3">
+      <div class="card-header"><i class="fa-solid fa-images me-2"></i>Team Logos</div>
+      <div class="card-body">
+        <div class="row g-3">
+          ${teams.map(logoGalleryTile).join('')}
+        </div>
+      </div>
     </div>
     <div class="card mb-3">
       <div class="card-body row g-2">
