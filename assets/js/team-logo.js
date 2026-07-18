@@ -45,31 +45,48 @@ export async function renderTeamLogo(outlet) {
   outlet.innerHTML = `
     <h2 class="page-title"><i class="fa-solid fa-image me-2"></i>Team Logos</h2>
 
-    <div class="card mb-4">
-      <div class="card-header"><i class="fa-solid fa-images me-2"></i>All Teams</div>
-      <div class="card-body">
-        <div class="row g-3">
-          ${teams.map(galleryTile).join('')}
+    <ul class="nav nav-tabs mb-4" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tl-pane-gallery" type="button" role="tab" aria-selected="true">
+          <i class="fa-solid fa-images me-1"></i>Logos
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tl-pane-upload" type="button" role="tab" aria-selected="false">
+          <i class="fa-solid fa-upload me-1"></i>Upload
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content">
+      <div class="tab-pane fade show active" id="tl-pane-gallery" role="tabpanel">
+        <div class="card">
+          <div class="card-body">
+            <div class="row g-3">
+              ${teams.map(galleryTile).join('')}
+            </div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="row justify-content-center">
-      <div class="col-lg-6">
-        <div class="card">
-          <div class="card-header"><i class="fa-solid fa-upload me-2"></i>Upload Your Team Logo</div>
-          <div class="card-body">
-            <p class="text-muted small">Enter your team and the access code given to you by the tournament organizer, then choose an image to upload as your team's logo. Images are resized automatically.</p>
-            <label class="form-label">Team</label>
-            <select class="form-select mb-3" id="tl-team">
-              ${teams.map((t) => `<option value="${t.id}">${t.name} &middot; ${t.pool}</option>`).join('')}
-            </select>
-            <label class="form-label">Access Code</label>
-            <input type="text" class="form-control mb-3 text-uppercase" id="tl-code" placeholder="6-character code" maxlength="6">
-            <label class="form-label">Logo Image</label>
-            <input type="file" class="form-control mb-3" id="tl-file" accept="image/*">
-            <div class="text-center mb-3" id="tl-preview-wrap"></div>
-            <button class="btn btn-primary w-100" id="tl-upload"><i class="fa-solid fa-upload me-1"></i>Upload Logo</button>
+      <div class="tab-pane fade" id="tl-pane-upload" role="tabpanel">
+        <div class="row justify-content-center">
+          <div class="col-lg-6">
+            <div class="card">
+              <div class="card-body">
+                <p class="text-muted small">Enter your team and the access code given to you by the tournament organizer, then choose an image to upload as your team's logo. Images are resized automatically.</p>
+                <label class="form-label">Team</label>
+                <select class="form-select mb-3" id="tl-team">
+                  ${teams.map((t) => `<option value="${t.id}">${t.name} &middot; ${t.pool}</option>`).join('')}
+                </select>
+                <label class="form-label">Access Code</label>
+                <input type="text" class="form-control mb-3 text-uppercase" id="tl-code" placeholder="6-character code" maxlength="6">
+                <label class="form-label">Logo Image</label>
+                <input type="file" class="form-control mb-3" id="tl-file" accept="image/*">
+                <div class="text-center mb-3" id="tl-preview-wrap"></div>
+                <button class="btn btn-primary w-100" id="tl-upload"><i class="fa-solid fa-upload me-1"></i>Upload Logo</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
