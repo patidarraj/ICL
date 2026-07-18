@@ -159,19 +159,63 @@ a { text-decoration: none; }
 .chart-box { position: relative; height: 260px; }
 
 .team-logo-zoomable {
-  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease;
-  transform-style: preserve-3d;
-  will-change: transform;
-  position: relative;
   cursor: pointer;
+  transition: box-shadow 0.2s ease;
 }
 .team-logo-zoomable:hover,
-.team-logo-zoomable:focus-visible,
-.team-logo-zoomable.is-zoomed {
-  transform: perspective(600px) scale(1.35) rotateY(8deg) rotateX(4deg) translateZ(30px);
-  box-shadow: 0 18px 40px rgba(0,0,0,0.45), 0 0 0 3px rgba(249,115,22,0.35);
-  z-index: 5;
+.team-logo-zoomable:focus-visible {
+  box-shadow: 0 0 0 3px rgba(249,115,22,0.5);
   outline: none;
+}
+
+.logo-float-card {
+  position: fixed;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  width: 260px;
+  background: var(--card-bg, #1E293B);
+  border: 1px solid var(--border, rgba(255,255,255,0.12));
+  border-radius: 18px;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(249,115,22,0.15);
+  opacity: 0;
+  transform: translateY(8px) scale(0.96);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.logo-float-card.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+.logo-float-card img {
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+  border-radius: 14px;
+  background: var(--card-bg-2, #0F172A);
+  border: 1px solid var(--border, rgba(255,255,255,0.12));
+  padding: 8px;
+}
+.logo-float-card .logo-float-placeholder {
+  width: 200px;
+  height: 200px;
+  border-radius: 14px;
+  background: var(--card-bg-2, #0F172A);
+  border: 1px solid var(--border, rgba(255,255,255,0.12));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 5rem;
+}
+.logo-float-card .logo-float-name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-align: center;
+  color: var(--text, #E2E8F0);
 }
 
 .team-logo {

@@ -33,14 +33,58 @@ document.getElementById('sidebar-toggle')?.addEventListener('click', () => {
   document.getElementById('sidebar').classList.toggle('show');
 });
 
-// Tap-to-zoom for team logos on touch devices, where CSS :hover never fires.
+// Floating card showing a large, readable version of a team's logo + name,
+// triggered on hover (desktop) or tap (touch devices, where :hover never fires).
+const logoFloatCard = document.createElement('div');
+logoFloatCard.className = 'logo-float-card';
+document.body.appendChild(logoFloatCard);
+
+function positionLogoFloatCard(target) {
+  const rect = target.getBoundingClientRect();
+  const cardW = 260, cardH = 340, margin = 12;
+  let left = rect.left + rect.width / 2 - cardW / 2;
+  left = Math.max(margin, Math.min(left, window.innerWidth - cardW - margin));
+  let top = rect.bottom + margin;
+  if (top + cardH > window.innerHeight - margin) top = rect.top - cardH - margin;
+  logoFloatCard.style.left = `${left}px`;
+  logoFloatCard.style.top = `${Math.max(margin, top)}px`;
+}
+
+function showLogoFloatCard(target) {
+  const name = target.dataset.teamName || '';
+  if (target.dataset.teamLogo) {
+    logoFloatCard.innerHTML = `<img src="${target.dataset.teamLogo}" alt=""><div class="logo-float-name">${name}</div>`;
+  } else {
+    const icon = target.dataset.teamIcon || 'fa-shield-halved';
+    const color = target.dataset.teamColor || '#F97316';
+    logoFloatCard.innerHTML = `<div class="logo-float-placeholder" style="color:${color}"><i class="fa-solid ${icon}"></i></div><div class="logo-float-name">${name}</div>`;
+  }
+  positionLogoFloatCard(target);
+  logoFloatCard.classList.add('is-visible');
+}
+
+function hideLogoFloatCard() {
+  logoFloatCard.classList.remove('is-visible');
+}
+
+document.addEventListener('mouseover', (e) => {
+  const logo = e.target.closest('.team-logo-zoomable');
+  if (logo) showLogoFloatCard(logo);
+});
+document.addEventListener('mouseout', (e) => {
+  const logo = e.target.closest('.team-logo-zoomable');
+  if (logo && !logo.contains(e.relatedTarget)) hideLogoFloatCard();
+});
 document.addEventListener('click', (e) => {
   const logo = e.target.closest('.team-logo-zoomable');
-  document.querySelectorAll('.team-logo-zoomable.is-zoomed').forEach((el) => {
-    if (el !== logo) el.classList.remove('is-zoomed');
-  });
-  if (logo) logo.classList.toggle('is-zoomed');
+  if (logo) {
+    e.stopPropagation();
+    showLogoFloatCard(logo);
+  } else {
+    hideLogoFloatCard();
+  }
 });
+window.addEventListener('scroll', hideLogoFloatCard, true);
 
 startRouter();
 
