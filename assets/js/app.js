@@ -35,20 +35,15 @@ document.getElementById('sidebar-toggle')?.addEventListener('click', () => {
 
 // Floating card showing a large, readable version of a team's logo + name,
 // triggered on hover (desktop) or tap (touch devices, where :hover never fires).
+// Centered and sized against the viewport (not anchored to the logo) so it reads
+// clearly regardless of how small the logo thumbnail is.
+const logoFloatBackdrop = document.createElement('div');
+logoFloatBackdrop.className = 'logo-float-backdrop';
+document.body.appendChild(logoFloatBackdrop);
+
 const logoFloatCard = document.createElement('div');
 logoFloatCard.className = 'logo-float-card';
 document.body.appendChild(logoFloatCard);
-
-function positionLogoFloatCard(target) {
-  const rect = target.getBoundingClientRect();
-  const cardW = 260, cardH = 340, margin = 12;
-  let left = rect.left + rect.width / 2 - cardW / 2;
-  left = Math.max(margin, Math.min(left, window.innerWidth - cardW - margin));
-  let top = rect.bottom + margin;
-  if (top + cardH > window.innerHeight - margin) top = rect.top - cardH - margin;
-  logoFloatCard.style.left = `${left}px`;
-  logoFloatCard.style.top = `${Math.max(margin, top)}px`;
-}
 
 function showLogoFloatCard(target) {
   const name = target.dataset.teamName || '';
@@ -59,12 +54,13 @@ function showLogoFloatCard(target) {
     const color = target.dataset.teamColor || '#F97316';
     logoFloatCard.innerHTML = `<div class="logo-float-placeholder" style="color:${color}"><i class="fa-solid ${icon}"></i></div><div class="logo-float-name">${name}</div>`;
   }
-  positionLogoFloatCard(target);
   logoFloatCard.classList.add('is-visible');
+  logoFloatBackdrop.classList.add('is-visible');
 }
 
 function hideLogoFloatCard() {
   logoFloatCard.classList.remove('is-visible');
+  logoFloatBackdrop.classList.remove('is-visible');
 }
 
 document.addEventListener('mouseover', (e) => {
