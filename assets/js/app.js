@@ -33,6 +33,15 @@ document.getElementById('sidebar-toggle')?.addEventListener('click', () => {
   document.getElementById('sidebar').classList.toggle('show');
 });
 
+// Tap-to-zoom for team logos on touch devices, where CSS :hover never fires.
+document.addEventListener('click', (e) => {
+  const logo = e.target.closest('.team-logo-zoomable');
+  document.querySelectorAll('.team-logo-zoomable.is-zoomed').forEach((el) => {
+    if (el !== logo) el.classList.remove('is-zoomed');
+  });
+  if (logo) logo.classList.toggle('is-zoomed');
+});
+
 startRouter();
 
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {

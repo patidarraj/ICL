@@ -156,13 +156,13 @@ function hashSeed(str) {
  */
 export function teamLogoHtml(team, sizeClass = 'team-logo') {
   if (team && team.logoBase64) {
-    return `<img src="${team.logoBase64}" alt="" class="${sizeClass}">`;
+    return `<img src="${team.logoBase64}" alt="" class="${sizeClass} team-logo-zoomable" tabindex="0">`;
   }
   const seed = hashSeed(team?.id || 'x');
   const scrambled = (seed * 2654435761) >>> 0; // Knuth multiplicative hash, decorrelates near-sequential ids
   const icon = PLACEHOLDER_ICONS[seed % PLACEHOLDER_ICONS.length];
   const color = PLACEHOLDER_COLORS[scrambled % PLACEHOLDER_COLORS.length];
-  return `<span class="${sizeClass} team-logo-placeholder" style="color:${color};border-color:${color}40;"><i class="fa-solid ${icon}"></i></span>`;
+  return `<span class="${sizeClass} team-logo-placeholder team-logo-zoomable" tabindex="0" style="color:${color};border-color:${color}40;"><i class="fa-solid ${icon}"></i></span>`;
 }
 
 const PRIORITY_PAIR_INDEXES = new Set([0, 1, 8, 10]); // Aditya, Esha, Shubham/Tejas Hiwarde, Ankit/Megan

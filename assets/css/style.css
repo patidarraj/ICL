@@ -158,6 +158,22 @@ a { text-decoration: none; }
 
 .chart-box { position: relative; height: 260px; }
 
+.team-logo-zoomable {
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease;
+  transform-style: preserve-3d;
+  will-change: transform;
+  position: relative;
+  cursor: pointer;
+}
+.team-logo-zoomable:hover,
+.team-logo-zoomable:focus-visible,
+.team-logo-zoomable.is-zoomed {
+  transform: perspective(600px) scale(1.35) rotateY(8deg) rotateX(4deg) translateZ(30px);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.45), 0 0 0 3px rgba(249,115,22,0.35);
+  z-index: 5;
+  outline: none;
+}
+
 .team-logo {
   width: 32px;
   height: 32px;
