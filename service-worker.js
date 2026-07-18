@@ -1,4 +1,4 @@
-const CACHE_NAME = 'carrom-tm-v1';
+const CACHE_NAME = 'carrom-tm-v2';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -43,13 +43,16 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// Network-first: always try to fetch the latest app code/styles, only falling back to the
+// cached copy if the network is unavailable. Serving stale JS from a cache-first strategy
+// previously caused the app to silently run outdated logic after every deploy.
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request).then((response) => {
+    fetch(event.request).then((response) => {
       const clone = response.clone();
       caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
       return response;
-    }).catch(() => cached))
+    }).catch(() => caches.match(event.request))
   );
 });
