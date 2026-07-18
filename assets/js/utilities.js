@@ -19,7 +19,36 @@ export const TEAMS_PER_POOL = 5;
 export const TOTAL_TEAMS = 25;
 export const MATCHES_PER_DAY = 2;
 export const VENUE = 'Carrom Championship Arena';
-export const MATCH_TIMES = ['10:00 AM', '4:00 PM'];
+export const MATCH_TIMES = ['06:00 PM', '06:30 PM'];
+
+/** Fixed real player roster, one pair per team, in T01..T25 order. */
+export const PLAYER_PAIRS = [
+  ['Aditya', 'Sayli'],
+  ['Esha', 'Rushi'],
+  ['Hemali', 'Nitish'],
+  ['Ashish', 'Shreyas'],
+  ['Animesh', 'Sudarshan'],
+  ['Om W', 'Riya'],
+  ['Pratham', 'Monika'],
+  ['Suresh', 'Jayshree'],
+  ['Shubham', 'Tejas'],
+  ['Vinay', 'Soniya'],
+  ['Ankit', 'Migan'],
+  ['Pramitashre', 'Sahil'],
+  ['Awdesh', 'Disha'],
+  ['Darshan', 'Suryamani'],
+  ['Prasad', 'Sidhi'],
+  ['Mayur', 'Tejas Wani'],
+  ['Nilesh', 'Hetvi'],
+  ['Sattyam', 'Aman'],
+  ['Alisha', 'Harshita'],
+  ['Mahi', 'Swapnil'],
+  ['Yash', 'Mehek'],
+  ['Shasank', 'Raj'],
+  ['Nitin', 'Harsh'],
+  ['Harshal', 'Vaibhav'],
+  ['Manish', 'Kishan'],
+];
 
 export function pad(n, len = 2) {
   return String(n).padStart(len, '0');
@@ -109,11 +138,9 @@ export function teamLogoHtml(team, sizeClass = 'team-logo') {
 
 export function generateTeams() {
   const teams = [];
-  let nameIdx = 0;
   for (let i = 1; i <= TOTAL_TEAMS; i++) {
     const poolIndex = Math.floor((i - 1) / TEAMS_PER_POOL);
-    const p1 = FIRST_NAMES[nameIdx % FIRST_NAMES.length]; nameIdx++;
-    const p2 = FIRST_NAMES[nameIdx % FIRST_NAMES.length]; nameIdx++;
+    const [p1, p2] = PLAYER_PAIRS[i - 1] || FIRST_NAMES.slice(0, 2);
     teams.push({
       id: `T${pad(i, 2)}`,
       name: `${TEAM_ADJECTIVES[(i - 1) % TEAM_ADJECTIVES.length]} ${i}`,
