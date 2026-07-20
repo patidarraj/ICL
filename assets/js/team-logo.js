@@ -1,5 +1,5 @@
-import { getTeams, updateTeamLogo } from './storage.js';
-import { teamLogoHtml } from './utilities.js';
+import { getTeams, updateTeamLogo, getSettings } from './storage.js';
+import { teamLogoHtml, escapeHtml } from './utilities.js';
 import { notify } from './notifications.js';
 
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
@@ -67,6 +67,47 @@ function galleryTile(team) {
     </div>`;
 }
 
+/** Small inline logo for the print view — a real uploaded logo, or a colored initial badge if none yet. */
+function printLogo(team) {
+  if (team?.logoBase64) return `<img src="${team.logoBase64}" alt="" class="print-logo">`;
+  const initial = (team?.name || '?').trim()[0]?.toUpperCase() || '?';
+  return `<span class="print-logo print-logo-placeholder">${initial}</span>`;
+}
+
+function printLogoTile(team) {
+  return `
+    <div class="print-logo-tile">
+      ${printLogo(team)}
+      <div class="print-logo-name">${escapeHtml(team.name)}</div>
+      <div class="print-logo-players">${escapeHtml(team.players.join(' & '))}</div>
+    </div>`;
+}
+
+function printLogoGallery(teams, settings) {
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>${escapeHtml(settings.tournamentName || 'Team Logos')} — Team Logos</title>
+    <style>
+      body { font-family: Arial, Helvetica, sans-serif; color: #111; margin: 24px; }
+      h1 { margin-bottom: 4px; }
+      p { margin-top: 0; color: #444; }
+      .print-logo-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-top: 20px; }
+      .print-logo-tile { border: 1px solid #999; border-radius: 8px; padding: 10px; text-align: center; break-inside: avoid; }
+      .print-logo { width: 96px; height: 96px; object-fit: contain; border-radius: 8px; border: 1px solid #ccc; padding: 4px; }
+      .print-logo-placeholder { display: inline-flex; align-items: center; justify-content: center; background: #ddd; font-weight: bold; font-size: 2.5rem; color: #555; }
+      .print-logo-name { font-weight: bold; margin-top: 8px; }
+      .print-logo-players { font-size: 12px; color: #555; }
+      @media print { body { margin: 8px; } .print-logo-grid { grid-template-columns: repeat(4, 1fr); } }
+    </style>
+    </head><body>
+    <h1>${escapeHtml(settings.tournamentName || 'Tournament')}</h1>
+    <p>${escapeHtml(settings.organizer || '')} &middot; Team Logos</p>
+    <div class="print-logo-grid">${teams.map(printLogoTile).join('')}</div>
+    </body></html>`);
+  win.document.close();
+  win.focus();
+  win.print();
+}
+
 export async function renderTeamLogo(outlet) {
   const teams = getTeams();
 
@@ -90,6 +131,9 @@ export async function renderTeamLogo(outlet) {
       <div class="tab-pane fade show active" id="tl-pane-gallery" role="tabpanel">
         <div class="card">
           <div class="card-body">
+            <div class="d-flex justify-content-end mb-3">
+              <button class="btn btn-sm btn-outline-secondary" id="tl-print"><i class="fa-solid fa-print me-1"></i>Print Logos</button>
+            </div>
             <div class="row g-3">
               ${teams.map(galleryTile).join('')}
             </div>
@@ -120,6 +164,8 @@ export async function renderTeamLogo(outlet) {
         </div>
       </div>
     </div>`;
+
+  outlet.querySelector('#tl-print').addEventListener('click', () => printLogoGallery(teams, getSettings()));
 
   const teamSelect = outlet.querySelector('#tl-team');
   const previewWrap = outlet.querySelector('#tl-preview-wrap');
