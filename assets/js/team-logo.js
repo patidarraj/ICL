@@ -2,32 +2,54 @@ import { getTeams, updateTeamLogo } from './storage.js';
 import { teamLogoHtml } from './utilities.js';
 import { notify } from './notifications.js';
 
-const MAX_DIMENSION = 480;
-const JPEG_QUALITY = 0.9;
+const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+const MAX_RAW_BYTES = 8 * 1024 * 1024;
+// Firestore caps a document at 1MB total; leave headroom for the team's other fields
+// (players, scores, etc.) so a huge logo can't push the whole document over the limit.
+const MAX_ENCODED_BYTES = 700 * 1024;
+// Progressively shrink dimension/quality until the encoded logo fits Firestore's budget —
+// most uploads succeed on the first (highest-quality) attempt.
+const COMPRESSION_LADDER = [
+  { dimension: 480, format: 'png' },
+  { dimension: 480, format: 'jpeg', quality: 0.85 },
+  { dimension: 320, format: 'jpeg', quality: 0.75 },
+  { dimension: 200, format: 'jpeg', quality: 0.6 },
+];
+
+function encodedByteLength(dataUrl) {
+  return Math.round(dataUrl.length * 0.75);
+}
+
+function renderAtSize(img, dimension, format, quality) {
+  let { width, height } = img;
+  if (width > height && width > dimension) {
+    height = Math.round((height * dimension) / width);
+    width = dimension;
+  } else if (height > dimension) {
+    width = Math.round((width * dimension) / height);
+    height = dimension;
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, 0, 0, width, height);
+  return format === 'png' ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', quality);
+}
 
 function compressImage(file) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
-      let { width, height } = img;
-      if (width > height && width > MAX_DIMENSION) {
-        height = Math.round((height * MAX_DIMENSION) / width);
-        width = MAX_DIMENSION;
-      } else if (height > MAX_DIMENSION) {
-        width = Math.round((width * MAX_DIMENSION) / height);
-        height = MAX_DIMENSION;
+      // PNG keeps logo artwork (flat colors, sharp edges, text) crisp on the first,
+      // highest-quality attempt; JPEG steps down further only if that's still too big.
+      for (const step of COMPRESSION_LADDER) {
+        const dataUrl = renderAtSize(img, step.dimension, step.format, step.quality);
+        if (encodedByteLength(dataUrl) <= MAX_ENCODED_BYTES) { resolve(dataUrl); return; }
       }
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(img, 0, 0, width, height);
-      // PNG keeps logo artwork (flat colors, sharp edges, text) crisp; JPEG introduces
-      // blur/ringing artifacts on that kind of graphic that made uploaded logos look fuzzy.
-      const isPhotographic = /\.(jpe?g)$/i.test(file.name) && !file.type.includes('png');
-      resolve(isPhotographic ? canvas.toDataURL('image/jpeg', JPEG_QUALITY) : canvas.toDataURL('image/png'));
+      reject(new Error('too-large-after-compression'));
     };
     img.onerror = () => reject(new Error('Could not read image'));
     img.src = URL.createObjectURL(file);
@@ -89,7 +111,7 @@ export async function renderTeamLogo(outlet) {
                 <label class="form-label">Access Code</label>
                 <input type="text" class="form-control mb-3 text-uppercase" id="tl-code" placeholder="6-character code" maxlength="6">
                 <label class="form-label">Logo Image</label>
-                <input type="file" class="form-control mb-3" id="tl-file" accept="image/*">
+                <input type="file" class="form-control mb-3" id="tl-file" accept="image/png,image/jpeg,image/webp">
                 <div class="text-center mb-3" id="tl-preview-wrap"></div>
                 <button class="btn btn-primary w-100" id="tl-upload"><i class="fa-solid fa-upload me-1"></i>Upload Logo</button>
               </div>
@@ -117,13 +139,17 @@ export async function renderTeamLogo(outlet) {
   outlet.querySelector('#tl-file').addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) { notify.warn('Please choose an image file'); return; }
-    if (file.size > 8 * 1024 * 1024) { notify.warn('Image is too large — please choose a smaller file'); return; }
+    if (!ALLOWED_TYPES.includes(file.type)) { notify.warn('Please choose a PNG, JPEG, or WEBP image'); return; }
+    if (file.size > MAX_RAW_BYTES) { notify.warn('Image is too large — please choose a file under 8MB'); return; }
     try {
       pendingDataUrl = await compressImage(file);
       previewWrap.innerHTML = `<img src="${pendingDataUrl}" alt="" class="team-logo-preview">`;
     } catch (err) {
-      notify.error('Could not read that image, try another file');
+      if (err.message === 'too-large-after-compression') {
+        notify.error('This image is too complex/detailed to fit our size limit — please try a simpler graphic or a lower-resolution image.');
+      } else {
+        notify.error('Could not read that image, try another file');
+      }
     }
   });
 
