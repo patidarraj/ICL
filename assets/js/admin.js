@@ -45,7 +45,11 @@ function teamRow(team) {
   return `<tr data-id="${team.id}">
     <td>${team.name}</td><td>${team.players.join(' & ')}</td><td>${team.pool}</td>
     <td>${team.won}/${team.played}</td>
-    <td><code class="text-warning">${team.logoCode || '—'}</code></td>
+    <td class="text-nowrap">
+      <code class="text-warning">${team.logoCode || '—'}</code>
+      <button class="btn btn-sm btn-outline-secondary border-0 py-0 btn-copy-code" data-id="${team.id}" title="Copy code"><i class="fa-solid fa-copy"></i></button>
+      <button class="btn btn-sm btn-outline-warning border-0 py-0 btn-regen-code" data-id="${team.id}" title="Generate a new code (invalidates the old one)"><i class="fa-solid fa-rotate"></i></button>
+    </td>
     <td class="text-nowrap">
       <button class="btn btn-sm btn-outline-primary btn-edit-team" data-id="${team.id}"><i class="fa-solid fa-pen"></i></button>
       <button class="btn btn-sm btn-outline-danger btn-delete-team" data-id="${team.id}"><i class="fa-solid fa-trash"></i></button>
@@ -165,11 +169,14 @@ function adminPanel(outlet) {
         <span><i class="fa-solid fa-people-group me-2"></i>Teams</span>
         <button class="btn btn-sm btn-success" id="btn-create-team"><i class="fa-solid fa-plus me-1"></i>Create Team</button>
       </div>
-      <div class="card-body table-responsive">
-        <table class="table table-dark table-hover align-middle mb-0">
-          <thead><tr><th>Name</th><th>Players</th><th>Pool</th><th>W/P</th><th>Logo Code</th><th>Actions</th></tr></thead>
-          <tbody id="admin-teams-body">${teams.map(teamRow).join('')}</tbody>
-        </table>
+      <div class="card-body">
+        <input type="text" class="form-control form-control-sm mb-3" id="admin-team-search" placeholder="Search by player name or team name to find their access code...">
+        <div class="table-responsive">
+          <table class="table table-dark table-hover align-middle mb-0">
+            <thead><tr><th>Name</th><th>Players</th><th>Pool</th><th>W/P</th><th>Access Code</th><th>Actions</th></tr></thead>
+            <tbody id="admin-teams-body">${teams.map(teamRow).join('')}</tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -246,6 +253,26 @@ function adminPanel(outlet) {
       refreshTeamsBody(getTeams());
       refreshMatchesBody(fx, list);
       notify.success('Team deleted');
+    }));
+
+    outlet.querySelectorAll('.btn-copy-code').forEach((btn) => btn.addEventListener('click', async () => {
+      const team = getTeams().find((t) => t.id === btn.dataset.id);
+      if (!team?.logoCode) { notify.warn('This team has no access code yet'); return; }
+      try {
+        await navigator.clipboard.writeText(team.logoCode);
+        notify.success(`Copied ${team.logoCode} for ${team.name}`);
+      } catch {
+        notify.error('Could not copy — clipboard access blocked');
+      }
+    }));
+
+    outlet.querySelectorAll('.btn-regen-code').forEach((btn) => btn.addEventListener('click', async () => {
+      const team = getTeams().find((t) => t.id === btn.dataset.id);
+      if (!confirm(`Generate a new access code for ${team.name}? Their old code will stop working.`)) return;
+      const list = getTeams().map((t) => (t.id === team.id ? { ...t, logoCode: generateLogoCode() } : t));
+      await saveTeams(list);
+      refreshTeamsBody(list);
+      notify.success(`New code: ${list.find((t) => t.id === team.id).logoCode}`);
     }));
   }
 
@@ -448,6 +475,14 @@ function adminPanel(outlet) {
       btn.disabled = false;
     }
   }));
+
+  outlet.querySelector('#admin-team-search').addEventListener('input', (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    const filtered = q
+      ? teams.filter((t) => t.name.toLowerCase().includes(q) || t.players.some((p) => p.toLowerCase().includes(q)))
+      : teams;
+    refreshTeamsBody(filtered);
+  });
 
   bindTeamActions();
   bindMatchActions();
