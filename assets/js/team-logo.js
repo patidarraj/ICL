@@ -81,9 +81,10 @@ export async function renderTeamLogo(outlet) {
             <div class="card">
               <div class="card-body">
                 <p class="text-muted small">Enter your team and the access code given to you by the tournament organizer, then choose an image to upload as your team's logo. Images are resized automatically.</p>
+                <p class="text-muted small">Team names below are auto-generated placeholders — look up your team by your and your partner's names in the list instead.</p>
                 <label class="form-label">Team</label>
                 <select class="form-select mb-3" id="tl-team">
-                  ${teams.map((t) => `<option value="${t.id}">${t.name} &middot; ${t.pool}</option>`).join('')}
+                  ${teams.map((t) => `<option value="${t.id}">${t.players.join(' & ')} &middot; ${t.name} &middot; ${t.pool}</option>`).join('')}
                 </select>
                 <label class="form-label">Access Code</label>
                 <input type="text" class="form-control mb-3 text-uppercase" id="tl-code" placeholder="6-character code" maxlength="6">
