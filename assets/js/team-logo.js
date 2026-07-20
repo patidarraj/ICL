@@ -58,12 +58,10 @@ function compressImage(file) {
 
 function galleryTile(team) {
   return `
-    <div class="col-6 col-sm-4 col-md-3 col-lg-2 text-center">
-      <div class="logo-gallery-tile">
-        ${teamLogoHtml(team, 'team-logo-gallery')}
-        <div class="fw-semibold mt-2 text-truncate">${team.name}</div>
-        <div class="small text-muted text-truncate">${team.players.join(' & ')}</div>
-      </div>
+    <div class="logo-gallery-tile text-center">
+      ${teamLogoHtml(team, 'team-logo-gallery')}
+      <div class="fw-semibold mt-2">${team.name}</div>
+      <div class="small text-muted">${team.players.join(' & ')}</div>
     </div>`;
 }
 
@@ -134,7 +132,7 @@ export async function renderTeamLogo(outlet) {
             <div class="d-flex justify-content-end mb-3">
               <button class="btn btn-sm btn-outline-secondary" id="tl-print"><i class="fa-solid fa-print me-1"></i>Print Logos</button>
             </div>
-            <div class="row g-3">
+            <div class="logo-gallery-grid">
               ${teams.map(galleryTile).join('')}
             </div>
           </div>

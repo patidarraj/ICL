@@ -2,5 +2,13 @@
 .team-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(0,0,0,0.3); }
 .team-players div { margin-bottom: 0.25rem; }
 
-.logo-gallery-tile { padding: 0.5rem; }
+.logo-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+}
+@media (max-width: 991px) { .logo-gallery-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 575px) { .logo-gallery-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.logo-gallery-tile { padding: 0.5rem; overflow-wrap: break-word; }
 .logo-gallery-tile .team-logo { display: block; margin: 0 auto; }
