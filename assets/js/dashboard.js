@@ -1,6 +1,8 @@
 import { getTeams, getFixtures, getSettings } from './storage.js';
 import { formatDate, POOL_NAMES, teamLogoHtml } from './utilities.js';
 import { goTo } from './router.js';
+import { getMyTeamId, setMyTeamId, notificationsSupported, permissionState, requestPermission } from './match-alerts.js';
+import { notify } from './notifications.js';
 
 function progressCard(fixtures) {
   const total = fixtures.length;
@@ -70,6 +72,34 @@ function nextMatchCard(fixtures, teamsById) {
     </div>`;
 }
 
+function matchAlertsCard(teams) {
+  const myTeamId = getMyTeamId();
+  const perm = permissionState();
+  const statusLine = !notificationsSupported()
+    ? '<span class="text-muted">Browser notifications aren\'t supported here — you\'ll still get an in-app alert if you keep this tab open.</span>'
+    : perm === 'granted'
+      ? '<span class="text-success"><i class="fa-solid fa-bell me-1"></i>Alerts enabled</span>'
+      : perm === 'denied'
+        ? '<span class="text-danger"><i class="fa-solid fa-bell-slash me-1"></i>Blocked in browser settings</span>'
+        : '<span class="text-muted">Not enabled yet</span>';
+  return `
+    <div class="card">
+      <div class="card-body">
+        <div class="fw-semibold mb-2"><i class="fa-solid fa-bell me-2"></i>Match Alerts</div>
+        <p class="small text-muted mb-2">Pick your team to get a reminder ~15 minutes before your match starts, as long as this page stays open.</p>
+        <select class="form-select form-select-sm mb-2" id="alert-my-team">
+          <option value="">Choose your team...</option>
+          ${teams.map((t) => `<option value="${t.id}" ${t.id === myTeamId ? 'selected' : ''}>${t.players.join(' & ')} &middot; ${t.name}</option>`).join('')}
+        </select>
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="small" id="alert-status">${statusLine}</div>
+          ${notificationsSupported() && perm !== 'granted' && perm !== 'denied'
+            ? '<button class="btn btn-sm btn-outline-primary" id="alert-enable">Enable</button>' : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
 function countdownToFinal(settings) {
   const finalDate = new Date(settings.startDate);
   finalDate.setDate(finalDate.getDate() + 40);
@@ -120,6 +150,7 @@ export async function renderDashboard(outlet) {
       </div>
       <div class="col-lg-4 d-flex flex-column gap-3">
         ${nextMatchCard(fixtures, teamsById)}
+        ${matchAlertsCard(teams)}
         ${countdownToFinal(settings)}
       </div>
     </div>
@@ -149,4 +180,20 @@ export async function renderDashboard(outlet) {
     </div>`;
 
   outlet.querySelector('#dash-view-schedule')?.addEventListener('click', () => goTo('schedule'));
+
+  outlet.querySelector('#alert-my-team')?.addEventListener('change', (e) => {
+    setMyTeamId(e.target.value);
+    notify.success(e.target.value ? 'We\'ll remind you before your matches.' : 'Match alerts turned off.');
+  });
+
+  outlet.querySelector('#alert-enable')?.addEventListener('click', async (e) => {
+    const result = await requestPermission();
+    if (result === 'granted') notify.success('Match alerts enabled!');
+    else if (result === 'denied') notify.warn('Notifications blocked — you can still get in-app alerts by keeping this tab open.');
+    e.target.closest('.card').querySelector('#alert-status').outerHTML = `<div class="small" id="alert-status">${
+      result === 'granted' ? '<span class="text-success"><i class="fa-solid fa-bell me-1"></i>Alerts enabled</span>'
+        : '<span class="text-danger"><i class="fa-solid fa-bell-slash me-1"></i>Blocked in browser settings</span>'
+    }</div>`;
+    if (result !== 'default') e.target.remove();
+  });
 }

@@ -9,8 +9,10 @@ import { renderStats } from './stats.js';
 import { renderAdmin } from './admin.js';
 import { renderTeamLogo } from './team-logo.js';
 import { renderRules } from './rules.js';
+import { startMatchAlertWatcher } from './match-alerts.js';
 
 await initData();
+startMatchAlertWatcher();
 
 registerRoute('dashboard', renderDashboard);
 registerRoute('schedule', renderSchedule);
