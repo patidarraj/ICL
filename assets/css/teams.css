@@ -12,3 +12,27 @@
 
 .logo-gallery-tile { padding: 0.5rem; overflow-wrap: break-word; }
 .logo-gallery-tile .team-logo { display: block; margin: 0 auto; }
+
+.team-search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--card-bg-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-top: 4px;
+  display: none;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.35);
+}
+.team-search-dropdown.show { display: block; }
+.team-search-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.team-search-item:hover { background: rgba(255,255,255,0.08); }
+.team-search-empty { padding: 8px 12px; font-size: 0.9rem; color: var(--text-muted); }

@@ -145,11 +145,13 @@ export async function renderTeamLogo(outlet) {
             <div class="card">
               <div class="card-body">
                 <p class="text-muted small">Enter your team and the access code given to you by the tournament organizer, then choose an image to upload as your team's logo. Images are resized automatically.</p>
-                <p class="text-muted small">Team names below are auto-generated placeholders — look up your team by your and your partner's names in the list instead.</p>
+                <p class="text-muted small">Team names below are auto-generated placeholders — search by your and your partner's names instead.</p>
                 <label class="form-label">Team</label>
-                <select class="form-select mb-3" id="tl-team">
-                  ${teams.map((t) => `<option value="${t.id}">${t.players.join(' & ')} &middot; ${t.name} &middot; ${t.pool}</option>`).join('')}
-                </select>
+                <div class="team-search position-relative mb-3">
+                  <input type="text" class="form-control" id="tl-team-search" placeholder="Search by your name, partner's name, or team name..." autocomplete="off">
+                  <input type="hidden" id="tl-team-id">
+                  <div class="team-search-dropdown" id="tl-team-dropdown"></div>
+                </div>
                 <label class="form-label">Access Code</label>
                 <input type="text" class="form-control mb-3 text-uppercase" id="tl-code" placeholder="6-character code" maxlength="6">
                 <label class="form-label">Logo Image</label>
@@ -165,19 +167,65 @@ export async function renderTeamLogo(outlet) {
 
   outlet.querySelector('#tl-print').addEventListener('click', () => printLogoGallery(teams, getSettings()));
 
-  const teamSelect = outlet.querySelector('#tl-team');
+  const teamSearchInput = outlet.querySelector('#tl-team-search');
+  const teamIdInput = outlet.querySelector('#tl-team-id');
+  const teamDropdown = outlet.querySelector('#tl-team-dropdown');
   const previewWrap = outlet.querySelector('#tl-preview-wrap');
   let pendingDataUrl = null;
 
+  function teamLabel(t) {
+    return `${t.players.join(' & ')} · ${t.name} · ${t.pool}`;
+  }
+
   function showCurrentLogo() {
     pendingDataUrl = null;
-    const team = getTeams().find((t) => t.id === teamSelect.value);
+    if (!teamIdInput.value) {
+      previewWrap.innerHTML = '<p class="text-muted small mb-0">Search and select your team above to see its current logo.</p>';
+      return;
+    }
+    const team = getTeams().find((t) => t.id === teamIdInput.value);
     previewWrap.innerHTML = teamLogoHtml(team, 'team-logo-preview');
     if (team.pendingLogoStatus === 'pending') {
       previewWrap.innerHTML += `<div class="small text-warning mt-2"><i class="fa-solid fa-clock me-1"></i>A logo is awaiting admin approval for this team.</div>`;
     }
   }
-  teamSelect.addEventListener('change', showCurrentLogo);
+
+  function selectTeam(team) {
+    teamIdInput.value = team.id;
+    teamSearchInput.value = teamLabel(team);
+    teamDropdown.classList.remove('show');
+    showCurrentLogo();
+  }
+
+  function renderDropdown(query) {
+    const q = query.trim().toLowerCase();
+    const matches = q
+      ? teams.filter((t) => teamLabel(t).toLowerCase().includes(q))
+      : teams;
+    if (!matches.length) {
+      teamDropdown.innerHTML = '<div class="team-search-empty">No matching team</div>';
+    } else {
+      teamDropdown.innerHTML = matches.map((t) => `<div class="team-search-item" data-id="${t.id}">${teamLabel(t)}</div>`).join('');
+      teamDropdown.querySelectorAll('.team-search-item').forEach((item) => {
+        item.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          selectTeam(teams.find((t) => t.id === item.dataset.id));
+        });
+      });
+    }
+    teamDropdown.classList.add('show');
+  }
+
+  teamSearchInput.addEventListener('focus', () => renderDropdown(teamSearchInput.value));
+  teamSearchInput.addEventListener('input', () => {
+    teamIdInput.value = '';
+    renderDropdown(teamSearchInput.value);
+    showCurrentLogo();
+  });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.team-search')) teamDropdown.classList.remove('show');
+  });
+
   showCurrentLogo();
 
   outlet.querySelector('#tl-file').addEventListener('change', async (e) => {
@@ -198,11 +246,12 @@ export async function renderTeamLogo(outlet) {
   });
 
   outlet.querySelector('#tl-upload').addEventListener('click', async () => {
-    const teamId = teamSelect.value;
+    const teamId = teamIdInput.value;
     const code = outlet.querySelector('#tl-code').value.trim().toUpperCase();
     const btn = outlet.querySelector('#tl-upload');
     const team = getTeams().find((t) => t.id === teamId);
 
+    if (!team) { notify.warn('Search and select your team first'); return; }
     if (!code) { notify.warn('Enter your team access code'); return; }
     if (team.logoCode && code !== team.logoCode) { notify.error('That access code doesn\'t match this team'); return; }
     if (!pendingDataUrl) { notify.warn('Choose an image file'); return; }
