@@ -7,6 +7,90 @@ import { uid, downloadFile, escapeHtml, POOL_NAMES, isoDate, VENUE, generateLogo
 import { notify } from './notifications.js';
 import { generateBracket } from './bracket.js';
 
+/**
+ * Live scoring runs as its own overlay appended directly to document.body, independent of
+ * the Admin page's outlet. Every score tap writes to Firestore, which triggers the app-wide
+ * onDataChange listener to re-render whatever page is currently showing (router.js) — if this
+ * lived inside the Admin outlet like the other modals, that re-render would tear out the open
+ * modal's DOM out from under the referee after their very first tap.
+ */
+function openLiveScoringOverlay(matchId) {
+  document.getElementById('live-scoring-overlay')?.remove();
+
+  const f = getFixtures().find((x) => x.id === matchId);
+  const t = Object.fromEntries(getTeams().map((x) => [x.id, x]));
+  let a = f.liveScoreA ?? 0;
+  let b = f.liveScoreB ?? 0;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'live-scoring-overlay';
+  overlay.className = 'live-scoring-overlay';
+  overlay.innerHTML = `
+    <div class="live-scoring-card">
+      <div class="live-scoring-header">
+        <span><i class="fa-solid fa-signal text-danger me-2"></i>Live Scoring &middot; ${f.id}</span>
+        <button type="button" class="btn-close btn-close-white" id="ls-close"></button>
+      </div>
+      <div class="row g-3 text-center mt-1">
+        <div class="col-6">
+          <div class="fw-semibold mb-2">${t[f.teamA]?.name}</div>
+          <button class="btn btn-outline-secondary btn-lg" id="ls-a-minus">&minus;</button>
+          <span class="fs-2 fw-bold mx-3" id="ls-a-val">${a}</span>
+          <button class="btn btn-outline-primary btn-lg" id="ls-a-plus">+</button>
+        </div>
+        <div class="col-6">
+          <div class="fw-semibold mb-2">${t[f.teamB]?.name}</div>
+          <button class="btn btn-outline-secondary btn-lg" id="ls-b-minus">&minus;</button>
+          <span class="fs-2 fw-bold mx-3" id="ls-b-val">${b}</span>
+          <button class="btn btn-outline-primary btn-lg" id="ls-b-plus">+</button>
+        </div>
+      </div>
+      <p class="small text-muted mt-3 mb-3">Updates instantly for everyone viewing the Dashboard and Schedule.</p>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary flex-fill" id="ls-stop">Stop Live (keep scheduled)</button>
+        <button class="btn btn-success flex-fill" id="ls-end">End Match &amp; Save Result</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const aVal = overlay.querySelector('#ls-a-val');
+  const bVal = overlay.querySelector('#ls-b-val');
+
+  async function updateLive() {
+    const fx = getFixtures().map((x) => (x.id === f.id ? { ...x, isLive: true, liveScoreA: a, liveScoreB: b } : x));
+    await saveFixtures(fx);
+  }
+
+  overlay.querySelector('#ls-a-minus').addEventListener('click', () => { a = Math.max(0, a - 1); aVal.textContent = a; updateLive(); });
+  overlay.querySelector('#ls-a-plus').addEventListener('click', () => { a += 1; aVal.textContent = a; updateLive(); });
+  overlay.querySelector('#ls-b-minus').addEventListener('click', () => { b = Math.max(0, b - 1); bVal.textContent = b; updateLive(); });
+  overlay.querySelector('#ls-b-plus').addEventListener('click', () => { b += 1; bVal.textContent = b; updateLive(); });
+  overlay.querySelector('#ls-close').addEventListener('click', () => overlay.remove());
+
+  overlay.querySelector('#ls-stop').addEventListener('click', async () => {
+    const fx = getFixtures().map((x) => (x.id === f.id ? { ...x, isLive: false } : x));
+    await saveFixtures(fx);
+    overlay.remove();
+    notify.info('Match taken off Live');
+  });
+
+  overlay.querySelector('#ls-end').addEventListener('click', async () => {
+    if (a === b) { notify.warn('Scores are tied — adjust before ending the match'); return; }
+    const fx = getFixtures().map((x) => (x.id === f.id ? { ...x } : x));
+    const match = fx.find((x) => x.id === f.id);
+    match.scoreA = a; match.scoreB = b;
+    match.winner = a > b ? match.teamA : match.teamB;
+    match.status = 'completed';
+    match.isLive = false;
+    delete match.liveScoreA;
+    delete match.liveScoreB;
+    await saveFixtures(fx);
+    await refreshStandings();
+    overlay.remove();
+    notify.success('Result saved &middot; standings updated', 'Match Completed');
+  });
+}
+
 function loginForm(outlet, onSuccess) {
   outlet.innerHTML = `
     <div class="d-flex justify-content-center">
@@ -61,10 +145,13 @@ function matchRow(f, teamsById) {
   return `<tr data-id="${f.id}">
     <td>${f.id}</td><td>${f.pool}</td>
     <td>${teamsById[f.teamA]?.name || f.teamA}</td><td>${teamsById[f.teamB]?.name || f.teamB}</td>
-    <td>${f.status === 'completed' ? `${f.scoreA} - ${f.scoreB}` : '-'}</td>
-    <td>
+    <td>${f.status === 'completed' ? `${f.scoreA} - ${f.scoreB}`
+      : f.isLive ? `<span class="badge bg-danger me-1"><i class="fa-solid fa-circle fa-2xs me-1"></i>LIVE</span>${f.liveScoreA ?? 0} - ${f.liveScoreB ?? 0}`
+      : '-'}</td>
+    <td class="text-nowrap">
       ${f.status === 'scheduled'
-        ? `<button class="btn btn-sm btn-success btn-enter-result" data-id="${f.id}"><i class="fa-solid fa-check"></i> Result</button>`
+        ? `<button class="btn btn-sm ${f.isLive ? 'btn-danger' : 'btn-outline-danger'} btn-go-live" data-id="${f.id}"><i class="fa-solid fa-signal"></i> ${f.isLive ? 'Live' : 'Go Live'}</button>
+           <button class="btn btn-sm btn-success btn-enter-result" data-id="${f.id}"><i class="fa-solid fa-check"></i> Result</button>`
         : `<button class="btn btn-sm btn-outline-warning btn-undo-match" data-id="${f.id}"><i class="fa-solid fa-rotate-left"></i> Undo</button>`}
     </td>
   </tr>`;
@@ -285,8 +372,8 @@ function adminPanel(outlet) {
         <div class="modal-body">
           <div class="d-flex justify-content-between mb-2"><strong>${t[f.teamA]?.name}</strong><strong>${t[f.teamB]?.name}</strong></div>
           <div class="d-flex gap-2">
-            <input type="number" min="0" class="form-control" id="m-score-a" placeholder="Score A">
-            <input type="number" min="0" class="form-control" id="m-score-b" placeholder="Score B">
+            <input type="number" min="0" class="form-control" id="m-score-a" placeholder="Score A" value="${f.liveScoreA ?? ''}">
+            <input type="number" min="0" class="form-control" id="m-score-b" placeholder="Score B" value="${f.liveScoreB ?? ''}">
           </div>
         </div>
         <div class="modal-footer"><button class="btn btn-success" id="m-save-result">Save Result</button></div>`);
@@ -299,6 +386,9 @@ function adminPanel(outlet) {
         match.scoreA = a; match.scoreB = b;
         match.winner = a > b ? match.teamA : match.teamB;
         match.status = 'completed';
+        match.isLive = false;
+        delete match.liveScoreA;
+        delete match.liveScoreB;
         await saveFixtures(fx);
         const updatedTeams = await refreshStandings();
         modal.hide();
@@ -306,6 +396,10 @@ function adminPanel(outlet) {
         refreshTeamsBody(updatedTeams);
         notify.success('Result saved &middot; standings updated', 'Match Completed');
       });
+    }));
+
+    outlet.querySelectorAll('.btn-go-live').forEach((btn) => btn.addEventListener('click', () => {
+      openLiveScoringOverlay(btn.dataset.id);
     }));
 
     outlet.querySelectorAll('.btn-undo-match').forEach((btn) => btn.addEventListener('click', async () => {

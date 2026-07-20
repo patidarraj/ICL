@@ -48,7 +48,9 @@ function matchRow(f, teamsById) {
   const b = teamsById[f.teamB]?.name || f.teamB;
   const badge = f.status === 'completed'
     ? `<span class="badge bg-success">Completed</span>`
-    : `<span class="badge bg-secondary">Scheduled</span>`;
+    : f.isLive
+      ? `<span class="badge bg-danger"><i class="fa-solid fa-circle fa-2xs me-1"></i>LIVE ${f.liveScoreA ?? 0}-${f.liveScoreB ?? 0}</span>`
+      : `<span class="badge bg-secondary">Scheduled</span>`;
   return `<tr>
     <td>${f.id}</td><td>${f.pool}</td><td>${a}</td><td>vs</td><td>${b}</td>
     <td>${f.time}</td><td>${badge}</td>

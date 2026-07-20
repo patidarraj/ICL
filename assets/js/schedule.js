@@ -5,9 +5,9 @@ import { notify } from './notifications.js';
 let viewMode = 'list';
 
 function statusBadge(f) {
-  return f.status === 'completed'
-    ? '<span class="badge bg-success">Completed</span>'
-    : '<span class="badge bg-secondary">Scheduled</span>';
+  if (f.status === 'completed') return '<span class="badge bg-success">Completed</span>';
+  if (f.isLive) return `<span class="badge bg-danger"><i class="fa-solid fa-circle fa-2xs me-1"></i>LIVE ${f.liveScoreA ?? 0}-${f.liveScoreB ?? 0}</span>`;
+  return '<span class="badge bg-secondary">Scheduled</span>';
 }
 
 function filterFixtures(fixtures, teamsById, filters) {
