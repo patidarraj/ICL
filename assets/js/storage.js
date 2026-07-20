@@ -5,7 +5,7 @@
 // the rest of the team's data (scores, points) to non-admin writes.
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js';
 import {
-  getFirestore, doc, collection, getDoc, getDocs, setDoc, updateDoc, writeBatch, onSnapshot,
+  getFirestore, doc, collection, getDoc, getDocs, setDoc, updateDoc, writeBatch, onSnapshot, deleteField,
 } from 'https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js';
 import {
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
@@ -106,9 +106,31 @@ export async function saveTeams(teams) {
   await batch.commit();
 }
 
-/** Narrow, rules-friendly update touching only a team's logo — usable by non-admins. */
+/**
+ * Narrow, rules-friendly update touching only a team's *pending* logo — usable by
+ * non-admins. The live/public `logoBase64` field is only ever set by an admin
+ * approval, so an uploaded image never goes public without review.
+ */
 export function updateTeamLogo(teamId, logoBase64) {
-  return updateDoc(doc(teamsColRef, teamId), { logoBase64 });
+  return updateDoc(doc(teamsColRef, teamId), { pendingLogoBase64: logoBase64, pendingLogoStatus: 'pending' });
+}
+
+/** Admin-only: promotes a team's pending logo to the live, publicly-shown logo. */
+export function approveTeamLogo(teamId) {
+  const team = getTeams().find((t) => t.id === teamId);
+  return updateDoc(doc(teamsColRef, teamId), {
+    logoBase64: team.pendingLogoBase64,
+    pendingLogoBase64: deleteField(),
+    pendingLogoStatus: deleteField(),
+  });
+}
+
+/** Admin-only: discards a team's pending logo without changing the live logo. */
+export function rejectTeamLogo(teamId) {
+  return updateDoc(doc(teamsColRef, teamId), {
+    pendingLogoBase64: deleteField(),
+    pendingLogoStatus: deleteField(),
+  });
 }
 
 export function getFixtures() { return cache.fixtures || []; }

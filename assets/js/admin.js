@@ -1,6 +1,7 @@
 import {
   getTeams, saveTeams, getFixtures, saveFixtures, getSettings, saveSettings,
   isAdminAuthed, loginAdmin, logoutAdmin, refreshStandings, resetTournament, exportBackup, restoreBackup,
+  approveTeamLogo, rejectTeamLogo,
 } from './storage.js';
 import { uid, downloadFile, escapeHtml, POOL_NAMES, isoDate, VENUE, generateLogoCode } from './utilities.js';
 import { notify } from './notifications.js';
@@ -65,11 +66,25 @@ function matchRow(f, teamsById) {
   </tr>`;
 }
 
+function logoApprovalTile(team) {
+  return `
+    <div class="col-6 col-sm-4 col-md-3 col-lg-2 text-center" data-id="${team.id}">
+      <img src="${team.pendingLogoBase64}" alt="" class="team-logo-gallery mb-2">
+      <div class="fw-semibold text-truncate">${team.players.join(' & ')}</div>
+      <div class="small text-muted text-truncate mb-2">${team.name}</div>
+      <div class="d-flex gap-1">
+        <button class="btn btn-sm btn-success flex-fill btn-approve-logo" data-id="${team.id}"><i class="fa-solid fa-check"></i></button>
+        <button class="btn btn-sm btn-outline-danger flex-fill btn-reject-logo" data-id="${team.id}"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+    </div>`;
+}
+
 function adminPanel(outlet) {
   const teams = getTeams();
   const fixtures = getFixtures();
   const teamsById = Object.fromEntries(teams.map((t) => [t.id, t]));
   const settings = getSettings();
+  const pendingLogoTeams = teams.filter((t) => t.pendingLogoStatus === 'pending');
 
   outlet.innerHTML = `
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -136,6 +151,14 @@ function adminPanel(outlet) {
         </div>
       </div>
     </div>
+
+    ${pendingLogoTeams.length ? `
+    <div class="card mb-3 border-warning">
+      <div class="card-header"><i class="fa-solid fa-image me-2"></i>Logo Approvals <span class="badge bg-warning text-dark ms-1">${pendingLogoTeams.length}</span></div>
+      <div class="card-body">
+        <div class="row g-3" id="admin-logo-approvals">${pendingLogoTeams.map(logoApprovalTile).join('')}</div>
+      </div>
+    </div>` : ''}
 
     <div class="card mb-3">
       <div class="card-header d-flex justify-content-between align-items-center">
@@ -402,6 +425,29 @@ function adminPanel(outlet) {
     await logoutAdmin();
     renderAdmin(outlet);
   });
+
+  outlet.querySelectorAll('.btn-approve-logo').forEach((btn) => btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    try {
+      await approveTeamLogo(btn.dataset.id);
+      notify.success('Logo approved and now live');
+    } catch (err) {
+      notify.error('Could not approve logo — please try again.');
+      btn.disabled = false;
+    }
+  }));
+
+  outlet.querySelectorAll('.btn-reject-logo').forEach((btn) => btn.addEventListener('click', async () => {
+    if (!confirm('Reject this logo submission?')) return;
+    btn.disabled = true;
+    try {
+      await rejectTeamLogo(btn.dataset.id);
+      notify.success('Logo rejected');
+    } catch (err) {
+      notify.error('Could not reject logo — please try again.');
+      btn.disabled = false;
+    }
+  }));
 
   bindTeamActions();
   bindMatchActions();

@@ -41,7 +41,7 @@ This is a one-time, ~5 minute setup. It's required before the app will load — 
          allow create: if !exists(/databases/$(database)/documents/teams/$(teamId));
          allow delete: if request.auth != null;
          allow update: if request.auth != null
-           || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['logoBase64']);
+           || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pendingLogoBase64', 'pendingLogoStatus']);
        }
      }
    }
@@ -49,7 +49,9 @@ This is a one-time, ~5 minute setup. It's required before the app will load — 
 
    Since you created exactly one Authentication user (your admin), any signed-in request is trusted. If you ever add more Firebase Auth users, tighten the `request.auth != null` checks to `request.auth.token.email == 'admin@your-tournament.local'`.
 
-   **On the logo access code:** the code entered on the Team Logo page is checked client-side against the team's public data before uploading — it's a light social gate to stop casual visitors from changing a team's logo by accident, not cryptographic security (since `teams` is public-read, a technically determined person could bypass it). The rule above only limits the *blast radius*: even without the code, the absolute most a non-admin write can ever touch is a team's `logoBase64` field — never scores, points, or any other data. That tradeoff was chosen deliberately to avoid needing Firebase Storage (which now requires a paid Blaze plan just to enable, even within the free-usage tier).
+   **On the logo access code:** the code entered on the Team Logo page is checked client-side against the team's public data before uploading — it's a light social gate to stop casual visitors from changing a team's logo by accident, not cryptographic security (since `teams` is public-read, a technically determined person could bypass it). The rule above only limits the *blast radius*: even without the code, the absolute most a non-admin write can ever touch is a team's `pendingLogoBase64`/`pendingLogoStatus` fields — never scores, points, the live `logoBase64`, or any other data. That tradeoff was chosen deliberately to avoid needing Firebase Storage (which now requires a paid Blaze plan just to enable, even within the free-usage tier).
+
+   **On logo moderation:** an uploaded logo is never shown publicly right away. It's written to `pendingLogoBase64`/`pendingLogoStatus` (a field only a non-admin is allowed to write), and only becomes the live, publicly-shown `logoBase64` once an admin approves it from the Admin panel's "Logo Approvals" card — a field only an authenticated admin can write.
 
 9. Open the app (see **Running locally** below, or your deployed URL) — the first load auto-generates the 25 teams / 50-match schedule into Firestore, and every subsequent visitor shares that same live data.
 

@@ -107,6 +107,9 @@ export async function renderTeamLogo(outlet) {
     pendingDataUrl = null;
     const team = getTeams().find((t) => t.id === teamSelect.value);
     previewWrap.innerHTML = teamLogoHtml(team, 'team-logo-preview');
+    if (team.pendingLogoStatus === 'pending') {
+      previewWrap.innerHTML += `<div class="small text-warning mt-2"><i class="fa-solid fa-clock me-1"></i>A logo is awaiting admin approval for this team.</div>`;
+    }
   }
   teamSelect.addEventListener('change', showCurrentLogo);
   showCurrentLogo();
@@ -138,7 +141,8 @@ export async function renderTeamLogo(outlet) {
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Uploading...';
     try {
       await updateTeamLogo(teamId, pendingDataUrl);
-      notify.success('Logo uploaded!', 'Upload Complete');
+      notify.success('Your logo has been submitted and is awaiting admin approval.', 'Submitted for Review');
+      showCurrentLogo();
     } catch (err) {
       notify.error('Upload failed — please try again.');
     } finally {
