@@ -73,6 +73,62 @@ export async function recordKnockoutResult(bracket, matchId, scoreA, scoreB) {
   return bracket;
 }
 
+function bracketStage(num, title, badge, body) {
+  return `
+    <div class="bracket-stage">
+      <div class="bracket-stage-num">${num}</div>
+      <div>
+        <div class="bracket-stage-title">${title} ${badge ? `<span class="badge bg-secondary ms-1">${badge}</span>` : ''}</div>
+        <div class="bracket-stage-body">${body}</div>
+      </div>
+    </div>`;
+}
+
+function bracketPathExplainer() {
+  return `
+    <div class="card">
+      <div class="card-header"><i class="fa-solid fa-route me-2"></i>How 25 Teams Become 1 Champion</div>
+      <div class="card-body">
+        <div class="bracket-flow-diagram mb-4">
+          <div class="bf-box bf-pool">25 Teams<br><small>5 Pools &middot; 5 teams each</small></div>
+          <div class="bf-arrow">&darr;</div>
+          <div class="bf-box bf-pool">Pool Stage<br><small>Round robin &middot; 10 matches/pool &middot; 50 total</small></div>
+          <div class="bf-arrow">&darr;</div>
+          <div class="bf-row">
+            <div class="bf-box bf-qual">5 Pool Winners<br><small>advance directly</small></div>
+            <div class="bf-box bf-qual">3 Wildcards<br><small>best runners-up by points</small></div>
+          </div>
+          <div class="bf-arrow">&darr;</div>
+          <div class="bf-box bf-ko">8 Qualifiers, Seeded 1&ndash;8</div>
+          <div class="bf-arrow">&darr;</div>
+          <div class="bf-row">
+            <div class="bf-box bf-ko-sm">QF1<br><small>Seed 1 v 8</small></div>
+            <div class="bf-box bf-ko-sm">QF2<br><small>Seed 4 v 5</small></div>
+            <div class="bf-box bf-ko-sm">QF3<br><small>Seed 3 v 6</small></div>
+            <div class="bf-box bf-ko-sm">QF4<br><small>Seed 2 v 7</small></div>
+          </div>
+          <div class="bf-arrow">&darr;</div>
+          <div class="bf-row">
+            <div class="bf-box bf-ko-sm">SF1</div>
+            <div class="bf-box bf-ko-sm">SF2</div>
+          </div>
+          <div class="bf-arrow">&darr;</div>
+          <div class="bf-row">
+            <div class="bf-box bf-ko">Final</div>
+            <div class="bf-box bf-ko">3rd Place Match<br><small>semifinal losers</small></div>
+          </div>
+          <div class="bf-arrow">&darr;</div>
+          <div class="bf-box bf-champ"><i class="fa-solid fa-trophy me-2"></i>Champion</div>
+        </div>
+        ${bracketStage(1, 'Pool Stage', '50 matches', `All 25 teams are split into <strong>5 pools (A&ndash;E) of 5 teams</strong>. Inside a pool, every team plays every other team once &mdash; <strong>4 matches each</strong>, 10 matches per pool, 50 in total.`)}
+        ${bracketStage(2, 'Qualification', '8 advance', `The <strong>winner of each pool</strong> (5 teams) advances automatically. The remaining 3 spots go to <strong>wildcards</strong> &mdash; the best 3 runners-up across all pools, ranked by points. That's <strong>5 + 3 = 8 qualifiers</strong>, seeded 1&ndash;8.`)}
+        ${bracketStage(3, 'Quarterfinals', '4 matches', `Seeded so the strongest teams face the weakest first: <strong>1 vs 8, 4 vs 5, 3 vs 6, 2 vs 7</strong>.`)}
+        ${bracketStage(4, 'Semifinals', '', `<strong>QF1 winner vs QF2 winner</strong> &rarr; SF1. <strong>QF3 winner vs QF4 winner</strong> &rarr; SF2.`)}
+        ${bracketStage(5, 'Third-Place Match &amp; Final', '', `The two <strong>semifinal losers</strong> play off for third place. The two <strong>semifinal winners</strong> meet in the <strong>Final</strong> &mdash; its winner is Champion.`)}
+      </div>
+    </div>`;
+}
+
 function teamName(id, teamsById) {
   return id ? (teamsById[id]?.name || id) : 'TBD';
 }
@@ -107,12 +163,19 @@ export async function renderBracket(outlet) {
   const canEdit = isAdminAuthed();
 
   if (!poolMatchesComplete(fixtures) && !bracket) {
+    const completedPoolMatches = fixtures.filter((f) => f.stage === 'pool' && f.status === 'completed').length;
+    const pct = Math.round((completedPoolMatches / ALL_POOL_MATCHES) * 100);
     outlet.innerHTML = `
       <h2 class="page-title"><i class="fa-solid fa-sitemap me-2"></i>Knockout Bracket</h2>
-      <div class="card"><div class="card-body text-center text-muted py-5">
-        <i class="fa-solid fa-lock fa-2x mb-3"></i>
-        <p>The knockout bracket will be generated once all pool matches are complete.<br>Completed: ${fixtures.filter((f) => f.stage === 'pool' && f.status === 'completed').length} / ${ALL_POOL_MATCHES}</p>
-      </div></div>`;
+      <div class="card mb-3"><div class="card-body text-center py-4">
+        <i class="fa-solid fa-lock fa-2x mb-3 text-muted"></i>
+        <p class="mb-2">The knockout bracket unlocks automatically once all pool matches are complete.</p>
+        <div class="progress mx-auto mb-2" style="height:14px; max-width:420px;">
+          <div class="progress-bar bg-primary" style="width:${pct}%"></div>
+        </div>
+        <p class="text-muted small mb-0">${completedPoolMatches} / ${ALL_POOL_MATCHES} pool matches completed</p>
+      </div></div>
+      ${bracketPathExplainer()}`;
     return;
   }
 

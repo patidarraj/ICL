@@ -36,3 +36,42 @@
 .champion-icon { animation: bounce 1.4s infinite; }
 @keyframes champion-pop { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+.bracket-flow-diagram {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+.bf-arrow { color: var(--text-muted); font-size: 1.1rem; line-height: 1; }
+.bf-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; }
+.bf-box {
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #fff;
+}
+.bf-box small { display: block; font-weight: 400; opacity: 0.85; font-size: 0.72rem; margin-top: 2px; }
+.bf-pool { background: #F97316; }
+.bf-qual { background: #22C55E; color: #06280f; }
+.bf-ko { background: #FACC15; color: #2b2004; }
+.bf-ko-sm { background: #FACC15; color: #2b2004; min-width: 100px; }
+.bf-champ { background: var(--card-bg-2); border: 2px solid #F97316; color: #F97316; font-size: 1.1rem; padding: 0.75rem 1.5rem; }
+
+.bracket-stage {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: 0 1rem;
+  padding: 0.85rem 0;
+  border-top: 1px solid var(--border);
+}
+.bracket-stage:first-of-type { border-top: none; }
+.bracket-stage-num {
+  font-weight: 700;
+  color: #F97316;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+.bracket-stage-title { font-weight: 700; margin-bottom: 2px; }
+.bracket-stage-body { color: var(--text-muted); font-size: 0.9rem; }
