@@ -1,5 +1,5 @@
-import { getTeams, getFixtures } from './storage.js';
-import { formatDate, POOL_NAMES, toCSV, downloadFile, teamLogoHtml, isoDate } from './utilities.js';
+import { getTeams, getFixtures, getSettings } from './storage.js';
+import { formatDate, POOL_NAMES, toCSV, downloadFile, teamLogoHtml, isoDate, escapeHtml } from './utilities.js';
 import { notify } from './notifications.js';
 
 let viewMode = 'list';
@@ -127,6 +127,66 @@ function calendarView(fixtures, teamsById) {
   }).join('')}</div>`;
 }
 
+/** Small inline logo for the print view — a real uploaded logo, or a colored initial badge if none yet. */
+function printLogo(team) {
+  if (team?.logoBase64) return `<img src="${team.logoBase64}" alt="" class="print-logo">`;
+  const initial = (team?.name || '?').trim()[0]?.toUpperCase() || '?';
+  return `<span class="print-logo print-logo-placeholder">${initial}</span>`;
+}
+
+function printMatchRow(f, teamsById) {
+  const teamA = teamsById[f.teamA];
+  const teamB = teamsById[f.teamB];
+  return `
+    <tr>
+      <td>${f.id}</td>
+      <td>${f.pool}</td>
+      <td class="print-team-cell">${printLogo(teamA)} ${escapeHtml(teamA?.name || f.teamA)}</td>
+      <td class="text-center">vs</td>
+      <td class="print-team-cell">${printLogo(teamB)} ${escapeHtml(teamB?.name || f.teamB)}</td>
+      <td>${f.time}</td>
+      <td>${f.status === 'completed' ? `${f.scoreA} - ${f.scoreB}` : '—'}</td>
+    </tr>`;
+}
+
+function printSchedule(fixtures, teamsById, settings) {
+  const byDate = {};
+  fixtures.forEach((f) => { (byDate[f.date] = byDate[f.date] || []).push(f); });
+  const dates = Object.keys(byDate).sort();
+
+  const body = dates.length
+    ? dates.map((d) => `
+        <h3>${formatDate(d)}</h3>
+        <table>
+          <thead><tr><th>#</th><th>Pool</th><th>Team A</th><th></th><th>Team B</th><th>Time</th><th>Score</th></tr></thead>
+          <tbody>${byDate[d].map((f) => printMatchRow(f, teamsById)).join('')}</tbody>
+        </table>`).join('')
+    : '<p>No matches match the current filters.</p>';
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>${escapeHtml(settings.tournamentName || 'Schedule')} — Schedule</title>
+    <style>
+      body { font-family: Arial, Helvetica, sans-serif; color: #111; margin: 24px; }
+      h1 { margin-bottom: 4px; }
+      h3 { margin-top: 28px; border-bottom: 2px solid #333; padding-bottom: 4px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+      th, td { border: 1px solid #999; padding: 6px 8px; text-align: left; font-size: 14px; }
+      th { background: #eee; }
+      .print-team-cell { display: table-cell; vertical-align: middle; }
+      .print-logo { width: 24px; height: 24px; object-fit: contain; vertical-align: middle; margin-right: 6px; border-radius: 4px; border: 1px solid #ccc; }
+      .print-logo-placeholder { display: inline-flex; align-items: center; justify-content: center; background: #ddd; font-weight: bold; }
+      @media print { body { margin: 8px; } }
+    </style>
+    </head><body>
+    <h1>${escapeHtml(settings.tournamentName || 'Tournament')}</h1>
+    <p>${escapeHtml(settings.organizer || '')} &middot; ${escapeHtml(settings.venue || '')}</p>
+    ${body}
+    </body></html>`);
+  win.document.close();
+  win.focus();
+  win.print();
+}
+
 export async function renderSchedule(outlet) {
   const teams = getTeams();
   const teamsById = Object.fromEntries(teams.map((t) => [t.id, t]));
@@ -199,7 +259,10 @@ export async function renderSchedule(outlet) {
 
   outlet.querySelector('#view-list').addEventListener('click', () => { viewMode = 'list'; renderSchedule(outlet); });
   outlet.querySelector('#view-calendar').addEventListener('click', () => { viewMode = 'calendar'; renderSchedule(outlet); });
-  outlet.querySelector('#btn-print').addEventListener('click', () => window.print());
+  outlet.querySelector('#btn-print').addEventListener('click', () => {
+    const filtered = filterFixtures(fixtures, teamsById, filters);
+    printSchedule(filtered, teamsById, getSettings());
+  });
   outlet.querySelector('#btn-export').addEventListener('click', () => {
     const filtered = filterFixtures(fixtures, teamsById, filters);
     const rows = filtered.map((f) => ({
