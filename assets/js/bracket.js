@@ -161,29 +161,48 @@ export async function renderBracket(outlet) {
   const fixtures = getFixtures();
   let bracket = getBracket();
   const canEdit = isAdminAuthed();
+  const locked = !poolMatchesComplete(fixtures) && !bracket;
 
-  if (!poolMatchesComplete(fixtures) && !bracket) {
+  outlet.innerHTML = `
+    <h2 class="page-title"><i class="fa-solid fa-sitemap me-2"></i>Knockout Bracket</h2>
+    <ul class="nav nav-tabs mb-4" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#bk-pane-bracket" type="button" role="tab" aria-selected="true">
+          <i class="fa-solid fa-sitemap me-1"></i>Bracket
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#bk-pane-path" type="button" role="tab" aria-selected="false">
+          <i class="fa-solid fa-route me-1"></i>Tournament Path
+        </button>
+      </li>
+    </ul>
+    <div class="tab-content">
+      <div class="tab-pane fade show active" id="bk-pane-bracket" role="tabpanel"></div>
+      <div class="tab-pane fade" id="bk-pane-path" role="tabpanel">${bracketPathExplainer()}</div>
+    </div>`;
+
+  const bracketPane = outlet.querySelector('#bk-pane-bracket');
+
+  if (locked) {
     const completedPoolMatches = fixtures.filter((f) => f.stage === 'pool' && f.status === 'completed').length;
     const pct = Math.round((completedPoolMatches / ALL_POOL_MATCHES) * 100);
-    outlet.innerHTML = `
-      <h2 class="page-title"><i class="fa-solid fa-sitemap me-2"></i>Knockout Bracket</h2>
-      <div class="card mb-3"><div class="card-body text-center py-4">
+    bracketPane.innerHTML = `
+      <div class="card"><div class="card-body text-center py-4">
         <i class="fa-solid fa-lock fa-2x mb-3 text-muted"></i>
         <p class="mb-2">The knockout bracket unlocks automatically once all pool matches are complete.</p>
         <div class="progress mx-auto mb-2" style="height:14px; max-width:420px;">
           <div class="progress-bar bg-primary" style="width:${pct}%"></div>
         </div>
         <p class="text-muted small mb-0">${completedPoolMatches} / ${ALL_POOL_MATCHES} pool matches completed</p>
-      </div></div>
-      ${bracketPathExplainer()}`;
+      </div></div>`;
     return;
   }
 
   if (!bracket) bracket = await generateBracket();
 
   function render() {
-    outlet.innerHTML = `
-      <h2 class="page-title"><i class="fa-solid fa-sitemap me-2"></i>Knockout Bracket</h2>
+    bracketPane.innerHTML = `
       <div class="bracket-scroll">
         <div class="bracket-round">
           <h6 class="bracket-round-title">Quarter Finals</h6>
@@ -209,7 +228,7 @@ export async function renderBracket(outlet) {
         </div>
       </div>`;
 
-    outlet.querySelectorAll('.btn-submit-score').forEach((btn) => {
+    bracketPane.querySelectorAll('.btn-submit-score').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const card = btn.closest('.bracket-match');
         const a = Number(card.querySelector('.score-a').value);
