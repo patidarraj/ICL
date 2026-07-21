@@ -1,19 +1,19 @@
 // Static rulebook content — sourced from the tournament's official rules document.
-const FOULS = [
-  ['Pocketing the striker', '1 warning'],
-  ["Pocketing opponent's coin", '1 warning'],
-  ['Time taken > 30 sec', '1 warning'],
-  ['Touching coins with hand', '1 warning'],
-  ['Talking, guiding, or making eye contact with partner', '1 warning'],
-  ['Playing out of turn', '1 warning'],
+const ALLOWED_MOVES = [
+  ['Back Shot', false],
+  ['Rebound Shot (off the walls)', true],
+  ['Double Touch while striking (Striker)', false],
+  ["Attempt to touch opponent's coin", true],
 ];
 
-const ALLOWED_MOVES = [
-  ['Back Shot (striker comes back after hitting coin)', true],
-  ['Thumb Shot (striking with thumb)', true],
-  ["Left-hand Strike (if you're lefty)", true],
-  ['Rebound Shot (using side walls)', true],
-  ['Double Touch', false],
+const FOULS = [
+  ['Touching any coin on the board with a hand', 'Chance skipped + one coin added'],
+  ['Striker not fully covering the red coin', 'Chance skipped + one coin added; if no coin is pocketed next turn, the next pocketed coin is removed'],
+  ['Striker not covering both base lines', 'Chance skipped + one coin added'],
+  ['Pocketing the striker', 'One coin removed + chance skipped'],
+  ['Hand or body placed outside the imaginary diagonal line while taking a shot', 'One coin added + chance skipped'],
+  ['Double-touching the striker', 'One coin added + chance skipped'],
+  ['Talking to your team member during the match', 'One coin added + chance skipped'],
 ];
 
 function section(icon, title, bodyHtml) {
@@ -34,56 +34,49 @@ export async function renderRules(outlet) {
       <p class="mb-0">Pot (pocket) all your assigned carrom coins (white or black), and finally the red coin (Queen), to win the game!</p>
     </div>
 
-    ${section('fa-users', 'Team Format', `
+    ${section('fa-users', '1. Team Format', `
       <ul class="mb-0">
-        <li>Each team will have 2 players.</li>
-        <li>Opponents sit diagonally opposite each other.</li>
+        <li>Each team must consist of <strong>2 players</strong>.</li>
+        <li>Opponents must sit <strong>opposite each other</strong>.</li>
       </ul>`)}
 
-    ${section('fa-circle', 'Carrom Coins', `
-      <p class="mb-0">There are 19 coins:</p>
-      <div class="d-flex gap-3 mt-2 flex-wrap">
+    ${section('fa-circle', '2. Carrom Coins', `
+      <p class="mb-2">Total coins: <strong>19</strong></p>
+      <div class="d-flex gap-3 mb-3 flex-wrap">
         <span class="coin-chip"><span class="coin coin-white"></span>9 White</span>
         <span class="coin-chip"><span class="coin coin-black"></span>9 Black</span>
         <span class="coin-chip"><span class="coin coin-red"></span>1 Red (Queen)</span>
-      </div>`)}
-
-    ${section('fa-rotate', 'Turn Rules', `
-      <ul class="mb-0">
-        <li>Each player gets 30 seconds for their turn.</li>
-        <li>Turns go clockwise.</li>
-        <li>You strike using the striker to pocket your own color coins.</li>
-      </ul>`)}
-
-    ${section('fa-medal', 'Who Gets Which Color?', `
-      <p class="mb-0">The player/team who pockets the first coin gets to play with that color for the entire match.</p>`)}
-
-    ${section('fa-crown', 'The Queen (Red Coin)', `
-      <ul class="mb-0">
-        <li><strong>Must be covered:</strong> after potting the red coin, you must pot your color coin in the same turn to cover it.</li>
-        <li>If not covered, the red coin comes back to the center.</li>
-      </ul>`)}
-
-    ${section('fa-triangle-exclamation', 'Fouls (Things You Should NOT Do)', `
-      <div class="table-responsive">
-        <table class="table table-dark table-hover align-middle mb-2">
-          <thead><tr><th>Foul</th><th>Result</th></tr></thead>
-          <tbody>
-            ${FOULS.map(([foul, result]) => `<tr><td>${foul}</td><td><span class="badge bg-warning text-dark">${result}</span></td></tr>`).join('')}
-          </tbody>
-        </table>
       </div>
-      <p class="small text-muted mb-0">After 2 warnings, 1 demerit point will be given for every foul thereafter.</p>`)}
-
-    ${section('fa-hand', 'Things to Avoid', `
       <ul class="mb-0">
-        <li>No talking to your partner during play.</li>
-        <li>No eye contact or signaling with your partner.</li>
-        <li>No coaching your partner mid-turn.</li>
-        <li>No touching coins with your hands.</li>
+        <li>If a coin lands on the black border or outside the board, the umpire will place it back in the center.</li>
+        <li>If a coin ends up in an upright position, it will <strong>not be touched</strong> — play continues as usual.</li>
       </ul>`)}
 
-    ${section('fa-gears', 'Allowed Moves', `
+    ${section('fa-coins', '2.1 The Toss', `
+      <ul class="mb-0">
+        <li>The umpire hides one black coin and one white coin, one in each hand.</li>
+        <li>A player must guess which coin is in the umpire's selected hand.</li>
+        <li>The <strong>loser of the toss sits first</strong> and decides on their team's seating.</li>
+        <li>If the guess is for the <strong>white coin</strong>, that player's team breaks and plays with white coins.</li>
+        <li class="text-muted small">In case of toss confusion, the umpire will decide who chooses.</li>
+      </ul>`)}
+
+    ${section('fa-rotate', '3. Turn Rules', `
+      <ul class="mb-0">
+        <li>Turns proceed in a <strong>clockwise</strong> direction.</li>
+        <li>The game itself has <strong>no overall time restriction</strong> — but each individual shot is limited to <strong>30 seconds</strong>.</li>
+      </ul>`)}
+
+    ${section('fa-crown', '3.2 The Queen (Red Coin)', `
+      <ul class="mb-0">
+        <li><strong>Must be covered:</strong> after pocketing the Queen, you must pocket your own color coin in the same turn to cover it.</li>
+        <li>If not covered, the Queen is returned to the center of the board.</li>
+      </ul>`)}
+
+    ${section('fa-trophy', 'How the Match Is Won', `
+      <p class="mb-0">Each match is a single game. To win, a team must pocket <strong>all of their own coins</strong> AND then pocket and cover the Queen (see above).</p>`)}
+
+    ${section('fa-gears', '4. Allowed Moves', `
       <div class="table-responsive">
         <table class="table table-dark table-hover align-middle mb-0">
           <thead><tr><th>Move</th><th>Allowed?</th></tr></thead>
@@ -93,21 +86,34 @@ export async function renderRules(outlet) {
         </table>
       </div>`)}
 
-    ${section('fa-calculator', 'How the Match Is Won', `
-      <p class="mb-2">Each match is a single game.</p>
+    ${section('fa-triangle-exclamation', '5.1 Fouls & Penalties', `
+      <div class="table-responsive">
+        <table class="table table-dark table-hover align-middle mb-0">
+          <thead><tr><th>Foul</th><th>Penalty</th></tr></thead>
+          <tbody>
+            ${FOULS.map(([foul, penalty]) => `<tr><td>${foul}</td><td><span class="badge bg-warning text-dark">${penalty}</span></td></tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`)}
+
+    ${section('fa-list-check', '5.2 Due Scenarios — When the Striker Is Pocketed', `
       <ul class="mb-0">
-        <li>To win outright, a team must pocket <strong>all of their own coins</strong> AND then pocket and cover the Queen (see above).</li>
-        <li>If the 20-minute time limit runs out and neither team has finished (i.e. nobody has completed the win condition above), whichever team has <strong>fewer of their own coins left</strong> on the table wins the match.</li>
+        <li><strong>Striker is pocketed:</strong> it's a foul — one coin is removed and the chance is skipped.</li>
+        <li><strong>Striker + own coin(s) pocketed:</strong> the pocketed coin is removed, one coin is added, and the turn is retained.</li>
+        <li><strong>Striker + opponent coin(s) pocketed:</strong> chance is skipped and one coin is added.</li>
+        <li><strong>Striker + own coin + opponent coin pocketed:</strong> the pocketed coin is removed, one of your coins is added, and the turn is retained.</li>
       </ul>`)}
 
-    ${section('fa-hourglass-half', 'Time Limits', `
-      <ul class="mb-0">
-        <li><strong>Per shot:</strong> max 30 seconds to play your turn. After that, a foul warning is issued.</li>
-        <li><strong>Per match:</strong> max 20 minutes total. If time runs out before anyone finishes, the team with fewer of their own coins left wins (see above).</li>
-      </ul>`)}
+    ${section('fa-hand', '6. Audience Conduct', `
+      <p class="mb-0">The audience is not allowed to communicate with players or umpires. Anyone found doing so will have to leave the playing area.</p>`)}
 
-    ${section('fa-flag-checkered', 'Referee', `
-      <p class="mb-0">All matches are monitored by a referee.</p>`)}
+    ${section('fa-flag-checkered', '7. Match Officials (Exempt from Audience Conduct)', `
+      <ul class="mb-0">
+        <li>Umpire &amp; Match Referee</li>
+        <li>Timer</li>
+        <li>Scorer</li>
+        <li>Camera Person</li>
+      </ul>`)}
 
     ${section('fa-note-sticky', 'Final Notes', `
       <ul class="mb-0">
