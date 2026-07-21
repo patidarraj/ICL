@@ -84,21 +84,26 @@ function logoApprovalTile(team) {
     </div>`;
 }
 
-function pendingScoreTile(live) {
+function liveScoreTile(live) {
   const totalA = live.teams.A.players.reduce((s, p) => s + p.points, 0);
   const totalB = live.teams.B.players.reduce((s, p) => s + p.points, 0);
-  const winnerName = live.result.winner === 'draw' ? 'Draw' : live.teams[live.result.winner].name;
+  const isPending = live.status === 'pending_review';
+  const winnerName = isPending ? (live.result.winner === 'draw' ? 'Draw' : live.teams[live.result.winner].name) : null;
   return `
     <div class="col-md-6" data-id="${live.matchId}">
-      <div class="card border-warning h-100">
+      <div class="card ${isPending ? 'border-warning' : 'border-info'} h-100">
         <div class="card-body">
           <div class="d-flex justify-content-between mb-1">
             <strong>${live.teams.A.name} ${totalA} – ${totalB} ${live.teams.B.name}</strong>
+            <span class="badge ${isPending ? 'bg-warning text-dark' : 'bg-info text-dark'}">${isPending ? 'Pending Review' : 'Live / In Progress'}</span>
           </div>
-          <div class="small text-muted mb-2">
+          ${isPending ? `<div class="small text-muted mb-2">
             Referee result: ${winnerName} &middot; NRR — ${live.teams.A.name}: ${live.result.nrrLeader === 'A' ? live.result.margin : 0}, ${live.teams.B.name}: ${live.result.nrrLeader === 'B' ? live.result.margin : 0}
+          </div>` : ''}
+          <div class="d-flex gap-2">
+            ${isPending ? `<button class="btn btn-sm btn-success btn-confirm-score" data-id="${live.matchId}"><i class="fa-solid fa-check me-1"></i>Confirm into Fixture</button>` : ''}
+            <button class="btn btn-sm btn-outline-danger btn-reset-score" data-id="${live.matchId}"><i class="fa-solid fa-rotate-left me-1"></i>Reset</button>
           </div>
-          <button class="btn btn-sm btn-success btn-confirm-score" data-id="${live.matchId}"><i class="fa-solid fa-check me-1"></i>Confirm into Fixture</button>
         </div>
       </div>
     </div>`;
@@ -110,7 +115,7 @@ function adminPanel(outlet) {
   const teamsById = Object.fromEntries(teams.map((t) => [t.id, t]));
   const settings = getSettings();
   const pendingLogoTeams = teams.filter((t) => t.pendingLogoStatus === 'pending');
-  const pendingScores = Object.values(getLiveScores()).filter((l) => l.status === 'pending_review');
+  const activeLiveScores = Object.values(getLiveScores());
 
   outlet.innerHTML = `
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -186,11 +191,11 @@ function adminPanel(outlet) {
       </div>
     </div>` : ''}
 
-    ${pendingScores.length ? `
+    ${activeLiveScores.length ? `
     <div class="card mb-3 border-warning">
-      <div class="card-header"><i class="fa-solid fa-flag-checkered me-2"></i>Pending Scoring Results <span class="badge bg-warning text-dark ms-1">${pendingScores.length}</span></div>
+      <div class="card-header"><i class="fa-solid fa-flag-checkered me-2"></i>Live / Pending Scoring <span class="badge bg-warning text-dark ms-1">${activeLiveScores.length}</span></div>
       <div class="card-body">
-        <div class="row g-3" id="admin-pending-scores">${pendingScores.map(pendingScoreTile).join('')}</div>
+        <div class="row g-3" id="admin-pending-scores">${activeLiveScores.map(liveScoreTile).join('')}</div>
       </div>
     </div>` : ''}
 
@@ -516,6 +521,19 @@ function adminPanel(outlet) {
       adminPanel(outlet);
     } catch (err) {
       notify.error('Could not confirm result — please try again.');
+      btn.disabled = false;
+    }
+  }));
+
+  outlet.querySelectorAll('.btn-reset-score').forEach((btn) => btn.addEventListener('click', async () => {
+    if (!confirm('Discard this scorecard? This does not affect the official fixture result.')) return;
+    btn.disabled = true;
+    try {
+      await deleteLiveScore(btn.dataset.id);
+      notify.success('Scorecard reset');
+      adminPanel(outlet);
+    } catch (err) {
+      notify.error('Could not reset — please try again.');
       btn.disabled = false;
     }
   }));
