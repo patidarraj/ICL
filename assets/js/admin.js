@@ -136,6 +136,7 @@ function teamRow(team) {
     </td>
     <td class="text-nowrap">
       <button class="btn btn-sm btn-outline-primary btn-edit-team" data-id="${team.id}"><i class="fa-solid fa-pen"></i></button>
+      ${team.logoBase64 ? `<button class="btn btn-sm btn-outline-warning btn-remove-logo" data-id="${team.id}" title="Remove this team's logo"><i class="fa-solid fa-image-slash"></i></button>` : ''}
       <button class="btn btn-sm btn-outline-danger btn-delete-team" data-id="${team.id}"><i class="fa-solid fa-trash"></i></button>
     </td>
   </tr>`;
@@ -360,6 +361,15 @@ function adminPanel(outlet) {
       await saveTeams(list);
       refreshTeamsBody(list);
       notify.success(`New code: ${list.find((t) => t.id === team.id).logoCode}`);
+    }));
+
+    outlet.querySelectorAll('.btn-remove-logo').forEach((btn) => btn.addEventListener('click', async () => {
+      const team = getTeams().find((t) => t.id === btn.dataset.id);
+      if (!confirm(`Remove ${team.name}'s logo? They'll show a placeholder until they upload a new one.`)) return;
+      const list = getTeams().map((t) => { if (t.id !== team.id) return t; const c = { ...t }; delete c.logoBase64; return c; });
+      await saveTeams(list);
+      refreshTeamsBody(list);
+      notify.success(`${team.name}'s logo removed`);
     }));
   }
 
