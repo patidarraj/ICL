@@ -4,10 +4,15 @@ import { notify } from './notifications.js';
 
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 const MAX_RAW_BYTES = 8 * 1024 * 1024;
-// Firestore caps a document at 1MB total; leave headroom for the team's other fields
-// (players, scores, etc.) so a huge logo can't push the whole document over the limit.
-const MAX_ENCODED_BYTES = 700 * 1024;
-// Progressively shrink dimension/quality until the encoded logo fits Firestore's budget —
+// Firestore caps a whole DOCUMENT at ~1MB, and a team's existing approved logoBase64
+// keeps sitting in that same document alongside a newly-submitted pendingLogoBase64 until
+// an admin reviews it — so re-uploading a replacement logo must leave room for both to
+// coexist, not just budget the new image on its own (that under-budgeted case previously
+// made re-uploads fail for any team that already had a sizeable approved logo).
+const TOTAL_DOC_BUDGET = 900 * 1024;
+const PER_IMAGE_MAX = 650 * 1024;
+const PER_IMAGE_MIN = 150 * 1024;
+// Progressively shrink dimension/quality until the encoded logo fits its budget —
 // most uploads succeed on the first (highest-quality) attempt.
 const COMPRESSION_LADDER = [
   { dimension: 480, format: 'png' },
@@ -18,6 +23,12 @@ const COMPRESSION_LADDER = [
 
 function encodedByteLength(dataUrl) {
   return Math.round(dataUrl.length * 0.75);
+}
+
+/** Leaves room for a team's existing approved logo to coexist during the review window. */
+function budgetFor(existingLogoBase64) {
+  const existingLen = existingLogoBase64 ? encodedByteLength(existingLogoBase64) : 0;
+  return Math.min(PER_IMAGE_MAX, Math.max(PER_IMAGE_MIN, TOTAL_DOC_BUDGET - existingLen));
 }
 
 function renderAtSize(img, dimension, format, quality) {
@@ -39,7 +50,7 @@ function renderAtSize(img, dimension, format, quality) {
   return format === 'png' ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', quality);
 }
 
-function compressImage(file) {
+function compressImage(file, maxEncodedBytes) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -47,7 +58,7 @@ function compressImage(file) {
       // highest-quality attempt; JPEG steps down further only if that's still too big.
       for (const step of COMPRESSION_LADDER) {
         const dataUrl = renderAtSize(img, step.dimension, step.format, step.quality);
-        if (encodedByteLength(dataUrl) <= MAX_ENCODED_BYTES) { resolve(dataUrl); return; }
+        if (encodedByteLength(dataUrl) <= maxEncodedBytes) { resolve(dataUrl); return; }
       }
       reject(new Error('too-large-after-compression'));
     };
@@ -234,7 +245,8 @@ export async function renderTeamLogo(outlet) {
     if (!ALLOWED_TYPES.includes(file.type)) { notify.warn('Please choose a PNG, JPEG, or WEBP image'); return; }
     if (file.size > MAX_RAW_BYTES) { notify.warn('Image is too large — please choose a file under 8MB'); return; }
     try {
-      pendingDataUrl = await compressImage(file);
+      const team = getTeams().find((t) => t.id === teamIdInput.value);
+      pendingDataUrl = await compressImage(file, budgetFor(team?.logoBase64));
       previewWrap.innerHTML = `<img src="${pendingDataUrl}" alt="" class="team-logo-preview">`;
     } catch (err) {
       if (err.message === 'too-large-after-compression') {

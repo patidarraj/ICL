@@ -1,4 +1,4 @@
-const CACHE_NAME = 'carrom-tm-v21';
+const CACHE_NAME = 'carrom-tm-v22';
 const CORE_ASSETS = [
   './',
   './index.html',
