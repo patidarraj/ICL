@@ -16,3 +16,42 @@
 .winner-options .btn { flex: 1; }
 .margin-row { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 1rem; }
 .margin-val { font-size: 1.8rem; font-weight: 800; min-width: 3ch; text-align: center; }
+
+/* --- Overview: featured "now scoring" hero card --- */
+.featured-match {
+  position: relative;
+  background: linear-gradient(160deg, var(--card-bg-2), var(--card-bg));
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem 1.5rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.08), 0 12px 30px -12px rgba(249, 115, 22, 0.35);
+}
+.featured-match.is-pending { border-color: rgba(234, 179, 8, 0.4); box-shadow: 0 0 0 1px rgba(234, 179, 8, 0.08), 0 12px 30px -12px rgba(234, 179, 8, 0.35); }
+.featured-match-badge {
+  display: inline-flex; align-items: center;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: #FDBA74; background: rgba(249, 115, 22, 0.12); border: 1px solid rgba(249, 115, 22, 0.3);
+  border-radius: 999px; padding: 0.25rem 0.7rem; margin-bottom: 0.9rem;
+}
+.featured-match.is-pending .featured-match-badge { color: #FDE68A; background: rgba(234, 179, 8, 0.12); border-color: rgba(234, 179, 8, 0.3); }
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: #F97316; margin-right: 0.4rem; animation: live-pulse 1.4s infinite; }
+@keyframes live-pulse { 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(249,115,22,0.5); } 50% { opacity: 0.6; box-shadow: 0 0 0 5px rgba(249,115,22,0); } }
+
+.featured-scoreline { display: flex; align-items: center; justify-content: center; gap: 1.5rem; text-align: center; }
+.featured-team { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; min-width: 110px; }
+.featured-team-name { font-weight: 700; font-size: 1rem; }
+.featured-team-score { font-size: 2.6rem; font-weight: 800; line-height: 1; background: linear-gradient(135deg, #F97316, #FACC15); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.featured-vs { font-size: 0.75rem; color: var(--text-muted); font-weight: 700; }
+
+.feat-player-row { background: var(--card-bg-2); border-radius: 10px; padding: 0.5rem 0.75rem; margin-bottom: 0.5rem; }
+.feat-player-row.has-queen { border: 1px solid rgba(239, 68, 68, 0.4); }
+.feat-player-name { font-weight: 600; font-size: 0.88rem; display: block; margin-bottom: 0.3rem; }
+.feat-player-stats { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.feat-stat { font-size: 0.78rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 0.3rem; }
+.feat-stat i { font-size: 0.7rem; opacity: 0.8; }
+
+.minimized-matches-toggle .btn { border-radius: 999px; }
+.minimized-matches-list { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 0.5rem 0.75rem; }
+.minimized-match-row { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.25rem; border-top: 1px solid var(--border); font-size: 0.88rem; }
+.minimized-match-row:first-child { border-top: none; }
