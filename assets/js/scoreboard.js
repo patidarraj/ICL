@@ -4,6 +4,11 @@ import {
 } from './storage.js';
 import { notify } from './notifications.js';
 
+// Every Firestore write (including a referee's own +/- taps) triggers the router's
+// global refreshCurrent(), which fully re-renders this page. Without persisting which
+// tab/match was open, each tap would bounce the referee back to a blank Overview tab.
+const uiState = { activeTab: 'overview', selectedMatchId: null };
+
 function blankPlayer(name) {
   return { name, points: 0, dues: 0, fouls: 0, streak: 0 };
 }
@@ -272,8 +277,8 @@ function bindScoringActions(outlet, f, live) {
 }
 
 async function renderScoringPane(outlet, f, live) {
-  const pane = outlet.querySelector('#sb-pane-scoring');
-  pane.innerHTML = scoreboardHtml(f, live);
+  const board = outlet.querySelector('#sb-scoreboard-body');
+  board.innerHTML = scoreboardHtml(f, live);
   bindScoringActions(outlet, f, live);
 }
 
@@ -292,9 +297,23 @@ function renderMatchPicker(outlet) {
         <option value="">Choose a match...</option>
         ${fixtures.map((f) => `<option value="${f.id}">${teamsById[f.teamA]?.name || f.teamA} vs ${teamsById[f.teamB]?.name || f.teamB} — ${f.date}</option>`).join('')}
       </select>
-    </div>`;
+    </div>
+    <div id="sb-scoreboard-body"></div>`;
+  if (uiState.selectedMatchId) {
+    const opt = pane.querySelector(`#sb-match-select option[value="${uiState.selectedMatchId}"]`);
+    if (opt) {
+      pane.querySelector('#sb-match-select').value = uiState.selectedMatchId;
+      const f = fixtures.find((x) => x.id === uiState.selectedMatchId);
+      const live = getLiveScore(f.id) || blankLiveScore(f, teamsById);
+      renderScoringPane(outlet, f, live);
+    } else {
+      uiState.selectedMatchId = null;
+    }
+  }
+
   pane.querySelector('#sb-match-select').addEventListener('change', (e) => {
-    if (!e.target.value) return;
+    if (!e.target.value) { uiState.selectedMatchId = null; return; }
+    uiState.selectedMatchId = e.target.value;
     const f = fixtures.find((x) => x.id === e.target.value);
     const live = getLiveScore(f.id) || blankLiveScore(f, teamsById);
     renderScoringPane(outlet, f, live);
@@ -323,31 +342,36 @@ function refereeLoginForm(outlet, onSuccess) {
 }
 
 export async function renderScoreboard(outlet) {
+  const overviewActive = uiState.activeTab === 'overview';
   outlet.innerHTML = `
     <h2 class="page-title"><i class="fa-solid fa-flag-checkered me-2"></i>Scoreboard</h2>
 
     <ul class="nav nav-tabs mb-4" role="tablist">
       <li class="nav-item" role="presentation">
-        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#sb-tab-overview" type="button" role="tab" aria-selected="true">
+        <button class="nav-link ${overviewActive ? 'active' : ''}" data-bs-toggle="tab" data-bs-target="#sb-tab-overview" data-tab="overview" type="button" role="tab" aria-selected="${overviewActive}">
           <i class="fa-solid fa-eye me-1"></i>Overview
         </button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#sb-tab-scoring" type="button" role="tab" aria-selected="false">
+        <button class="nav-link ${overviewActive ? '' : 'active'}" data-bs-toggle="tab" data-bs-target="#sb-tab-scoring" data-tab="scoring" type="button" role="tab" aria-selected="${!overviewActive}">
           <i class="fa-solid fa-list-ol me-1"></i>Individual Scoring
         </button>
       </li>
     </ul>
 
     <div class="tab-content">
-      <div class="tab-pane fade show active" id="sb-tab-overview" role="tabpanel">
+      <div class="tab-pane fade ${overviewActive ? 'show active' : ''}" id="sb-tab-overview" role="tabpanel">
         <div id="sb-pane-overview"></div>
       </div>
-      <div class="tab-pane fade" id="sb-tab-scoring" role="tabpanel">
+      <div class="tab-pane fade ${overviewActive ? '' : 'show active'}" id="sb-tab-scoring" role="tabpanel">
         ${isRefereeAuthed() ? '<div class="d-flex justify-content-end mb-2"><button class="btn btn-sm btn-outline-danger" id="sb-ref-logout"><i class="fa-solid fa-right-from-bracket me-1"></i>Lock</button></div>' : ''}
         <div id="sb-pane-scoring"></div>
       </div>
     </div>`;
+
+  outlet.querySelectorAll('[data-bs-toggle="tab"]').forEach((btn) => {
+    btn.addEventListener('shown.bs.tab', () => { uiState.activeTab = btn.dataset.tab; });
+  });
 
   renderOverview(outlet);
 
@@ -355,6 +379,7 @@ export async function renderScoreboard(outlet) {
     renderMatchPicker(outlet);
     outlet.querySelector('#sb-ref-logout')?.addEventListener('click', () => {
       logoutReferee();
+      uiState.selectedMatchId = null;
       renderScoreboard(outlet);
     });
   } else {
