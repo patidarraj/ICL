@@ -166,58 +166,17 @@ export function teamLogoHtml(team, sizeClass = 'team-logo') {
   return `<span class="${sizeClass} team-logo-placeholder team-logo-zoomable" tabindex="0" data-team-name="${name}" data-team-icon="${icon}" data-team-color="${color}" style="color:${color};border-color:${color}40;"><i class="fa-solid ${icon}"></i></span>`;
 }
 
-const PRIORITY_PAIR_INDEXES = new Set([0, 1, 8, 10]); // Aditya, Esha, Shubham/Tejas Hiwarde, Ankit/Megan
-
-export function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
 /**
- * Random pool draw. Priority teams (see PLAYER_PAIRS) are each dropped into a different,
- * randomly-chosen pool, then placed at that pool's "index 2" slot before the round-robin
- * schedule is generated — in our circle-method implementation that slot always draws the
- * final round's bye, so the team's 4 real matches land in rounds 1-4 and it finishes one
- * round earlier than the rest of its pool. Everyone else is shuffled in randomly around them,
- * and since every pool still plays its round 1 in the tournament's opening days, no team is
- * left waiting idle at the start just because a priority team is finishing early.
+ * Fixed pool draw: pools are simply PLAYER_PAIRS taken 5-at-a-time in the exact order
+ * given — Pool A = pairs 1-5, Pool B = pairs 6-10, and so on. No shuffling, so the pools
+ * and schedule are identical and predictable every time the tournament is reset.
  */
 export function generateTeams() {
-  const draft = PLAYER_PAIRS.map(([p1, p2], idx) => ({
-    players: [p1, p2],
-    priority: PRIORITY_PAIR_INDEXES.has(idx),
-  }));
-
-  const priorityTeams = draft.filter((t) => t.priority);
-  const otherTeams = shuffle(draft.filter((t) => !t.priority));
-  const priorityPools = shuffle([...POOL_NAMES]).slice(0, priorityTeams.length);
-
-  const pools = Object.fromEntries(POOL_NAMES.map((p) => [p, []]));
-  priorityTeams.forEach((team, i) => { pools[priorityPools[i]].push(team); });
-  otherTeams.forEach((team) => {
-    const pool = POOL_NAMES.find((p) => pools[p].length < TEAMS_PER_POOL);
-    pools[pool].push(team);
-  });
-
-  const orderedDraft = [];
-  POOL_NAMES.forEach((poolName) => {
-    const poolTeams = pools[poolName];
-    const priorityPos = poolTeams.findIndex((t) => t.priority);
-    if (priorityPos !== -1 && priorityPos !== 2) {
-      [poolTeams[2], poolTeams[priorityPos]] = [poolTeams[priorityPos], poolTeams[2]];
-    }
-    poolTeams.forEach((t) => orderedDraft.push({ ...t, pool: poolName }));
-  });
-
-  return orderedDraft.map((t, i) => ({
+  return PLAYER_PAIRS.map(([p1, p2], i) => ({
     id: `T${pad(i + 1, 2)}`,
     name: `${TEAM_ADJECTIVES[i % TEAM_ADJECTIVES.length]} ${i + 1}`,
-    players: t.players,
-    pool: t.pool,
+    players: [p1, p2],
+    pool: POOL_NAMES[Math.floor(i / TEAMS_PER_POOL)],
     played: 0,
     won: 0,
     lost: 0,
