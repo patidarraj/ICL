@@ -89,36 +89,65 @@ function bracketPathExplainer() {
     <div class="card">
       <div class="card-header"><i class="fa-solid fa-route me-2"></i>How 25 Teams Become 1 Champion</div>
       <div class="card-body">
-        <div class="bracket-flow-diagram mb-4">
-          <div class="bf-box bf-pool">25 Teams<br><small>5 Pools &middot; 5 teams each</small></div>
-          <div class="bf-arrow">&darr;</div>
-          <div class="bf-box bf-pool">Pool Stage<br><small>Round robin &middot; 10 matches/pool &middot; 50 total</small></div>
-          <div class="bf-arrow">&darr;</div>
-          <div class="bf-row">
-            <div class="bf-box bf-qual">5 Pool Winners<br><small>advance directly</small></div>
-            <div class="bf-box bf-qual">3 Wildcards<br><small>best runners-up by points</small></div>
+        <p class="text-muted small mb-3">New to the format? Follow the lines left to right — 5 pools feed 8 seeded qualifiers, then it's a standard knockout bracket down to a single champion.</p>
+        <div class="path-bracket-scroll mb-4">
+          <div class="path-bracket">
+            <div class="path-col">
+              <div class="path-col-title">5 Pools</div>
+              <div class="path-col-body">
+                ${['1', '2', '3', '4', '5'].map((p) => `<div class="path-box path-box-pool">Pool ${p}<br><small>5 teams, round robin</small></div>`).join('')}
+              </div>
+            </div>
+            <div class="path-col">
+              <div class="path-col-title">8 Qualifiers</div>
+              <div class="path-col-body">
+                <div class="path-pair">
+                  <div class="path-box path-box-seed">Seed 1</div>
+                  <div class="path-box path-box-seed">Seed 8</div>
+                </div>
+                <div class="path-pair">
+                  <div class="path-box path-box-seed">Seed 4</div>
+                  <div class="path-box path-box-seed">Seed 5</div>
+                </div>
+                <div class="path-pair">
+                  <div class="path-box path-box-seed">Seed 3</div>
+                  <div class="path-box path-box-seed">Seed 6</div>
+                </div>
+                <div class="path-pair">
+                  <div class="path-box path-box-seed">Seed 2</div>
+                  <div class="path-box path-box-seed">Seed 7</div>
+                </div>
+              </div>
+            </div>
+            <div class="path-col">
+              <div class="path-col-title">Quarterfinals</div>
+              <div class="path-col-body">
+                <div class="path-pair">
+                  <div class="path-box path-box-qf">QF1 Winner</div>
+                  <div class="path-box path-box-qf">QF2 Winner</div>
+                </div>
+                <div class="path-pair">
+                  <div class="path-box path-box-qf">QF3 Winner</div>
+                  <div class="path-box path-box-qf">QF4 Winner</div>
+                </div>
+              </div>
+            </div>
+            <div class="path-col">
+              <div class="path-col-title">Semifinals</div>
+              <div class="path-col-body">
+                <div class="path-pair">
+                  <div class="path-box path-box-sf">SF1 Winner</div>
+                  <div class="path-box path-box-sf">SF2 Winner</div>
+                </div>
+              </div>
+            </div>
+            <div class="path-col">
+              <div class="path-col-title">Final</div>
+              <div class="path-col-body path-col-body-center">
+                <div class="path-box path-box-champ"><i class="fa-solid fa-trophy me-2"></i>Champion</div>
+              </div>
+            </div>
           </div>
-          <div class="bf-arrow">&darr;</div>
-          <div class="bf-box bf-ko">8 Qualifiers, Seeded 1&ndash;8</div>
-          <div class="bf-arrow">&darr;</div>
-          <div class="bf-row">
-            <div class="bf-box bf-ko-sm">QF1<br><small>Seed 1 v 8</small></div>
-            <div class="bf-box bf-ko-sm">QF2<br><small>Seed 4 v 5</small></div>
-            <div class="bf-box bf-ko-sm">QF3<br><small>Seed 3 v 6</small></div>
-            <div class="bf-box bf-ko-sm">QF4<br><small>Seed 2 v 7</small></div>
-          </div>
-          <div class="bf-arrow">&darr;</div>
-          <div class="bf-row">
-            <div class="bf-box bf-ko-sm">SF1</div>
-            <div class="bf-box bf-ko-sm">SF2</div>
-          </div>
-          <div class="bf-arrow">&darr;</div>
-          <div class="bf-row">
-            <div class="bf-box bf-ko">Final</div>
-            <div class="bf-box bf-ko">3rd Place Match<br><small>semifinal losers</small></div>
-          </div>
-          <div class="bf-arrow">&darr;</div>
-          <div class="bf-box bf-champ"><i class="fa-solid fa-trophy me-2"></i>Champion</div>
         </div>
         ${bracketStage(1, 'Pool Stage', '50 matches', `All 25 teams are split into <strong>5 pools (A&ndash;E) of 5 teams</strong>. Inside a pool, every team plays every other team once &mdash; <strong>4 matches each</strong>, 10 matches per pool, 50 in total.`)}
         ${bracketStage(2, 'Qualification', '8 advance', `The <strong>winner of each pool</strong> (5 teams) advances automatically. The remaining 3 spots go to <strong>wildcards</strong> &mdash; the best 3 runners-up across all pools, ranked by points. That's <strong>5 + 3 = 8 qualifiers</strong>, seeded 1&ndash;8.`)}
