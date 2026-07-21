@@ -1,7 +1,7 @@
 import {
   getTeams, saveTeams, getFixtures, saveFixtures, getSettings, saveSettings,
   isAdminAuthed, loginAdmin, logoutAdmin, refreshStandings, resetTournament, exportBackup, restoreBackup,
-  approveTeamLogo, rejectTeamLogo,
+  approveTeamLogo, rejectTeamLogo, getLiveScores, deleteLiveScore,
 } from './storage.js';
 import { uid, downloadFile, escapeHtml, POOL_NAMES, isoDate, VENUE, generateLogoCode } from './utilities.js';
 import { notify } from './notifications.js';
@@ -84,12 +84,33 @@ function logoApprovalTile(team) {
     </div>`;
 }
 
+function pendingScoreTile(live) {
+  const totalA = live.teams.A.players.reduce((s, p) => s + p.points, 0);
+  const totalB = live.teams.B.players.reduce((s, p) => s + p.points, 0);
+  const winnerName = live.result.winner === 'draw' ? 'Draw' : live.teams[live.result.winner].name;
+  return `
+    <div class="col-md-6" data-id="${live.matchId}">
+      <div class="card border-warning h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between mb-1">
+            <strong>${live.teams.A.name} ${totalA} – ${totalB} ${live.teams.B.name}</strong>
+          </div>
+          <div class="small text-muted mb-2">
+            Referee result: ${winnerName} &middot; NRR — ${live.teams.A.name}: ${live.result.nrrLeader === 'A' ? live.result.margin : 0}, ${live.teams.B.name}: ${live.result.nrrLeader === 'B' ? live.result.margin : 0}
+          </div>
+          <button class="btn btn-sm btn-success btn-confirm-score" data-id="${live.matchId}"><i class="fa-solid fa-check me-1"></i>Confirm into Fixture</button>
+        </div>
+      </div>
+    </div>`;
+}
+
 function adminPanel(outlet) {
   const teams = getTeams();
   const fixtures = getFixtures();
   const teamsById = Object.fromEntries(teams.map((t) => [t.id, t]));
   const settings = getSettings();
   const pendingLogoTeams = teams.filter((t) => t.pendingLogoStatus === 'pending');
+  const pendingScores = Object.values(getLiveScores()).filter((l) => l.status === 'pending_review');
 
   outlet.innerHTML = `
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -162,6 +183,14 @@ function adminPanel(outlet) {
       <div class="card-header"><i class="fa-solid fa-image me-2"></i>Logo Approvals <span class="badge bg-warning text-dark ms-1">${pendingLogoTeams.length}</span></div>
       <div class="card-body">
         <div class="row g-3" id="admin-logo-approvals">${pendingLogoTeams.map(logoApprovalTile).join('')}</div>
+      </div>
+    </div>` : ''}
+
+    ${pendingScores.length ? `
+    <div class="card mb-3 border-warning">
+      <div class="card-header"><i class="fa-solid fa-flag-checkered me-2"></i>Pending Scoring Results <span class="badge bg-warning text-dark ms-1">${pendingScores.length}</span></div>
+      <div class="card-body">
+        <div class="row g-3" id="admin-pending-scores">${pendingScores.map(pendingScoreTile).join('')}</div>
       </div>
     </div>` : ''}
 
@@ -462,6 +491,34 @@ function adminPanel(outlet) {
     await logoutAdmin();
     renderAdmin(outlet);
   });
+
+  outlet.querySelectorAll('.btn-confirm-score').forEach((btn) => btn.addEventListener('click', async () => {
+    const live = Object.values(getLiveScores()).find((l) => l.matchId === btn.dataset.id);
+    if (!live) return;
+    const f = getFixtures().find((x) => x.id === live.matchId);
+    if (!f) { notify.error('That match no longer exists'); return; }
+    if (live.result.winner === 'draw') { notify.warn('Draws aren\'t supported for official results — resolve manually in Enter Result'); return; }
+    const totalA = live.teams.A.players.reduce((s, p) => s + p.points, 0);
+    const totalB = live.teams.B.players.reduce((s, p) => s + p.points, 0);
+    btn.disabled = true;
+    try {
+      const fx = getFixtures().map((x) => (x.id === f.id ? { ...x } : x));
+      const match = fx.find((x) => x.id === f.id);
+      match.scoreA = totalA; match.scoreB = totalB;
+      match.winner = live.result.winner === 'A' ? match.teamA : match.teamB;
+      match.status = 'completed';
+      await saveFixtures(fx);
+      const updatedTeams = await refreshStandings();
+      await deleteLiveScore(live.matchId);
+      refreshMatchesBody(fx, updatedTeams);
+      refreshTeamsBody(updatedTeams);
+      notify.success('Result confirmed &middot; standings updated', 'Match Completed');
+      adminPanel(outlet);
+    } catch (err) {
+      notify.error('Could not confirm result — please try again.');
+      btn.disabled = false;
+    }
+  }));
 
   outlet.querySelectorAll('.btn-approve-logo').forEach((btn) => btn.addEventListener('click', async () => {
     btn.disabled = true;

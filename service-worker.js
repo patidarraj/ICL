@@ -1,4 +1,4 @@
-const CACHE_NAME = 'carrom-tm-v26';
+const CACHE_NAME = 'carrom-tm-v27';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -13,6 +13,7 @@ const CORE_ASSETS = [
   './assets/css/stats.css',
   './assets/css/admin.css',
   './assets/css/rules.css',
+  './assets/css/scoreboard.css',
   './assets/js/app.js',
   './assets/js/router.js',
   './assets/js/dashboard.js',
@@ -29,6 +30,7 @@ const CORE_ASSETS = [
   './assets/js/team-logo.js',
   './assets/js/rules.js',
   './assets/js/match-alerts.js',
+  './assets/js/scoreboard.js',
 ];
 
 self.addEventListener('install', (event) => {

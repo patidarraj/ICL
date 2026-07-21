@@ -5,12 +5,12 @@
 // the rest of the team's data (scores, points) to non-admin writes.
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js';
 import {
-  getFirestore, doc, collection, getDoc, getDocs, setDoc, updateDoc, writeBatch, onSnapshot, deleteField,
+  getFirestore, doc, collection, getDoc, getDocs, setDoc, updateDoc, writeBatch, onSnapshot, deleteField, deleteDoc,
 } from 'https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js';
 import {
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
 } from 'https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js';
-import { firebaseConfig, ADMIN_EMAIL } from './firebase-config.js';
+import { firebaseConfig, ADMIN_EMAIL, REFEREE_PASSCODE } from './firebase-config.js';
 import { generateTeams, generateFixtures, generateSettings, recomputeStandingsForTeams, sortStandings } from './utilities.js';
 
 const app = initializeApp(firebaseConfig);
@@ -18,8 +18,10 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const stateRef = doc(db, 'tournaments', 'main');
 const teamsColRef = collection(db, 'teams');
+const liveScoresColRef = collection(db, 'liveScores');
+const REFEREE_SESSION_KEY = 'icl_referee_authed';
 
-let cache = { teams: [], fixtures: [], settings: {}, bracket: null };
+let cache = { teams: [], fixtures: [], settings: {}, bracket: null, liveScores: {} };
 let currentUser = null;
 const changeListeners = new Set();
 
@@ -43,6 +45,13 @@ onSnapshot(stateRef, (snap) => {
 
 onSnapshot(teamsColRef, (snap) => {
   cache = { ...cache, teams: snap.docs.map((d) => ({ id: d.id, ...d.data() })) };
+  notifyChange();
+});
+
+onSnapshot(liveScoresColRef, (snap) => {
+  const liveScores = {};
+  snap.docs.forEach((d) => { liveScores[d.id] = d.data(); });
+  cache = { ...cache, liveScores };
   notifyChange();
 });
 
@@ -159,6 +168,31 @@ export async function refreshStandings() {
   const updated = sortStandings(recomputeStandingsForTeams(teams, fixtures));
   await saveTeams(updated);
   return updated;
+}
+
+// --- Referee access (light social gate, same tier as team logo access codes) ---
+export function isRefereeAuthed() { return sessionStorage.getItem(REFEREE_SESSION_KEY) === '1'; }
+
+export function loginReferee(passcode) {
+  if (passcode !== REFEREE_PASSCODE) return false;
+  sessionStorage.setItem(REFEREE_SESSION_KEY, '1');
+  return true;
+}
+
+export function logoutReferee() { sessionStorage.removeItem(REFEREE_SESSION_KEY); }
+
+// --- Live scoring (per-match scratch scorecard, referee-writable, admin confirms into fixtures) ---
+export function getLiveScores() { return cache.liveScores || {}; }
+export function getLiveScore(matchId) { return cache.liveScores?.[matchId] || null; }
+
+/** Referees write freely here; nothing here is official until an admin confirms it into the fixture. */
+export function saveLiveScore(matchId, data) {
+  return setDoc(doc(liveScoresColRef, matchId), data, { merge: true });
+}
+
+/** Admin-only: clears the scratch scorecard once its result has been confirmed into the fixture. */
+export function deleteLiveScore(matchId) {
+  return deleteDoc(doc(liveScoresColRef, matchId));
 }
 
 export async function resetTournament() {

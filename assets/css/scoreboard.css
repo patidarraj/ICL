@@ -1,0 +1,18 @@
+.card-x { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+.team-name { font-weight: 700; font-size: 1.1rem; }
+.coin-total { font-size: 2rem; font-weight: 800; }
+.player-block { background: var(--card-bg-2); border-radius: 10px; padding: 0.75rem; margin-bottom: 0.6rem; }
+.player-name { font-weight: 700; }
+.stat-row { display: flex; align-items: center; justify-content: space-between; padding: 0.3rem 0; border-top: 1px solid var(--border); }
+.stat-row:first-of-type { border-top: none; }
+.stat-label { font-size: 0.8rem; color: var(--text-muted); }
+.stat-val { font-weight: 700; min-width: 2.5ch; text-align: center; }
+.btn-round { width: 30px; height: 30px; border-radius: 50%; padding: 0; line-height: 1; font-size: 0.85rem; }
+
+.modal-backdrop-x { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1050; align-items: center; justify-content: center; }
+.modal-backdrop-x.show { display: flex; }
+.modal-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; width: 100%; max-width: 420px; }
+.winner-options { display: flex; gap: 0.6rem; margin-bottom: 1rem; }
+.winner-options .btn { flex: 1; }
+.margin-row { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 1rem; }
+.margin-val { font-size: 1.8rem; font-weight: 800; min-width: 3ch; text-align: center; }

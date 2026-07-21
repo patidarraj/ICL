@@ -12,3 +12,8 @@ export const firebaseConfig = {
 // Email/password of the single admin account you create in Firebase Authentication.
 // The UI only ever asks for the password; this email is used behind the scenes.
 export const ADMIN_EMAIL = 'raj.patidar@infytrix.com';
+
+// Shared passcode handed to match referees to unlock the Individual Scoring tab.
+// This is a light social gate (like team logo access codes), not real security —
+// the liveScores collection itself stays writable client-side.
+export const REFEREE_PASSCODE = 'ICL-REF-2025';

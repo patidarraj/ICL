@@ -9,6 +9,7 @@ import { renderStats } from './stats.js';
 import { renderAdmin } from './admin.js';
 import { renderTeamLogo } from './team-logo.js';
 import { renderRules } from './rules.js';
+import { renderScoreboard } from './scoreboard.js';
 import { startMatchAlertWatcher } from './match-alerts.js';
 
 await initData();
@@ -23,6 +24,7 @@ registerRoute('stats', renderStats);
 registerRoute('admin', renderAdmin);
 registerRoute('team-logo', renderTeamLogo);
 registerRoute('rules', renderRules);
+registerRoute('scoreboard', renderScoreboard);
 
 document.querySelectorAll('[data-route]').forEach((el) => {
   el.addEventListener('click', (e) => {
