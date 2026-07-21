@@ -31,16 +31,16 @@ function blankLiveScore(f, teamsById) {
 
 function playerKey(teamKey, idx) { return `${teamKey}-${idx}`; }
 
-function featuredPlayerRow(p, key, live) {
+function phonePlayerChip(p, key, live) {
   const isQueenHolder = live.queenTakenBy === key;
   return `
-    <div class="feat-player-row ${isQueenHolder ? 'has-queen' : ''}">
-      <span class="feat-player-name">${p.name} ${isQueenHolder ? '<i class="fa-solid fa-crown text-warning ms-1"></i>' : ''}</span>
-      <div class="feat-player-stats">
-        <span class="feat-stat" title="Points Scored"><i class="fa-solid fa-circle-dot"></i>${p.points}</span>
-        <span class="feat-stat" title="Dues Scored"><i class="fa-solid fa-plus"></i>${p.dues}</span>
-        <span class="feat-stat" title="Fouls Scored"><i class="fa-solid fa-triangle-exclamation"></i>${p.fouls}</span>
-        <span class="feat-stat" title="Consecutive Shots"><i class="fa-solid fa-fire"></i>${p.streak}</span>
+    <div class="phone-player-chip ${isQueenHolder ? 'has-queen' : ''}">
+      <span class="phone-player-name">${p.name} ${isQueenHolder ? '<i class="fa-solid fa-crown text-warning ms-1"></i>' : ''}</span>
+      <div class="phone-player-stats">
+        <span title="Points Scored"><i class="fa-solid fa-circle-dot"></i>${p.points}</span>
+        <span title="Dues Scored"><i class="fa-solid fa-plus"></i>${p.dues}</span>
+        <span title="Fouls Scored"><i class="fa-solid fa-triangle-exclamation"></i>${p.fouls}</span>
+        <span title="Consecutive Shots"><i class="fa-solid fa-fire"></i>${p.streak}</span>
       </div>
     </div>`;
 }
@@ -49,78 +49,55 @@ function featuredMatchCard(f, live) {
   const totalA = live.teams.A.players.reduce((s, p) => s + p.points, 0);
   const totalB = live.teams.B.players.reduce((s, p) => s + p.points, 0);
   const isPending = live.status === 'pending_review';
+  const queenTeam = live.queenTakenBy ? live.teams[live.queenTakenBy.split('-')[0]].name : null;
   return `
-    <div class="featured-match ${isPending ? 'is-pending' : 'is-live'}">
-      <div class="featured-match-badge">
-        ${isPending ? '<i class="fa-solid fa-hourglass-half me-1"></i>Awaiting Admin Confirmation' : '<span class="live-dot"></span>LIVE NOW'}
+    <div class="phone-card">
+      <div class="phone-card-topbar">
+        <span>${isPending ? 'Awaiting Confirmation' : 'Game in Progress'}</span>
+        <i class="fa-solid fa-house"></i>
       </div>
-      <div class="featured-scoreline">
-        <div class="featured-team">
-          <span class="featured-team-name">${live.teams.A.name}</span>
-          <span class="featured-team-score">${totalA}</span>
+      <div class="phone-scorerow">
+        <div class="phone-team">
+          <span class="phone-team-name">${live.teams.A.name}</span>
+          <span class="phone-score-circle">${totalA}</span>
         </div>
-        <div class="featured-vs">VS</div>
-        <div class="featured-team">
-          <span class="featured-team-score">${totalB}</span>
-          <span class="featured-team-name">${live.teams.B.name}</span>
+        <div class="phone-center">
+          <div class="phone-center-badge ${isPending ? 'is-pending' : 'is-live'}">
+            ${isPending ? '<i class="fa-solid fa-hourglass-half"></i>' : '<span class="live-dot"></span>'}
+          </div>
+          <div class="phone-center-label">${isPending ? 'Pending' : 'Live'}</div>
+        </div>
+        <div class="phone-team">
+          <span class="phone-score-circle">${totalB}</span>
+          <span class="phone-team-name">${live.teams.B.name}</span>
         </div>
       </div>
+
+      <div class="phone-board">
+        <span><i class="fa-solid fa-crown me-1 text-warning"></i>Queen: ${queenTeam ? `${queenTeam}` : 'Not taken'}</span>
+        ${live.toss ? `<span><i class="fa-solid fa-coins me-1"></i>Toss: ${live.teams[live.toss].name}</span>` : ''}
+      </div>
+
       <div class="row g-2 mt-2">
         <div class="col-md-6">
-          ${live.teams.A.players.map((p, idx) => featuredPlayerRow(p, playerKey('A', idx), live)).join('')}
+          ${live.teams.A.players.map((p, idx) => phonePlayerChip(p, playerKey('A', idx), live)).join('')}
         </div>
         <div class="col-md-6">
-          ${live.teams.B.players.map((p, idx) => featuredPlayerRow(p, playerKey('B', idx), live)).join('')}
+          ${live.teams.B.players.map((p, idx) => phonePlayerChip(p, playerKey('B', idx), live)).join('')}
         </div>
       </div>
-      ${live.toss ? `<div class="small text-muted mt-2"><i class="fa-solid fa-coins me-1"></i>Toss won by ${live.teams[live.toss].name}</div>` : ''}
-    </div>`;
-}
-
-function minimizedRow(f, teamsById) {
-  const teamA = teamsById[f.teamA];
-  const teamB = teamsById[f.teamB];
-  return `
-    <div class="minimized-match-row">
-      <span>${teamA?.name || f.teamA} <span class="text-muted small">vs</span> ${teamB?.name || f.teamB}</span>
-      <span class="badge bg-secondary">${f.time || 'Not started'}</span>
     </div>`;
 }
 
 function renderOverview(outlet) {
   const fixtures = getFixtures().filter((f) => f.status === 'scheduled');
-  const teamsById = Object.fromEntries(getTeams().map((t) => [t.id, t]));
   const liveScores = getLiveScores();
   const pane = outlet.querySelector('#sb-pane-overview');
-  if (!fixtures.length) {
-    pane.innerHTML = '<p class="text-muted">No upcoming matches.</p>';
-    return;
-  }
-
   const featured = fixtures.filter((f) => liveScores[f.id]);
-  const rest = fixtures.filter((f) => !liveScores[f.id]);
 
-  const featuredHtml = featured.length
+  pane.innerHTML = featured.length
     ? featured.map((f) => featuredMatchCard(f, liveScores[f.id])).join('')
-    : '<p class="text-muted text-center py-4"><i class="fa-solid fa-satellite-dish me-2"></i>No match being scored right now.</p>';
-
-  pane.innerHTML = `
-    ${featuredHtml}
-    ${rest.length ? `
-      <div class="minimized-matches-toggle mt-3">
-        <button class="btn btn-sm btn-outline-secondary" id="sb-toggle-others">
-          <i class="fa-solid fa-chevron-down me-1"></i>${rest.length} other upcoming match${rest.length === 1 ? '' : 'es'}
-        </button>
-      </div>
-      <div class="minimized-matches-list mt-2 d-none" id="sb-others-list">
-        ${rest.map((f) => minimizedRow(f, teamsById)).join('')}
-      </div>` : ''}`;
-
-  pane.querySelector('#sb-toggle-others')?.addEventListener('click', (e) => {
-    const list = pane.querySelector('#sb-others-list');
-    list.classList.toggle('d-none');
-    e.currentTarget.querySelector('i').className = list.classList.contains('d-none') ? 'fa-solid fa-chevron-down me-1' : 'fa-solid fa-chevron-up me-1';
-  });
+    : '<p class="text-muted text-center py-5"><i class="fa-solid fa-satellite-dish me-2"></i>No match is being scored right now.</p>';
 }
 
 function playerBlock(teamKey, idx, p, live) {
@@ -186,12 +163,21 @@ function teamCard(teamKey, live) {
 function scoreboardHtml(f, live) {
   return `
     <div class="card-x">
-      <label class="form-label small text-muted mb-1">Toss Won by</label>
-      <select class="form-select" id="sb-toss" style="max-width:320px;">
-        <option value="">Select team...</option>
-        <option value="A" ${live.toss === 'A' ? 'selected' : ''}>${live.teams.A.name}</option>
-        <option value="B" ${live.toss === 'B' ? 'selected' : ''}>${live.teams.B.name}</option>
-      </select>
+      <div class="row g-3 align-items-end">
+        <div class="col-sm-8">
+          <label class="form-label small text-muted mb-1">Toss Won by</label>
+          <select class="form-select" id="sb-toss">
+            <option value="">Select team...</option>
+            <option value="A" ${live.toss === 'A' ? 'selected' : ''}>${live.teams.A.name}</option>
+            <option value="B" ${live.toss === 'B' ? 'selected' : ''}>${live.teams.B.name}</option>
+          </select>
+        </div>
+        <div class="col-sm-4 text-sm-end">
+          <button class="btn btn-sm btn-outline-danger w-100" id="sb-queen-reset" ${live.queenTakenBy === null ? 'disabled' : ''}>
+            <i class="fa-solid fa-rotate-left me-1"></i>Reset Queen
+          </button>
+        </div>
+      </div>
     </div>
 
     <div class="row g-3">
@@ -245,6 +231,12 @@ function bindScoringActions(outlet, f, live) {
   const persist = () => saveLiveScore(f.id, live);
 
   pane.querySelector('#sb-toss').addEventListener('change', (e) => { live.toss = e.target.value; persist(); });
+
+  pane.querySelector('#sb-queen-reset').addEventListener('click', () => {
+    live.queenTakenBy = null;
+    persist();
+    renderScoringPane(outlet, f, live);
+  });
 
   pane.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-action]');
