@@ -2,14 +2,16 @@
 const ALLOWED_MOVES = [
   ['Back Shot', true, 'Allowed only until the league (pool) matches are over'],
   ['Rebound Shot (off the walls)', true],
-  ['Double Touch while striking (Striker)', false],
-  ["Attempt to touch opponent's coin", true],
+  ['Double Touch while striking hits hand (Striker)', false],
+  ['Attempt to strike opponents coins', true],
 ];
+
+const CASE_PENALTY = 'Case 1: the coin is pocketed — the pocketed coin is added back on the board. Case 2: no coin is pocketed — a coin is added on the board.';
 
 const FOULS = [
   ['Touching any coin on the board with a hand', 'Chance skipped + one coin added'],
-  ['Striker not fully covering the red coin', 'Chance skipped + one coin added; if no coin is pocketed next turn, the next pocketed coin is removed'],
-  ['Striker not covering both base lines', 'Chance skipped + one coin added'],
+  ['Striker not fully covering the red circle', CASE_PENALTY],
+  ['Striker not covering both base lines', CASE_PENALTY],
   ['Pocketing the striker', 'One coin removed + chance skipped'],
   ['Hand or body placed outside the imaginary diagonal line while taking a shot', 'One coin added + chance skipped'],
   ['Double-touching the striker', 'One coin added + chance skipped'],
@@ -48,7 +50,7 @@ export async function renderRules(outlet) {
         <span class="coin-chip"><span class="coin coin-red"></span>1 Red (Queen)</span>
       </div>
       <ul class="mb-0">
-        <li>If a coin lands on the black border or outside the board, the umpire will place it back in the center.</li>
+        <li>If a coin lands on the black border and enters the pocket, it will <strong>not be considered pocketed</strong> — the umpire will place it back in the center.</li>
         <li>If a coin ends up in an upright position, it will <strong>not be touched</strong> — play continues as usual.</li>
       </ul>`)}
 
@@ -57,24 +59,34 @@ export async function renderRules(outlet) {
         <li>The umpire hides one black coin and one white coin, one in each hand.</li>
         <li>A player must guess which coin is in the umpire's selected hand.</li>
         <li>The <strong>loser of the toss sits first</strong> and decides on their team's seating.</li>
-        <li>If the guess is for the <strong>white coin</strong>, that player's team breaks and plays with white coins.</li>
-        <li class="text-muted small">In case of toss confusion, the umpire will decide who chooses.</li>
+        <li>If the guess is <strong>right</strong>, that player's team breaks and plays with white coins.</li>
       </ul>`)}
 
     ${section('fa-rotate', '3. Turn Rules', `
       <ul class="mb-0">
         <li>Turns proceed in a <strong>clockwise</strong> direction.</li>
-        <li>The game itself has <strong>no overall time restriction</strong> — but each individual shot is limited to <strong>30 seconds</strong>.</li>
+        <li>The game has a <strong>time restriction of 20 minutes</strong>, until the league (pool) matches are over.</li>
+        <li>Each individual shot is limited to <strong>30 seconds</strong>.</li>
       </ul>`)}
 
     ${section('fa-crown', '3.2 The Queen (Red Coin)', `
       <ul class="mb-0">
-        <li><strong>Must be covered:</strong> after pocketing the Queen, you must pocket your own color coin in the same turn to cover it.</li>
+        <li><strong>Case 1:</strong> if in the same strike both the Queen and your own coin are pocketed, the Queen is considered covered — irrespective of the order.</li>
+        <li><strong>Case 2:</strong> if the Queen and an opponent's coin are pocketed together, the Queen is <strong>not</strong> covered — you must pocket your own coin in the same turn to cover it.</li>
         <li>If not covered, the Queen is returned to the center of the board.</li>
       </ul>`)}
 
     ${section('fa-trophy', 'How the Match Is Won', `
-      <p class="mb-0">Each match is a single game. To win, a team must pocket <strong>all of their own coins</strong> AND then pocket and cover the Queen (see above).</p>`)}
+      <p class="mb-0">Each match is a single game. To win, a team must pocket <strong>all of their own coins</strong> and cover the Queen.</p>`)}
+
+    ${section('fa-scale-balanced', 'Draw Match', `
+      <p class="mb-0">When the game time is over, the match is called a <strong>draw</strong>, and <strong>1 point</strong> is given to both teams.</p>`)}
+
+    ${section('fa-calculator', 'NRR Rule', `
+      <ul class="mb-0">
+        <li>The <strong>winning team's NRR</strong> equals the Queen (counted as <strong>5 points</strong>) plus however many coins remain on the board for the losing team.</li>
+        <li>In a <strong>draw</strong>, the Queen is not counted in the NRR — instead, the NRR is the difference in coins between the two teams, awarded to the team with <strong>fewer</strong> coins on their board.</li>
+      </ul>`)}
 
     ${section('fa-gears', '4. Allowed Moves', `
       <div class="table-responsive">
@@ -99,7 +111,7 @@ export async function renderRules(outlet) {
     ${section('fa-list-check', '5.2 Due Scenarios — When the Striker Is Pocketed', `
       <ul class="mb-0">
         <li><strong>Striker is pocketed:</strong> it's a foul — one coin is removed and the chance is skipped.</li>
-        <li><strong>Striker + own coin(s) pocketed:</strong> the pocketed coin is removed, one coin is added, and the turn is retained.</li>
+        <li><strong>Striker + own coin(s) pocketed:</strong> the pocketed coin is removed, two coins are added, and the turn is retained.</li>
         <li><strong>Striker + opponent coin(s) pocketed:</strong> chance is skipped and one coin is added.</li>
         <li><strong>Striker + own coin + opponent coin pocketed:</strong> the pocketed coin is removed, one of your coins is added, and the turn is retained.</li>
       </ul>`)}
