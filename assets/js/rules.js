@@ -1,6 +1,6 @@
 // Static rulebook content — sourced from the tournament's official rules document.
 const ALLOWED_MOVES = [
-  ['Back Shot', false],
+  ['Back Shot', true, 'Allowed only until the league (pool) matches are over'],
   ['Rebound Shot (off the walls)', true],
   ['Double Touch while striking (Striker)', false],
   ["Attempt to touch opponent's coin", true],
@@ -81,7 +81,7 @@ export async function renderRules(outlet) {
         <table class="table table-dark table-hover align-middle mb-0">
           <thead><tr><th>Move</th><th>Allowed?</th></tr></thead>
           <tbody>
-            ${ALLOWED_MOVES.map(([move, ok]) => `<tr><td>${move}</td><td>${ok ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-danger">No</span>'}</td></tr>`).join('')}
+            ${ALLOWED_MOVES.map(([move, ok, note]) => `<tr><td>${move}${note ? `<div class="small text-muted">${note}</div>` : ''}</td><td>${ok ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-danger">No</span>'}</td></tr>`).join('')}
           </tbody>
         </table>
       </div>`)}
