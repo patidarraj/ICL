@@ -188,8 +188,11 @@ export async function refreshStandings() {
 // --- Referee access (light social gate, same tier as team logo access codes) ---
 export function isRefereeAuthed() { return sessionStorage.getItem(REFEREE_SESSION_KEY) === '1'; }
 
+/** Admin can rotate this from the Admin panel; falls back to the static default until they do. */
+export function getRefereePasscode() { return getSettings().refereePasscode || REFEREE_PASSCODE; }
+
 export function loginReferee(passcode) {
-  if (passcode !== REFEREE_PASSCODE) return false;
+  if (passcode !== getRefereePasscode()) return false;
   sessionStorage.setItem(REFEREE_SESSION_KEY, '1');
   return true;
 }
