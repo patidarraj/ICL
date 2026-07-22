@@ -1,4 +1,4 @@
-import { getTeams, getFixtures, getSettings } from './storage.js';
+import { getTeams, getFixtures, getSettings, getLiveScore } from './storage.js';
 import { formatDate, POOL_NAMES, toCSV, downloadFile, teamLogoHtml, isoDate, escapeHtml } from './utilities.js';
 import { notify } from './notifications.js';
 
@@ -6,7 +6,12 @@ let viewMode = 'list';
 
 function statusBadge(f) {
   if (f.status === 'completed') return '<span class="badge bg-success">Completed</span>';
-  if (f.isLive) return `<span class="badge bg-danger"><i class="fa-solid fa-circle fa-2xs me-1"></i>LIVE ${f.liveScoreA ?? 0}-${f.liveScoreB ?? 0}</span>`;
+  const live = getLiveScore(f.id);
+  if (live) {
+    const totalA = live.teams.A.players.reduce((s, p) => s + p.points, 0);
+    const totalB = live.teams.B.players.reduce((s, p) => s + p.points, 0);
+    return `<span class="badge bg-danger"><i class="fa-solid fa-circle fa-2xs me-1"></i>LIVE ${totalA}-${totalB}</span>`;
+  }
   return '<span class="badge bg-secondary">Scheduled</span>';
 }
 

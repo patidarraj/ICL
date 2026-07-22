@@ -1,4 +1,4 @@
-import { getTeams, getFixtures, getSettings } from './storage.js';
+import { getTeams, getFixtures, getSettings, getLiveScore } from './storage.js';
 import { formatDate, POOL_NAMES, teamLogoHtml } from './utilities.js';
 import { goTo } from './router.js';
 import { getMyTeamId, setMyTeamId, notificationsSupported, permissionState, requestPermission } from './match-alerts.js';
@@ -47,10 +47,11 @@ function summaryCards(teams, fixtures) {
 function matchRow(f, teamsById) {
   const a = teamsById[f.teamA]?.name || f.teamA;
   const b = teamsById[f.teamB]?.name || f.teamB;
+  const live = f.status !== 'completed' ? getLiveScore(f.id) : null;
   const badge = f.status === 'completed'
     ? `<span class="badge bg-success">Completed</span>`
-    : f.isLive
-      ? `<span class="badge bg-danger"><i class="fa-solid fa-circle fa-2xs me-1"></i>LIVE ${f.liveScoreA ?? 0}-${f.liveScoreB ?? 0}</span>`
+    : live
+      ? `<span class="badge bg-danger"><i class="fa-solid fa-circle fa-2xs me-1"></i>LIVE ${live.teams.A.players.reduce((s, p) => s + p.points, 0)}-${live.teams.B.players.reduce((s, p) => s + p.points, 0)}</span>`
       : `<span class="badge bg-secondary">Scheduled</span>`;
   return `<tr>
     <td>${f.id}</td><td>${f.pool}</td><td>${a}</td><td>vs</td><td>${b}</td>
