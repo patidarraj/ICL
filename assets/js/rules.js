@@ -115,6 +115,9 @@ export async function renderRules(outlet) {
         <li>Camera Person</li>
       </ul>`)}
 
+    ${section('fa-indian-rupee-sign', '8. Penalty Policy', `
+      <p class="mb-0">A <strong>₹1,000 penalty</strong> applies for match absence. This comes from the absent player's own contribution rather than being a compulsory charge on the whole team, and is intended to encourage attendance.</p>`)}
+
     ${section('fa-note-sticky', 'Final Notes', `
       <ul class="mb-0">
         <li>Respect opponents and follow the rules.</li>
