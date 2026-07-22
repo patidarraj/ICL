@@ -9,6 +9,15 @@
 .stat-val { font-weight: 700; min-width: 2.5ch; text-align: center; }
 .btn-round { width: 30px; height: 30px; border-radius: 50%; padding: 0; line-height: 1; font-size: 0.85rem; }
 
+.timer-card { display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: center; justify-content: center; }
+.timer-block { text-align: center; min-width: 140px; }
+.timer-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.timer-val { font-family: ui-monospace, monospace; font-size: 2rem; font-weight: 800; }
+.timer-val.warn { color: #f59e0b; }
+.timer-val.danger { color: #ef4444; animation: timer-pulse 1s infinite; }
+@keyframes timer-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+.timer-controls { display: flex; gap: 0.4rem; justify-content: center; margin-top: 0.4rem; }
+
 .modal-backdrop-x { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1050; align-items: center; justify-content: center; }
 .modal-backdrop-x.show { display: flex; }
 .modal-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; width: 100%; max-width: 420px; }

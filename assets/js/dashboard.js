@@ -3,6 +3,7 @@ import { formatDate, POOL_NAMES, teamLogoHtml } from './utilities.js';
 import { goTo } from './router.js';
 import { getMyTeamId, setMyTeamId, notificationsSupported, permissionState, requestPermission } from './match-alerts.js';
 import { notify } from './notifications.js';
+import { getFeaturedMatchesHtml } from './scoreboard.js';
 
 function progressCard(fixtures) {
   const total = fixtures.length;
@@ -123,6 +124,8 @@ export async function renderDashboard(outlet) {
   const upcoming = fixtures.filter((f) => f.status === 'scheduled').slice(0, 5);
   const latestResults = [...fixtures].filter((f) => f.status === 'completed').slice(-5).reverse();
 
+  const featuredHtml = getFeaturedMatchesHtml();
+
   outlet.innerHTML = `
     <div class="hero-section mb-4">
       <div class="hero-content">
@@ -137,6 +140,12 @@ export async function renderDashboard(outlet) {
     ${summaryCards(teams, fixtures)}
     <div class="row g-3 mb-4">
       <div class="col-lg-8">
+        ${featuredHtml ? `
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="mb-0"><i class="fa-solid fa-flag-checkered me-2"></i>Live Right Now</h6>
+          <button class="btn btn-sm btn-outline-primary" id="dash-view-scoreboard">Full Scoreboard</button>
+        </div>
+        ${featuredHtml}` : `
         <div class="card h-100">
           <div class="card-header d-flex justify-content-between align-items-center">
             <span><i class="fa-solid fa-calendar-day me-2"></i>Today's Matches</span>
@@ -148,7 +157,7 @@ export async function renderDashboard(outlet) {
               <tbody>${todayMatches.map((f) => matchRow(f, teamsById)).join('')}</tbody>
             </table>` : `<p class="text-muted mb-0">No matches scheduled today.</p>`}
           </div>
-        </div>
+        </div>`}
       </div>
       <div class="col-lg-4 d-flex flex-column gap-3">
         ${nextMatchCard(fixtures, teamsById)}
@@ -182,6 +191,7 @@ export async function renderDashboard(outlet) {
     </div>`;
 
   outlet.querySelector('#dash-view-schedule')?.addEventListener('click', () => goTo('schedule'));
+  outlet.querySelector('#dash-view-scoreboard')?.addEventListener('click', () => goTo('scoreboard'));
 
   outlet.querySelector('#alert-my-team')?.addEventListener('change', (e) => {
     setMyTeamId(e.target.value);

@@ -9,6 +9,86 @@ import { notify } from './notifications.js';
 // tab/match was open, each tap would bounce the referee back to a blank Overview tab.
 const uiState = { activeTab: 'overview', selectedMatchId: null };
 
+// Referee-side pacing aids (30s shot clock, 20-min match timer) — local to this browser
+// session only, not synced to Firestore, keyed by match so they survive the page's
+// frequent re-renders (see note above) without resetting on every scoring tap.
+const SHOT_CLOCK_SECONDS = 30;
+const MATCH_MINUTES = 20;
+const scoreTimers = {};
+
+function getTimer(matchId) {
+  if (!scoreTimers[matchId]) {
+    scoreTimers[matchId] = {
+      shotRemaining: SHOT_CLOCK_SECONDS, shotInterval: null,
+      matchRemaining: MATCH_MINUTES * 60, matchInterval: null,
+    };
+  }
+  return scoreTimers[matchId];
+}
+
+function fmtClock(totalSeconds) {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+/** Re-queries the timer DOM fresh each call, since a Firestore-triggered re-render replaces these nodes underneath a running interval. */
+function renderTimerDom(outlet, matchId) {
+  const t = getTimer(matchId);
+  const shotEl = outlet.querySelector('#sb-shot-val');
+  if (shotEl) {
+    shotEl.textContent = t.shotRemaining;
+    shotEl.className = 'timer-val' + (t.shotRemaining <= 5 ? ' danger' : t.shotRemaining <= 10 ? ' warn' : '');
+  }
+  const matchEl = outlet.querySelector('#sb-match-val');
+  if (matchEl) {
+    matchEl.textContent = fmtClock(t.matchRemaining);
+    matchEl.className = 'timer-val' + (t.matchRemaining <= 60 ? ' danger' : t.matchRemaining <= 300 ? ' warn' : '');
+  }
+}
+
+function resetShotClock(matchId, outlet) {
+  const t = getTimer(matchId);
+  clearInterval(t.shotInterval);
+  t.shotInterval = null;
+  t.shotRemaining = SHOT_CLOCK_SECONDS;
+  renderTimerDom(outlet, matchId);
+}
+
+function bindTimerActions(outlet, matchId) {
+  const t = getTimer(matchId);
+  const pane = outlet.querySelector('#sb-pane-scoring');
+
+  pane.querySelector('#sb-shot-start').addEventListener('click', () => {
+    clearInterval(t.shotInterval);
+    t.shotInterval = setInterval(() => {
+      t.shotRemaining -= 1;
+      if (t.shotRemaining <= 0) { t.shotRemaining = 0; clearInterval(t.shotInterval); t.shotInterval = null; }
+      renderTimerDom(outlet, matchId);
+    }, 1000);
+  });
+  pane.querySelector('#sb-shot-reset').addEventListener('click', () => resetShotClock(matchId, outlet));
+
+  pane.querySelector('#sb-match-start').addEventListener('click', () => {
+    if (t.matchInterval) return;
+    t.matchInterval = setInterval(() => {
+      t.matchRemaining -= 1;
+      if (t.matchRemaining <= 0) { t.matchRemaining = 0; clearInterval(t.matchInterval); t.matchInterval = null; }
+      renderTimerDom(outlet, matchId);
+    }, 1000);
+  });
+  pane.querySelector('#sb-match-pause').addEventListener('click', () => {
+    clearInterval(t.matchInterval);
+    t.matchInterval = null;
+  });
+  pane.querySelector('#sb-match-reset').addEventListener('click', () => {
+    clearInterval(t.matchInterval);
+    t.matchInterval = null;
+    t.matchRemaining = MATCH_MINUTES * 60;
+    renderTimerDom(outlet, matchId);
+  });
+}
+
 function blankPlayer(name) {
   return { name, points: 0, dues: 0, fouls: 0, streak: 0 };
 }
@@ -89,15 +169,19 @@ function featuredMatchCard(f, live) {
     </div>`;
 }
 
-function renderOverview(outlet) {
+/** Shared by the Scoreboard Overview tab and the Dashboard — HTML for whichever match(es) currently have an active/pending scorecard. Empty string if none. */
+export function getFeaturedMatchesHtml() {
   const fixtures = getFixtures().filter((f) => f.status === 'scheduled');
   const liveScores = getLiveScores();
-  const pane = outlet.querySelector('#sb-pane-overview');
   const featured = fixtures.filter((f) => liveScores[f.id]);
+  return featured.map((f) => featuredMatchCard(f, liveScores[f.id])).join('');
+}
 
-  pane.innerHTML = featured.length
-    ? featured.map((f) => featuredMatchCard(f, liveScores[f.id])).join('')
-    : '<p class="text-muted text-center py-5"><i class="fa-solid fa-satellite-dish me-2"></i>No match is being scored right now.</p>';
+function renderOverview(outlet) {
+  const pane = outlet.querySelector('#sb-pane-overview');
+  const html = getFeaturedMatchesHtml();
+
+  pane.innerHTML = html || '<p class="text-muted text-center py-5"><i class="fa-solid fa-satellite-dish me-2"></i>No match is being scored right now.</p>';
 }
 
 function playerBlock(teamKey, idx, p, live) {
@@ -160,8 +244,33 @@ function teamCard(teamKey, live) {
     </div>`;
 }
 
+function timersHtml(matchId) {
+  const t = getTimer(matchId);
+  return `
+    <div class="card-x timer-card">
+      <div class="timer-block">
+        <div class="timer-label"><i class="fa-solid fa-stopwatch me-1"></i>Shot Clock (30s)</div>
+        <div class="timer-val" id="sb-shot-val">${t.shotRemaining}</div>
+        <div class="timer-controls">
+          <button class="btn btn-sm btn-success" id="sb-shot-start"><i class="fa-solid fa-play"></i></button>
+          <button class="btn btn-sm btn-outline-light" id="sb-shot-reset"><i class="fa-solid fa-rotate-right"></i></button>
+        </div>
+      </div>
+      <div class="timer-block">
+        <div class="timer-label"><i class="fa-solid fa-hourglass-half me-1"></i>Match Timer (20:00)</div>
+        <div class="timer-val" id="sb-match-val">${fmtClock(t.matchRemaining)}</div>
+        <div class="timer-controls">
+          <button class="btn btn-sm btn-success" id="sb-match-start"><i class="fa-solid fa-play"></i></button>
+          <button class="btn btn-sm btn-warning" id="sb-match-pause"><i class="fa-solid fa-pause"></i></button>
+          <button class="btn btn-sm btn-outline-light" id="sb-match-reset"><i class="fa-solid fa-rotate-right"></i></button>
+        </div>
+      </div>
+    </div>`;
+}
+
 function scoreboardHtml(f, live) {
   return `
+    ${timersHtml(f.id)}
     <div class="card-x">
       <div class="row g-3 align-items-end">
         <div class="col-sm-8">
@@ -246,11 +355,11 @@ function bindScoringActions(outlet, f, live) {
     const p = live.teams[teamKey]?.players?.[idx];
     const action = btn.dataset.action;
 
-    if (action === 'points-plus') p.points += 1;
+    if (action === 'points-plus') { p.points += 1; resetShotClock(f.id, outlet); }
     else if (action === 'points-minus') p.points = Math.max(0, p.points - 1);
     else if (action === 'dues-plus') p.dues += 1;
     else if (action === 'dues-minus') p.dues = Math.max(0, p.dues - 1);
-    else if (action === 'fouls-plus') p.fouls += 1;
+    else if (action === 'fouls-plus') { p.fouls += 1; resetShotClock(f.id, outlet); }
     else if (action === 'fouls-minus') p.fouls = Math.max(0, p.fouls - 1);
     else if (action === 'streak-plus') p.streak += 1;
     else if (action === 'streak-minus') p.streak = Math.max(0, p.streak - 1);
@@ -260,6 +369,8 @@ function bindScoringActions(outlet, f, live) {
     persist();
     renderScoringPane(outlet, f, live);
   });
+
+  bindTimerActions(outlet, f.id);
 
   // --- Submit modal ---
   const modal = pane.querySelector('#sb-submit-modal');
