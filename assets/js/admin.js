@@ -1,7 +1,7 @@
 import {
   getTeams, saveTeams, getFixtures, saveFixtures, getSettings, saveSettings,
   isAdminAuthed, loginAdmin, logoutAdmin, refreshStandings, resetTournament, exportBackup, restoreBackup,
-  approveTeamLogo, rejectTeamLogo, getLiveScores, deleteLiveScore,
+  approveTeamLogo, rejectTeamLogo, getLiveScores, deleteLiveScore, updateTeam, removeTeamLogo,
 } from './storage.js';
 import { uid, downloadFile, escapeHtml, POOL_NAMES, isoDate, VENUE, generateLogoCode } from './utilities.js';
 import { notify } from './notifications.js';
@@ -266,14 +266,12 @@ function adminPanel(outlet) {
         </div>
         <div class="modal-footer"><button class="btn btn-primary" id="m-save">Save</button></div>`);
       modalContent.querySelector('#m-save').addEventListener('click', async () => {
-        const list = getTeams().map((t) => (t.id === team.id ? { ...t } : t));
-        const t = list.find((x) => x.id === team.id);
-        t.name = modalContent.querySelector('#m-name').value.trim() || t.name;
-        t.players = [modalContent.querySelector('#m-p1').value.trim(), modalContent.querySelector('#m-p2').value.trim()];
-        t.pool = modalContent.querySelector('#m-pool').value;
-        await saveTeams(list);
+        const name = modalContent.querySelector('#m-name').value.trim() || team.name;
+        const players = [modalContent.querySelector('#m-p1').value.trim(), modalContent.querySelector('#m-p2').value.trim()];
+        const pool = modalContent.querySelector('#m-pool').value;
+        await updateTeam(team.id, { name, players, pool });
         modal.hide();
-        refreshTeamsBody(list);
+        refreshTeamsBody(getTeams());
         notify.success('Team updated');
       });
     }));
@@ -304,18 +302,17 @@ function adminPanel(outlet) {
     outlet.querySelectorAll('.btn-regen-code').forEach((btn) => btn.addEventListener('click', async () => {
       const team = getTeams().find((t) => t.id === btn.dataset.id);
       if (!confirm(`Generate a new access code for ${team.name}? Their old code will stop working.`)) return;
-      const list = getTeams().map((t) => (t.id === team.id ? { ...t, logoCode: generateLogoCode() } : t));
-      await saveTeams(list);
-      refreshTeamsBody(list);
-      notify.success(`New code: ${list.find((t) => t.id === team.id).logoCode}`);
+      const logoCode = generateLogoCode();
+      await updateTeam(team.id, { logoCode });
+      refreshTeamsBody(getTeams());
+      notify.success(`New code: ${logoCode}`);
     }));
 
     outlet.querySelectorAll('.btn-remove-logo').forEach((btn) => btn.addEventListener('click', async () => {
       const team = getTeams().find((t) => t.id === btn.dataset.id);
       if (!confirm(`Remove ${team.name}'s logo? They'll show a placeholder until they upload a new one.`)) return;
-      const list = getTeams().map((t) => { if (t.id !== team.id) return t; const c = { ...t }; delete c.logoBase64; return c; });
-      await saveTeams(list);
-      refreshTeamsBody(list);
+      await removeTeamLogo(team.id);
+      refreshTeamsBody(getTeams());
       notify.success(`${team.name}'s logo removed`);
     }));
   }

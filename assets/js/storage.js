@@ -105,6 +105,21 @@ export async function initData() {
 
 export function getTeams() { return cache.teams || []; }
 
+/**
+ * Partial, single-team update — only touches the fields passed in. Unlike saveTeams()
+ * (which rewrites every team's whole document from the local cache), this can never
+ * clobber another team's data with a stale read, and is safe even if this team's own
+ * local cache is momentarily behind the server.
+ */
+export function updateTeam(teamId, fields) {
+  return updateDoc(doc(teamsColRef, teamId), fields);
+}
+
+/** Admin-only: clears a team's live logo without touching anything else on the doc. */
+export function removeTeamLogo(teamId) {
+  return updateDoc(doc(teamsColRef, teamId), { logoBase64: deleteField() });
+}
+
 /** Upserts every team in the array and deletes any team docs no longer present. */
 export async function saveTeams(teams) {
   const currentIds = new Set(getTeams().map((t) => t.id));
