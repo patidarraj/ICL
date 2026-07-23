@@ -7,7 +7,7 @@ import { notify } from './notifications.js';
 // Every Firestore write (including a referee's own +/- taps) triggers the router's
 // global refreshCurrent(), which fully re-renders this page. Without persisting which
 // tab/match was open, each tap would bounce the referee back to a blank Overview tab.
-const uiState = { activeTab: 'overview', selectedMatchId: null };
+const uiState = { selectedMatchId: null };
 
 // Referee-side pacing aids (30s shot clock, 20-min match timer) — local to this browser
 // session only, not synced to Firestore, keyed by match so they survive the page's
@@ -175,13 +175,6 @@ export function getFeaturedMatchesHtml() {
   const liveScores = getLiveScores();
   const featured = fixtures.filter((f) => liveScores[f.id]);
   return featured.map((f) => featuredMatchCard(f, liveScores[f.id])).join('');
-}
-
-function renderOverview(outlet) {
-  const pane = outlet.querySelector('#sb-pane-overview');
-  const html = getFeaturedMatchesHtml();
-
-  pane.innerHTML = html || '<p class="text-muted text-center py-5"><i class="fa-solid fa-satellite-dish me-2"></i>No match is being scored right now.</p>';
 }
 
 function playerBlock(teamKey, idx, p, live) {
@@ -498,38 +491,12 @@ function refereeLoginForm(outlet, onSuccess) {
 }
 
 export async function renderScoreboard(outlet) {
-  const overviewActive = uiState.activeTab === 'overview';
   outlet.innerHTML = `
-    <h2 class="page-title"><i class="fa-solid fa-flag-checkered me-2"></i>Scoreboard</h2>
-
-    <ul class="nav nav-tabs mb-4" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button class="nav-link ${overviewActive ? 'active' : ''}" data-bs-toggle="tab" data-bs-target="#sb-tab-overview" data-tab="overview" type="button" role="tab" aria-selected="${overviewActive}">
-          <i class="fa-solid fa-eye me-1"></i>Overview
-        </button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link ${overviewActive ? '' : 'active'}" data-bs-toggle="tab" data-bs-target="#sb-tab-scoring" data-tab="scoring" type="button" role="tab" aria-selected="${!overviewActive}">
-          <i class="fa-solid fa-list-ol me-1"></i>Individual Scoring
-        </button>
-      </li>
-    </ul>
-
-    <div class="tab-content">
-      <div class="tab-pane fade ${overviewActive ? 'show active' : ''}" id="sb-tab-overview" role="tabpanel">
-        <div id="sb-pane-overview"></div>
-      </div>
-      <div class="tab-pane fade ${overviewActive ? '' : 'show active'}" id="sb-tab-scoring" role="tabpanel">
-        ${isRefereeAuthed() ? '<div class="d-flex justify-content-end mb-2"><button class="btn btn-sm btn-outline-danger" id="sb-ref-logout"><i class="fa-solid fa-right-from-bracket me-1"></i>Lock</button></div>' : ''}
-        <div id="sb-pane-scoring"></div>
-      </div>
-    </div>`;
-
-  outlet.querySelectorAll('[data-bs-toggle="tab"]').forEach((btn) => {
-    btn.addEventListener('shown.bs.tab', () => { uiState.activeTab = btn.dataset.tab; });
-  });
-
-  renderOverview(outlet);
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="page-title mb-0"><i class="fa-solid fa-flag-checkered me-2"></i>Individual Scoring</h2>
+      ${isRefereeAuthed() ? '<button class="btn btn-sm btn-outline-danger" id="sb-ref-logout"><i class="fa-solid fa-right-from-bracket me-1"></i>Lock</button>' : ''}
+    </div>
+    <div id="sb-pane-scoring"></div>`;
 
   if (isRefereeAuthed()) {
     renderMatchPicker(outlet);
