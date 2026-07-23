@@ -259,11 +259,11 @@ function scoreboardHtml(f, live) {
     ${stripHtml(f.id, live)}
 
     <div class="legend">
-      <span><i class="fa-solid fa-circle-dot"></i>Points</span>
-      <span><i class="fa-solid fa-plus"></i>Dues</span>
-      <span><i class="fa-solid fa-triangle-exclamation"></i>Fouls</span>
-      <span><i class="fa-solid fa-fire"></i>Streak</span>
-      <span><i class="fa-solid fa-crown"></i>Queen</span>
+      <span class="legend-points"><i class="fa-solid fa-circle-dot"></i>Points</span>
+      <span class="legend-dues"><i class="fa-solid fa-plus"></i>Dues</span>
+      <span class="legend-fouls"><i class="fa-solid fa-triangle-exclamation"></i>Fouls</span>
+      <span class="legend-streak"><i class="fa-solid fa-fire"></i>Streak</span>
+      <span class="legend-queen"><i class="fa-solid fa-crown"></i>Queen</span>
     </div>
 
     <div class="grid">
