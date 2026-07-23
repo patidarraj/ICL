@@ -50,8 +50,9 @@ export async function renderRules(outlet) {
         <span class="coin-chip"><span class="coin coin-red"></span>1 Red (Queen)</span>
       </div>
       <ul class="mb-0">
-        <li>If a coin lands on the black border and enters the pocket, it will <strong>not be considered pocketed</strong> — the umpire will place it back in the center.</li>
+        <li>If a coin lands on the black border, or enters the pocket off the border, it will <strong>not be considered pocketed</strong> in either case — the umpire will place it back in the center.</li>
         <li>If a coin ends up in an upright position, it will <strong>not be touched</strong> — play continues as usual.</li>
+        <li>On the <strong>break</strong> (the first shot of the game), if the Queen and your coin enter the pocket together — or one early, or one delayed — it will <strong>not be considered pocketed</strong>; the umpire places both back in the center.</li>
       </ul>`)}
 
     ${section('fa-coins', '2.1 The Toss', `
