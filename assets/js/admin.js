@@ -185,8 +185,9 @@ function adminPanel(outlet) {
 
     <ul class="nav nav-tabs mb-3" role="tablist">
       <li class="nav-item" role="presentation">
-        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#admin-tab-referee" type="button" role="tab" aria-selected="true">
-          <i class="fa-solid fa-user-shield me-1"></i>Referee Access
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#admin-tab-matches" type="button" role="tab" aria-selected="true">
+          <i class="fa-solid fa-table-list me-1"></i>Matches
+          ${activeLiveScores.length ? `<span class="badge bg-warning text-dark ms-1">${activeLiveScores.length}</span>` : ''}
         </button>
       </li>
       <li class="nav-item" role="presentation">
@@ -196,24 +197,32 @@ function adminPanel(outlet) {
         </button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#admin-tab-matches" type="button" role="tab" aria-selected="false">
-          <i class="fa-solid fa-table-list me-1"></i>Matches
-          ${activeLiveScores.length ? `<span class="badge bg-warning text-dark ms-1">${activeLiveScores.length}</span>` : ''}
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#admin-tab-referee" type="button" role="tab" aria-selected="false">
+          <i class="fa-solid fa-user-shield me-1"></i>Referee Access
         </button>
       </li>
     </ul>
 
     <div class="tab-content">
-      <div class="tab-pane fade show active" id="admin-tab-referee" role="tabpanel">
-        <div class="card mb-3">
-          <div class="card-header"><i class="fa-solid fa-user-shield me-2"></i>Referee Access</div>
+      <div class="tab-pane fade show active" id="admin-tab-matches" role="tabpanel">
+        ${activeLiveScores.length ? `
+        <div class="card mb-3 border-warning">
+          <div class="card-header"><i class="fa-solid fa-flag-checkered me-2"></i>Live / Pending Scoring <span class="badge bg-warning text-dark ms-1">${activeLiveScores.length}</span></div>
           <div class="card-body">
-            <p class="text-muted small mb-2">Share this passcode with match referees to unlock the Scoreboard's Individual Scoring tab. Regenerating it immediately invalidates the old one for anyone still using it.</p>
-            <div class="d-flex align-items-center gap-2">
-              <code class="text-warning fs-5" id="referee-code-display">${getRefereePasscode()}</code>
-              <button class="btn btn-sm btn-outline-secondary" id="btn-copy-referee-code" title="Copy"><i class="fa-solid fa-copy"></i></button>
-              <button class="btn btn-sm btn-outline-warning" id="btn-regen-referee-code" title="Generate a new code (invalidates the old one)"><i class="fa-solid fa-rotate me-1"></i>Regenerate</button>
-            </div>
+            <div class="row g-3" id="admin-pending-scores">${activeLiveScores.map(liveScoreTile).join('')}</div>
+          </div>
+        </div>` : ''}
+
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="fa-solid fa-table-list me-2"></i>Matches</span>
+            <button class="btn btn-sm btn-success" id="btn-create-match"><i class="fa-solid fa-plus me-1"></i>Create Match</button>
+          </div>
+          <div class="card-body table-responsive">
+            <table class="table table-dark table-hover align-middle mb-0">
+              <thead><tr><th>#</th><th>Pool</th><th>Team A</th><th>Team B</th><th>Score</th><th>Action</th></tr></thead>
+              <tbody id="admin-matches-body">${fixtures.map((f) => matchRow(f, teamsById)).join('')}</tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -244,25 +253,16 @@ function adminPanel(outlet) {
         </div>
       </div>
 
-      <div class="tab-pane fade" id="admin-tab-matches" role="tabpanel">
-        ${activeLiveScores.length ? `
-        <div class="card mb-3 border-warning">
-          <div class="card-header"><i class="fa-solid fa-flag-checkered me-2"></i>Live / Pending Scoring <span class="badge bg-warning text-dark ms-1">${activeLiveScores.length}</span></div>
+      <div class="tab-pane fade" id="admin-tab-referee" role="tabpanel">
+        <div class="card mb-3">
+          <div class="card-header"><i class="fa-solid fa-user-shield me-2"></i>Referee Access</div>
           <div class="card-body">
-            <div class="row g-3" id="admin-pending-scores">${activeLiveScores.map(liveScoreTile).join('')}</div>
-          </div>
-        </div>` : ''}
-
-        <div class="card">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span><i class="fa-solid fa-table-list me-2"></i>Matches</span>
-            <button class="btn btn-sm btn-success" id="btn-create-match"><i class="fa-solid fa-plus me-1"></i>Create Match</button>
-          </div>
-          <div class="card-body table-responsive">
-            <table class="table table-dark table-hover align-middle mb-0">
-              <thead><tr><th>#</th><th>Pool</th><th>Team A</th><th>Team B</th><th>Score</th><th>Action</th></tr></thead>
-              <tbody id="admin-matches-body">${fixtures.map((f) => matchRow(f, teamsById)).join('')}</tbody>
-            </table>
+            <p class="text-muted small mb-2">Share this passcode with match referees to unlock the Scoreboard's Individual Scoring tab. Regenerating it immediately invalidates the old one for anyone still using it.</p>
+            <div class="d-flex align-items-center gap-2">
+              <code class="text-warning fs-5" id="referee-code-display">${getRefereePasscode()}</code>
+              <button class="btn btn-sm btn-outline-secondary" id="btn-copy-referee-code" title="Copy"><i class="fa-solid fa-copy"></i></button>
+              <button class="btn btn-sm btn-outline-warning" id="btn-regen-referee-code" title="Generate a new code (invalidates the old one)"><i class="fa-solid fa-rotate me-1"></i>Regenerate</button>
+            </div>
           </div>
         </div>
       </div>
