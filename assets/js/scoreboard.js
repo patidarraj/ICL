@@ -7,7 +7,7 @@ import { notify } from './notifications.js';
 // Every Firestore write (including a referee's own +/- taps) triggers the router's
 // global refreshCurrent(), which fully re-renders this page. Without persisting which
 // tab/match was open, each tap would bounce the referee back to a blank Overview tab.
-const uiState = { selectedMatchId: null };
+const uiState = { selectedMatchId: null, stripOpen: false };
 
 // Referee-side pacing aids (30s shot clock, 20-min match timer) — local to this browser
 // session only, not synced to Firestore, keyed by match so they survive the page's
@@ -35,16 +35,18 @@ function fmtClock(totalSeconds) {
 /** Re-queries the timer DOM fresh each call, since a Firestore-triggered re-render replaces these nodes underneath a running interval. */
 function renderTimerDom(outlet, matchId) {
   const t = getTimer(matchId);
+  const shotHot = t.shotRemaining <= 5;
+  const matchHot = t.matchRemaining <= 60;
+
   const shotEl = outlet.querySelector('#sb-shot-val');
-  if (shotEl) {
-    shotEl.textContent = t.shotRemaining;
-    shotEl.className = 'timer-val' + (t.shotRemaining <= 5 ? ' danger' : t.shotRemaining <= 10 ? ' warn' : '');
-  }
+  if (shotEl) shotEl.textContent = t.shotRemaining;
+  const shotGlance = outlet.querySelector('#sb-shot-glance');
+  if (shotGlance) { shotGlance.textContent = `${t.shotRemaining}s`; shotGlance.classList.toggle('hot', shotHot); }
+
   const matchEl = outlet.querySelector('#sb-match-val');
-  if (matchEl) {
-    matchEl.textContent = fmtClock(t.matchRemaining);
-    matchEl.className = 'timer-val' + (t.matchRemaining <= 60 ? ' danger' : t.matchRemaining <= 300 ? ' warn' : '');
-  }
+  if (matchEl) matchEl.textContent = fmtClock(t.matchRemaining);
+  const matchGlance = outlet.querySelector('#sb-match-glance');
+  if (matchGlance) { matchGlance.textContent = fmtClock(t.matchRemaining); matchGlance.classList.toggle('hot', matchHot); }
 }
 
 function resetShotClock(matchId, outlet) {
@@ -177,125 +179,110 @@ export function getFeaturedMatchesHtml() {
   return featured.map((f) => featuredMatchCard(f, liveScores[f.id])).join('');
 }
 
-function playerBlock(teamKey, idx, p, live) {
-  const key = playerKey(teamKey, idx);
-  const queenLocked = live.queenTakenBy !== null;
-  const isQueenHolder = live.queenTakenBy === key;
+function compactStatRow(field, iconClass, teamKey, idx, val) {
   return `
-    <div class="player-block">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <span class="player-name">${p.name}</span>
-        <button class="btn btn-sm ${isQueenHolder ? 'btn-danger' : 'btn-outline-light'}" data-action="queen-take" data-team="${teamKey}" data-idx="${idx}" ${queenLocked ? 'disabled' : ''}>
-          <i class="fa-solid fa-crown"></i> ${isQueenHolder ? 'Queen' : ''}
+    <div class="stat-row">
+      <span class="stat-label" title="${field}"><i class="fa-solid ${iconClass}"></i></span>
+      <div class="stat-ctrl">
+        <button class="pill-btn" data-action="${field}-minus" data-team="${teamKey}" data-idx="${idx}">−</button>
+        <span class="stat-val">${val}</span>
+        <button class="pill-btn plus-${field}" data-action="${field}-plus" data-team="${teamKey}" data-idx="${idx}">+</button>
+      </div>
+    </div>`;
+}
+
+function compactPlayerCard(teamKey, idx, p, live) {
+  const key = playerKey(teamKey, idx);
+  const isQueenHolder = live.queenTakenBy === key;
+  const queenLocked = live.queenTakenBy !== null && !isQueenHolder;
+  return `
+    <div class="p-card team-${teamKey.toLowerCase()}">
+      <div class="p-head">
+        <span class="p-name">${p.name}</span>
+        <button class="queen-btn ${isQueenHolder ? 'active' : ''}" data-action="queen-take" data-team="${teamKey}" data-idx="${idx}" ${queenLocked ? 'disabled' : ''} title="Queen Acquired">
+          <i class="fa-solid fa-crown"></i>
         </button>
       </div>
-      <div class="stat-row">
-        <span class="stat-label">Points Scored</span>
-        <div class="d-flex align-items-center gap-2">
-          <button class="btn btn-sm btn-outline-light btn-round" data-action="points-minus" data-team="${teamKey}" data-idx="${idx}">−</button>
-          <span class="stat-val">${p.points}</span>
-          <button class="btn btn-sm btn-success btn-round" data-action="points-plus" data-team="${teamKey}" data-idx="${idx}">+</button>
-        </div>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Dues Scored</span>
-        <div class="d-flex align-items-center gap-2">
-          <button class="btn btn-sm btn-outline-light btn-round" data-action="dues-minus" data-team="${teamKey}" data-idx="${idx}">−</button>
-          <span class="stat-val">${p.dues}</span>
-          <button class="btn btn-sm btn-primary btn-round" data-action="dues-plus" data-team="${teamKey}" data-idx="${idx}">+</button>
-        </div>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Fouls Scored</span>
-        <div class="d-flex align-items-center gap-2">
-          <button class="btn btn-sm btn-outline-light btn-round" data-action="fouls-minus" data-team="${teamKey}" data-idx="${idx}">−</button>
-          <span class="stat-val">${p.fouls}</span>
-          <button class="btn btn-sm btn-warning btn-round" data-action="fouls-plus" data-team="${teamKey}" data-idx="${idx}">+</button>
-        </div>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Consecutive Shots</span>
-        <div class="d-flex align-items-center gap-2">
-          <button class="btn btn-sm btn-outline-light btn-round" data-action="streak-minus" data-team="${teamKey}" data-idx="${idx}">−</button>
-          <span class="stat-val">${p.streak}</span>
-          <button class="btn btn-sm btn-info btn-round" data-action="streak-plus" data-team="${teamKey}" data-idx="${idx}">+</button>
-        </div>
-      </div>
+      ${compactStatRow('points', 'fa-circle-dot', teamKey, idx, p.points)}
+      ${compactStatRow('dues', 'fa-plus', teamKey, idx, p.dues)}
+      ${compactStatRow('fouls', 'fa-triangle-exclamation', teamKey, idx, p.fouls)}
+      ${compactStatRow('streak', 'fa-fire', teamKey, idx, p.streak)}
     </div>`;
 }
 
-function teamCard(teamKey, live) {
-  const team = live.teams[teamKey];
-  const total = team.players.reduce((s, p) => s + p.points, 0);
-  return `
-    <div class="card-x">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <span class="team-name">${team.name}</span>
-        <span class="coin-total">${total}</span>
-      </div>
-      ${team.players.map((p, idx) => playerBlock(teamKey, idx, p, live)).join('')}
-    </div>`;
-}
-
-function timersHtml(matchId) {
+function stripHtml(matchId, live) {
   const t = getTimer(matchId);
   return `
-    <div class="card-x timer-card">
-      <div class="timer-block">
-        <div class="timer-label"><i class="fa-solid fa-stopwatch me-1"></i>Shot Clock (30s)</div>
-        <div class="timer-val" id="sb-shot-val">${t.shotRemaining}</div>
-        <div class="timer-controls">
-          <button class="btn btn-sm btn-success" id="sb-shot-start"><i class="fa-solid fa-play"></i></button>
-          <button class="btn btn-sm btn-outline-light" id="sb-shot-reset"><i class="fa-solid fa-rotate-right"></i></button>
+    <div class="strip ${uiState.stripOpen ? 'open' : ''}" id="sb-strip">
+      <div class="strip-head" id="sb-strip-head">
+        <div class="strip-glance">
+          <span class="glance-item"><i class="fa-solid fa-stopwatch"></i><span class="glance-val" id="sb-shot-glance">${t.shotRemaining}s</span></span>
+          <span class="glance-item"><i class="fa-solid fa-hourglass-half"></i><span class="glance-val" id="sb-match-glance">${fmtClock(t.matchRemaining)}</span></span>
+          <span class="glance-item text-muted">Toss <strong id="sb-toss-glance">${live.toss ? live.teams[live.toss].name : '—'}</strong></span>
         </div>
+        <i class="fa-solid fa-chevron-down chev"></i>
       </div>
-      <div class="timer-block">
-        <div class="timer-label"><i class="fa-solid fa-hourglass-half me-1"></i>Match Timer (20:00)</div>
-        <div class="timer-val" id="sb-match-val">${fmtClock(t.matchRemaining)}</div>
-        <div class="timer-controls">
-          <button class="btn btn-sm btn-success" id="sb-match-start"><i class="fa-solid fa-play"></i></button>
-          <button class="btn btn-sm btn-warning" id="sb-match-pause"><i class="fa-solid fa-pause"></i></button>
-          <button class="btn btn-sm btn-outline-light" id="sb-match-reset"><i class="fa-solid fa-rotate-right"></i></button>
+      <div class="strip-body">
+        <div class="strip-body-inner">
+          <div class="strip-row">
+            <span class="label">Shot clock (30s) <span class="timer-val-inline" id="sb-shot-val">${t.shotRemaining}</span></span>
+            <div class="btn-group-mini">
+              <button class="mini-btn go" id="sb-shot-start"><i class="fa-solid fa-play"></i></button>
+              <button class="mini-btn" id="sb-shot-reset"><i class="fa-solid fa-rotate-right"></i></button>
+            </div>
+          </div>
+          <div class="strip-row">
+            <span class="label">Match timer (20:00) <span class="timer-val-inline" id="sb-match-val">${fmtClock(t.matchRemaining)}</span></span>
+            <div class="btn-group-mini">
+              <button class="mini-btn go" id="sb-match-start"><i class="fa-solid fa-play"></i></button>
+              <button class="mini-btn pause" id="sb-match-pause"><i class="fa-solid fa-pause"></i></button>
+              <button class="mini-btn" id="sb-match-reset"><i class="fa-solid fa-rotate-right"></i></button>
+            </div>
+          </div>
+          <div class="strip-row">
+            <span class="label">Toss won by</span>
+            <select class="toss-select" id="sb-toss">
+              <option value="">Select…</option>
+              <option value="A" ${live.toss === 'A' ? 'selected' : ''}>${live.teams.A.name}</option>
+              <option value="B" ${live.toss === 'B' ? 'selected' : ''}>${live.teams.B.name}</option>
+            </select>
+          </div>
         </div>
       </div>
     </div>`;
 }
 
 function scoreboardHtml(f, live) {
+  const totalA = live.teams.A.players.reduce((s, p) => s + p.points, 0);
+  const totalB = live.teams.B.players.reduce((s, p) => s + p.points, 0);
   return `
-    ${timersHtml(f.id)}
-    <div class="card-x">
-      <div class="row g-3 align-items-end">
-        <div class="col-sm-8">
-          <label class="form-label small text-muted mb-1">Toss Won by</label>
-          <select class="form-select" id="sb-toss">
-            <option value="">Select team...</option>
-            <option value="A" ${live.toss === 'A' ? 'selected' : ''}>${live.teams.A.name}</option>
-            <option value="B" ${live.toss === 'B' ? 'selected' : ''}>${live.teams.B.name}</option>
-          </select>
-        </div>
-        <div class="col-sm-4 text-sm-end">
-          <button class="btn btn-sm btn-outline-danger w-100" id="sb-queen-reset" ${live.queenTakenBy === null ? 'disabled' : ''}>
-            <i class="fa-solid fa-rotate-left me-1"></i>Reset Queen
-          </button>
-        </div>
-      </div>
+    ${stripHtml(f.id, live)}
+
+    <div class="legend">
+      <span><i class="fa-solid fa-circle-dot"></i>Points</span>
+      <span><i class="fa-solid fa-plus"></i>Dues</span>
+      <span><i class="fa-solid fa-triangle-exclamation"></i>Fouls</span>
+      <span><i class="fa-solid fa-fire"></i>Streak</span>
+      <span><i class="fa-solid fa-crown"></i>Queen</span>
     </div>
 
-    <div class="row g-3">
-      <div class="col-md-6">${teamCard('A', live)}</div>
-      <div class="col-md-6">${teamCard('B', live)}</div>
+    <div class="grid">
+      ${live.teams.A.players.map((p, idx) => compactPlayerCard('A', idx, p, live)).join('')}
+      ${live.teams.B.players.map((p, idx) => compactPlayerCard('B', idx, p, live)).join('')}
     </div>
 
     ${live.result ? `
-    <div class="card-x">
+    <div class="card-x mt-2">
       <strong><i class="fa-solid fa-trophy me-2"></i>${live.result.winner === 'draw' ? 'Match Drawn' : `${live.teams[live.result.winner].name} Won`}</strong>
       <div class="small text-muted mt-1">NRR — ${live.teams.A.name}: ${live.result.nrrLeader === 'A' ? live.result.margin : 0} &middot; ${live.teams.B.name}: ${live.result.nrrLeader === 'B' ? live.result.margin : 0}</div>
       <div class="small mt-1"><span class="badge bg-warning text-dark">Submitted — awaiting admin confirmation</span></div>
     </div>` : `
-    <div class="text-end">
-      <button class="btn btn-primary" id="sb-open-submit"><i class="fa-solid fa-check me-2"></i>Submit Result</button>
-    </div>`}
+    <div class="totals-bar mt-2">
+      <div class="totals-side"><div class="totals-name">${live.teams.A.name}</div><div class="totals-score team-a-score">${totalA}</div></div>
+      <div class="totals-mid">vs</div>
+      <div class="totals-side"><div class="totals-name">${live.teams.B.name}</div><div class="totals-score team-b-score">${totalB}</div></div>
+    </div>
+    <button class="btn btn-primary w-100 mt-2" id="sb-open-submit"><i class="fa-solid fa-check me-2"></i>Submit Result</button>`}
 
     <div class="modal-backdrop-x" id="sb-submit-modal">
       <div class="modal-box">
@@ -332,12 +319,15 @@ function bindScoringActions(outlet, f, live) {
   const pane = outlet.querySelector('#sb-pane-scoring');
   const persist = () => saveLiveScore(f.id, live);
 
-  pane.querySelector('#sb-toss').addEventListener('change', (e) => { live.toss = e.target.value; persist(); });
-
-  pane.querySelector('#sb-queen-reset').addEventListener('click', () => {
-    live.queenTakenBy = null;
+  pane.querySelector('#sb-toss').addEventListener('change', (e) => {
+    live.toss = e.target.value;
     persist();
-    renderScoringPane(outlet, f, live);
+    pane.querySelector('#sb-toss-glance').textContent = live.toss ? live.teams[live.toss].name : '—';
+  });
+
+  pane.querySelector('#sb-strip-head').addEventListener('click', () => {
+    uiState.stripOpen = !uiState.stripOpen;
+    pane.querySelector('#sb-strip').classList.toggle('open', uiState.stripOpen);
   });
 
   pane.addEventListener('click', (e) => {
@@ -356,8 +346,11 @@ function bindScoringActions(outlet, f, live) {
     else if (action === 'fouls-minus') p.fouls = Math.max(0, p.fouls - 1);
     else if (action === 'streak-plus') p.streak += 1;
     else if (action === 'streak-minus') p.streak = Math.max(0, p.streak - 1);
-    else if (action === 'queen-take') { if (live.queenTakenBy === null) live.queenTakenBy = playerKey(teamKey, idx); }
-    else return;
+    else if (action === 'queen-take') {
+      const key = playerKey(teamKey, idx);
+      if (live.queenTakenBy === key) live.queenTakenBy = null;
+      else if (live.queenTakenBy === null) live.queenTakenBy = key;
+    } else return;
 
     persist();
     renderScoringPane(outlet, f, live);

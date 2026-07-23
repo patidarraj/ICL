@@ -1,22 +1,65 @@
 .card-x { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
 .team-name { font-weight: 700; font-size: 1.1rem; }
 .coin-total { font-size: 2rem; font-weight: 800; }
-.player-block { background: var(--card-bg-2); border-radius: 10px; padding: 0.75rem; margin-bottom: 0.6rem; }
-.player-name { font-weight: 700; }
-.stat-row { display: flex; align-items: center; justify-content: space-between; padding: 0.3rem 0; border-top: 1px solid var(--border); }
-.stat-row:first-of-type { border-top: none; }
-.stat-label { font-size: 0.8rem; color: var(--text-muted); }
-.stat-val { font-weight: 700; min-width: 2.5ch; text-align: center; }
-.btn-round { width: 30px; height: 30px; border-radius: 50%; padding: 0; line-height: 1; font-size: 0.85rem; }
 
-.timer-card { display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: center; justify-content: center; }
-.timer-block { text-align: center; min-width: 140px; }
-.timer-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
-.timer-val { font-family: ui-monospace, monospace; font-size: 2rem; font-weight: 800; }
-.timer-val.warn { color: #f59e0b; }
-.timer-val.danger { color: #ef4444; animation: timer-pulse 1s infinite; }
+/* --- Individual Scoring: compact mobile-first layout (collapsible strip + 2x2 grid) --- */
+.strip { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 0.6rem; }
+.strip-head { display: flex; align-items: center; justify-content: space-between; padding: 0.55rem 0.75rem; cursor: pointer; user-select: none; }
+.strip-glance { display: flex; align-items: center; gap: 0.9rem; font-size: 0.78rem; color: var(--text-muted); flex-wrap: wrap; }
+.glance-item { display: flex; align-items: center; gap: 0.3rem; }
+.glance-val { color: inherit; font-weight: 700; font-family: ui-monospace, monospace; }
+.glance-val.hot { color: #ef4444; animation: timer-pulse 1s infinite; }
 @keyframes timer-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
-.timer-controls { display: flex; gap: 0.4rem; justify-content: center; margin-top: 0.4rem; }
+.chev { transition: transform 0.18s ease; color: var(--text-muted); font-size: 0.75rem; }
+.strip.open .chev { transform: rotate(180deg); }
+.strip-body { max-height: 0; overflow: hidden; transition: max-height 0.22s ease; }
+.strip.open .strip-body { max-height: 260px; border-top: 1px solid var(--border); }
+.strip-body-inner { padding: 0.7rem 0.75rem 0.8rem; display: flex; flex-direction: column; gap: 0.6rem; }
+.strip-row { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.strip-row .label { font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.4rem; }
+.timer-val-inline { font-family: ui-monospace, monospace; font-weight: 700; color: var(--text-ink, #e2e8f0); }
+.btn-group-mini { display: flex; gap: 0.35rem; }
+.mini-btn { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg-2); color: inherit; font-size: 0.75rem; display: inline-flex; align-items: center; justify-content: center; }
+.mini-btn.go { background: #22c55e; border-color: #22c55e; color: #052015; }
+.mini-btn.pause { background: #f59e0b; border-color: #f59e0b; color: #2b1a04; }
+.toss-select { background: var(--card-bg-2); border: 1px solid var(--border); color: inherit; border-radius: 8px; padding: 0.3rem 0.5rem; font-size: 0.78rem; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 0.75rem; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.5rem; padding: 0 0.15rem; }
+.legend span { display: inline-flex; align-items: center; gap: 0.3rem; }
+
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.p-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 0.55rem 0.55rem 0.35rem; position: relative; }
+.p-card::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 3px; }
+.p-card.team-a::before { background: #4C8BF5; }
+.p-card.team-b::before { background: #E2663F; }
+.p-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem; padding-left: 0.3rem; }
+.p-name { font-size: 0.78rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.queen-btn { width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0; border: 1px solid var(--border); background: var(--card-bg-2); color: var(--text-muted); font-size: 0.68rem; display: inline-flex; align-items: center; justify-content: center; }
+.queen-btn.active { background: #ef4444; border-color: #ef4444; color: #fff; }
+.queen-btn:disabled { opacity: 0.4; }
+
+.stat-row { display: flex; align-items: center; justify-content: space-between; padding: 0.22rem 0.3rem; border-top: 1px solid var(--border); }
+.stat-row:first-of-type { border-top: none; }
+.stat-label { font-size: 0.7rem; color: var(--text-muted); }
+.stat-ctrl { display: flex; align-items: center; gap: 0.32rem; }
+.pill-btn { width: 24px; height: 24px; border-radius: 7px; border: none; display: inline-flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 700; color: inherit; background: var(--card-bg-2); }
+.pill-btn.plus-points { background: #22c55e; color: #052015; }
+.pill-btn.plus-dues { background: #4C8BF5; color: #071022; }
+.pill-btn.plus-fouls { background: #f59e0b; color: #2b1a04; }
+.pill-btn.plus-streak { background: #7c6ee0; color: #100a2e; }
+.stat-val { font-weight: 700; font-size: 0.85rem; min-width: 1.6ch; text-align: center; }
+
+.totals-bar { display: flex; align-items: center; justify-content: space-between; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 0.55rem 0.85rem; }
+.totals-side { text-align: center; flex: 1; }
+.totals-name { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.totals-score { font-size: 1.6rem; font-weight: 800; }
+.totals-score.team-a-score { color: #4C8BF5; }
+.totals-score.team-b-score { color: #E2663F; }
+.totals-mid { font-size: 0.7rem; color: var(--text-muted); padding: 0 0.6rem; }
+
+@media (max-width: 380px) {
+  .grid { grid-template-columns: 1fr; }
+}
 
 .modal-backdrop-x { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1050; align-items: center; justify-content: center; }
 .modal-backdrop-x.show { display: flex; }
