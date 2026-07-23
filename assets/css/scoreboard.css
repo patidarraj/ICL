@@ -2,7 +2,13 @@
 .team-name { font-weight: 700; font-size: 1.1rem; }
 .coin-total { font-size: 2rem; font-weight: 800; }
 
-/* --- Individual Scoring: compact mobile-first layout (collapsible strip + 2x2 grid) --- */
+/* --- Individual Scoring: compact mobile-first layout (collapsible strip + 2x2 grid) ---
+   Capped to a phone-width column and centered, even on desktop — a wide row stretches
+   each stat row's icon+controls apart from the rest of a mostly-empty card, which reads
+   as a stray gap. Keeping the whole scoring UI phone-width avoids that regardless of
+   viewport, and referees only ever use this on mobile anyway. */
+#sb-pane-scoring { max-width: 480px; margin: 0 auto; }
+
 .strip { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 0.6rem; }
 .strip-head { display: flex; align-items: center; justify-content: space-between; padding: 0.55rem 0.75rem; cursor: pointer; user-select: none; }
 .strip-glance { display: flex; align-items: center; gap: 0.9rem; font-size: 0.78rem; color: var(--text-muted); flex-wrap: wrap; }
