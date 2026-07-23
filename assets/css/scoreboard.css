@@ -34,20 +34,25 @@
 .p-card.team-b::before { background: #E2663F; }
 .p-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem; padding-left: 0.3rem; }
 .p-name { font-size: 0.78rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.queen-btn { width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0; border: 1px solid var(--border); background: var(--card-bg-2); color: var(--text-muted); font-size: 0.68rem; display: inline-flex; align-items: center; justify-content: center; }
+.queen-btn { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; border: 1px solid var(--border); background: var(--card-bg-2); color: var(--text-muted); font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center; }
 .queen-btn.active { background: #ef4444; border-color: #ef4444; color: #fff; }
 .queen-btn:disabled { opacity: 0.4; }
 
-.stat-row { display: flex; align-items: center; justify-content: space-between; padding: 0.22rem 0.3rem; border-top: 1px solid var(--border); }
+.stat-row { display: flex; align-items: center; justify-content: space-between; padding: 0.35rem 0.3rem; border-top: 1px solid var(--border); }
 .stat-row:first-of-type { border-top: none; }
-.stat-label { font-size: 0.7rem; color: var(--text-muted); }
-.stat-ctrl { display: flex; align-items: center; gap: 0.32rem; }
-.pill-btn { width: 24px; height: 24px; border-radius: 7px; border: none; display: inline-flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 700; color: inherit; background: var(--card-bg-2); }
+.stat-label { font-size: 0.75rem; color: var(--text-muted); }
+.stat-ctrl { display: flex; align-items: center; gap: 0.55rem; }
+.pill-btn {
+  width: 38px; height: 38px; border-radius: 10px; border: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 1.15rem; font-weight: 700; color: inherit; background: var(--card-bg-2);
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+}
 .pill-btn.plus-points { background: #22c55e; color: #052015; }
 .pill-btn.plus-dues { background: #4C8BF5; color: #071022; }
 .pill-btn.plus-fouls { background: #f59e0b; color: #2b1a04; }
 .pill-btn.plus-streak { background: #7c6ee0; color: #100a2e; }
-.stat-val { font-weight: 700; font-size: 0.85rem; min-width: 1.6ch; text-align: center; }
+.stat-val { font-weight: 700; font-size: 0.95rem; min-width: 2ch; text-align: center; }
 
 .totals-bar { display: flex; align-items: center; justify-content: space-between; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 0.55rem 0.85rem; }
 .totals-side { text-align: center; flex: 1; }
@@ -57,8 +62,9 @@
 .totals-score.team-b-score { color: #E2663F; }
 .totals-mid { font-size: 0.7rem; color: var(--text-muted); padding: 0 0.6rem; }
 
-@media (max-width: 380px) {
+@media (max-width: 560px) {
   .grid { grid-template-columns: 1fr; }
+  .p-card { padding: 0.65rem 0.7rem 0.5rem; }
 }
 
 .modal-backdrop-x { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1050; align-items: center; justify-content: center; }
