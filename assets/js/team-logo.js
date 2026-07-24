@@ -117,6 +117,37 @@ function printLogoGallery(teams, settings) {
   win.print();
 }
 
+function printLogoOnePerPageTile(team) {
+  return `
+    <div class="print-page">
+      ${printLogo(team)}
+      <div class="print-page-name">${escapeHtml(team.name)}</div>
+      <div class="print-page-players">${escapeHtml(team.players.join(' & '))}</div>
+    </div>`;
+}
+
+/** One team's logo per printed page — for cutting out individually or handing out one-per-team, rather than the shared grid sheet. */
+function printLogosOnePerPage(teams, settings) {
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>${escapeHtml(settings.tournamentName || 'Team Logos')} — Team Logos (One per Page)</title>
+    <style>
+      body { font-family: Arial, Helvetica, sans-serif; color: #111; margin: 0; }
+      .print-page { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; break-after: page; page-break-after: always; }
+      .print-page:last-child { break-after: auto; page-break-after: auto; }
+      .print-logo { width: 320px; height: 320px; object-fit: contain; border-radius: 24px; border: 1px solid #ccc; padding: 12px; }
+      .print-logo-placeholder { display: inline-flex; align-items: center; justify-content: center; background: #ddd; font-weight: bold; font-size: 6rem; color: #555; }
+      .print-page-name { font-weight: bold; font-size: 28px; margin-top: 24px; }
+      .print-page-players { font-size: 16px; color: #555; margin-top: 4px; }
+      @media print { .print-page { height: auto; min-height: 100vh; } }
+    </style>
+    </head><body>
+    ${teams.map(printLogoOnePerPageTile).join('')}
+    </body></html>`);
+  win.document.close();
+  win.focus();
+  win.print();
+}
+
 export async function renderTeamLogo(outlet) {
   const teams = getTeams();
 
@@ -140,8 +171,9 @@ export async function renderTeamLogo(outlet) {
       <div class="tab-pane fade show active" id="tl-pane-gallery" role="tabpanel">
         <div class="card">
           <div class="card-body">
-            <div class="d-flex justify-content-end mb-3">
+            <div class="d-flex justify-content-end gap-2 mb-3">
               <button class="btn btn-sm btn-outline-secondary" id="tl-print"><i class="fa-solid fa-print me-1"></i>Print Logos</button>
+              <button class="btn btn-sm btn-outline-secondary" id="tl-print-one-per-page" title="One logo per printed page"><i class="fa-solid fa-file-image me-1"></i>Print One per Page</button>
             </div>
             <div class="logo-gallery-grid">
               ${teams.map(galleryTile).join('')}
@@ -177,6 +209,7 @@ export async function renderTeamLogo(outlet) {
     </div>`;
 
   outlet.querySelector('#tl-print').addEventListener('click', () => printLogoGallery(teams, getSettings()));
+  outlet.querySelector('#tl-print-one-per-page').addEventListener('click', () => printLogosOnePerPage(teams, getSettings()));
 
   const teamSearchInput = outlet.querySelector('#tl-team-search');
   const teamIdInput = outlet.querySelector('#tl-team-id');
