@@ -135,9 +135,16 @@ function gridDimsFor(perPage) {
 
 /** Configurable N-logos-per-A4-page print — full-bleed cells, no borders/margins wasted, for any layout from 1 up. */
 function printLogosPerPage(teams, perPage) {
-  const { cols, rows } = gridDimsFor(perPage);
   const pages = [];
   for (let i = 0; i < teams.length; i += perPage) pages.push(teams.slice(i, i + perPage));
+
+  // Each page's grid is sized to how many teams actually landed on it, not the requested
+  // per-page count — otherwise a short last page (e.g. 2 teams in a "4 per page" print)
+  // still reserves a full 2x2 grid's worth of row height, leaving half the sheet blank.
+  const pageHtml = (page) => {
+    const { cols, rows } = gridDimsFor(page.length);
+    return `<div class="print-page" style="grid-template-columns: repeat(${cols}, 1fr); grid-template-rows: repeat(${rows}, 1fr);">${page.map(printGridCell).join('')}</div>`;
+  };
 
   const win = window.open('', '_blank');
   win.document.write(`<!DOCTYPE html><html><head><title> </title>
@@ -147,7 +154,7 @@ function printLogosPerPage(teams, perPage) {
       body { font-family: Arial, Helvetica, sans-serif; color: #111; margin: 0; }
       .print-page {
         width: 210mm; height: 297mm;
-        display: grid; grid-template-columns: repeat(${cols}, 1fr); grid-template-rows: repeat(${rows}, 1fr);
+        display: grid;
         break-after: page; page-break-after: always;
       }
       .print-page:last-child { break-after: auto; page-break-after: auto; }
@@ -161,7 +168,7 @@ function printLogosPerPage(teams, perPage) {
       .print-cell-players { font-size: clamp(9px, 1.6vw, 14px); color: #555; margin-top: 2px; }
     </style>
     </head><body>
-    ${pages.map((page) => `<div class="print-page">${page.map(printGridCell).join('')}</div>`).join('')}
+    ${pages.map(pageHtml).join('')}
     </body></html>`);
   win.document.close();
   win.focus();
