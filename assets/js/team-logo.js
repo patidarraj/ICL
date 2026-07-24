@@ -129,16 +129,25 @@ function printLogoOnePerPageTile(team) {
 /** One team's logo per printed page — for cutting out individually or handing out one-per-team, rather than the shared grid sheet. */
 function printLogosOnePerPage(teams, settings) {
   const win = window.open('', '_blank');
-  win.document.write(`<!DOCTYPE html><html><head><title>${escapeHtml(settings.tournamentName || 'Team Logos')} — Team Logos (One per Page)</title>
+  win.document.write(`<!DOCTYPE html><html><head><title> </title>
     <style>
+      @page { size: A4 portrait; margin: 10mm; }
+      * { box-sizing: border-box; }
       body { font-family: Arial, Helvetica, sans-serif; color: #111; margin: 0; }
-      .print-page { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; break-after: page; page-break-after: always; }
+      .print-page {
+        width: 100%; min-height: 100vh;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        break-after: page; page-break-after: always;
+      }
       .print-page:last-child { break-after: auto; page-break-after: auto; }
-      .print-logo { width: 320px; height: 320px; object-fit: contain; border-radius: 24px; border: 1px solid #ccc; padding: 12px; }
-      .print-logo-placeholder { display: inline-flex; align-items: center; justify-content: center; background: #ddd; font-weight: bold; font-size: 6rem; color: #555; }
-      .print-page-name { font-weight: bold; font-size: 28px; margin-top: 24px; }
-      .print-page-players { font-size: 16px; color: #555; margin-top: 4px; }
-      @media print { .print-page { height: auto; min-height: 100vh; } }
+      .print-logo {
+        width: 100%; max-width: 620px; aspect-ratio: 1 / 1;
+        object-fit: contain; border-radius: 32px; border: 1px solid #ccc; padding: 16px;
+      }
+      .print-logo-placeholder { display: inline-flex; align-items: center; justify-content: center; background: #ddd; font-weight: bold; font-size: 10rem; color: #555; }
+      .print-page-name { font-weight: bold; font-size: 40px; margin-top: 32px; text-align: center; }
+      .print-page-players { font-size: 20px; color: #555; margin-top: 6px; text-align: center; }
+      @media print { .print-page { min-height: auto; height: 277mm; } }
     </style>
     </head><body>
     ${teams.map(printLogoOnePerPageTile).join('')}
