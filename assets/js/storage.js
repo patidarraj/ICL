@@ -167,6 +167,7 @@ export function getBracket() { return cache.bracket || null; }
 export function saveBracket(bracket) { return updateDoc(stateRef, { bracket }); }
 
 export function isAdminAuthed() { return currentUser !== null; }
+export function getAdminEmail() { return currentUser?.email || null; }
 
 export async function loginAdmin(password) {
   await signInWithEmailAndPassword(auth, ADMIN_EMAIL, password);

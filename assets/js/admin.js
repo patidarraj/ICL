@@ -2,6 +2,7 @@ import {
   getTeams, saveTeams, getFixtures, saveFixtures, getSettings, saveSettings,
   isAdminAuthed, loginAdmin, logoutAdmin, refreshStandings, resetTournament, exportBackup, restoreBackup,
   approveTeamLogo, rejectTeamLogo, getLiveScores, deleteLiveScore, updateTeam, removeTeamLogo, getRefereePasscode,
+  getAdminEmail,
 } from './storage.js';
 import { uid, downloadFile, escapeHtml, POOL_NAMES, isoDate, VENUE, generateLogoCode } from './utilities.js';
 import { notify } from './notifications.js';
@@ -382,6 +383,8 @@ function adminPanel(outlet) {
         match.scoreA = a; match.scoreB = b;
         match.winner = a === b ? 'draw' : (a > b ? match.teamA : match.teamB);
         match.status = 'completed';
+        match.confirmedBy = getAdminEmail();
+        match.confirmedAt = new Date().toISOString();
         await saveFixtures(fx);
         const updatedTeams = await refreshStandings();
         modal.hide();
@@ -590,6 +593,10 @@ function adminPanel(outlet) {
       match.scoreA = totalA; match.scoreB = totalB;
       match.winner = live.result.winner === 'draw' ? 'draw' : (live.result.winner === 'A' ? match.teamA : match.teamB);
       match.status = 'completed';
+      match.confirmedBy = getAdminEmail();
+      match.confirmedAt = new Date().toISOString();
+      match.playerStats = live.teams;
+      match.queenTakenBy = live.queenTakenBy || null;
       await saveFixtures(fx);
       const updatedTeams = await refreshStandings();
       await deleteLiveScore(live.matchId);

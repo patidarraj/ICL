@@ -19,9 +19,39 @@ function matchesPerDay(fixtures) {
   return { labels: dates.map((d) => d.slice(5)), values: dates.map((d) => byDate[d]) };
 }
 
+function playerLeaderboard(fixtures, teamsById) {
+  const byName = {};
+  const bump = (name, teamName, field, amount) => {
+    const key = `${name}::${teamName}`;
+    if (!byName[key]) byName[key] = { name, teamName, points: 0, fouls: 0, queens: 0 };
+    byName[key][field] += amount;
+  };
+
+  fixtures.filter((f) => f.playerStats).forEach((f) => {
+    ['A', 'B'].forEach((side) => {
+      const teamId = side === 'A' ? f.teamA : f.teamB;
+      const teamName = teamsById[teamId]?.name || teamId;
+      (f.playerStats[side]?.players || []).forEach((p, idx) => {
+        bump(p.name, teamName, 'points', p.points || 0);
+        bump(p.name, teamName, 'fouls', p.fouls || 0);
+        if (f.queenTakenBy === `${side}-${idx}`) bump(p.name, teamName, 'queens', 1);
+      });
+    });
+  });
+
+  const players = Object.values(byName);
+  return {
+    topScorers: [...players].sort((a, b) => b.points - a.points).slice(0, 5),
+    topQueens: [...players].filter((p) => p.queens > 0).sort((a, b) => b.queens - a.queens).slice(0, 5),
+    cleanest: [...players].filter((p) => p.points > 0).sort((a, b) => a.fouls - b.fouls || b.points - a.points).slice(0, 5),
+  };
+}
+
 export async function renderStats(outlet) {
   const teams = getTeams();
   const fixtures = getFixtures();
+  const teamsById = Object.fromEntries(teams.map((t) => [t.id, t]));
+  const leaderboard = playerLeaderboard(fixtures, teamsById);
 
   const poolWins = POOL_NAMES.map((pool) => teams.filter((t) => t.pool === pool).reduce((s, t) => s + t.won, 0));
   const winPct = teams.map((t) => (t.played ? Math.round((t.won / t.played) * 100) : 0));
@@ -80,6 +110,35 @@ export async function renderStats(outlet) {
           <thead><tr><th>#</th><th>Team</th><th>Pool</th><th>Won</th><th>Points</th></tr></thead>
           <tbody>${topTeams.map((t, i) => `<tr><td>${i + 1}</td><td>${t.name}</td><td>${t.pool}</td><td>${t.won}</td><td>${t.points}</td></tr>`).join('') || '<tr><td colspan="5" class="text-muted">No data yet</td></tr>'}</tbody>
         </table>
+      </div>
+    </div>
+    <div class="row g-3 mt-1">
+      <div class="col-lg-4">
+        <div class="card h-100"><div class="card-header"><i class="fa-solid fa-circle-dot me-2"></i>Top Scorers</div>
+          <div class="card-body">
+            ${leaderboard.topScorers.length ? `<table class="table table-dark table-sm mb-0">
+              <tbody>${leaderboard.topScorers.map((p, i) => `<tr><td>${i + 1}</td><td>${p.name}<div class="small text-muted">${p.teamName}</div></td><td class="text-end fw-bold">${p.points}</td></tr>`).join('')}</tbody>
+            </table>` : '<p class="text-muted small mb-0">No completed matches yet</p>'}
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="card h-100"><div class="card-header"><i class="fa-solid fa-crown me-2"></i>Most Queens Taken</div>
+          <div class="card-body">
+            ${leaderboard.topQueens.length ? `<table class="table table-dark table-sm mb-0">
+              <tbody>${leaderboard.topQueens.map((p, i) => `<tr><td>${i + 1}</td><td>${p.name}<div class="small text-muted">${p.teamName}</div></td><td class="text-end fw-bold">${p.queens}</td></tr>`).join('')}</tbody>
+            </table>` : '<p class="text-muted small mb-0">No Queens taken yet</p>'}
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="card h-100"><div class="card-header"><i class="fa-solid fa-shield-halved me-2"></i>Cleanest Play (Fewest Fouls)</div>
+          <div class="card-body">
+            ${leaderboard.cleanest.length ? `<table class="table table-dark table-sm mb-0">
+              <tbody>${leaderboard.cleanest.map((p, i) => `<tr><td>${i + 1}</td><td>${p.name}<div class="small text-muted">${p.teamName}</div></td><td class="text-end fw-bold">${p.fouls}</td></tr>`).join('')}</tbody>
+            </table>` : '<p class="text-muted small mb-0">No data yet</p>'}
+          </div>
+        </div>
       </div>
     </div>`;
 
