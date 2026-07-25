@@ -89,7 +89,14 @@ function bracketPathExplainer() {
     <div class="card">
       <div class="card-header"><i class="fa-solid fa-route me-2"></i>How 25 Teams Become 1 Champion</div>
       <div class="card-body">
-        <p class="text-muted small mb-3">New to the format? Follow the lines left to right — 5 pools feed 8 seeded qualifiers, then it's a standard knockout bracket down to a single champion.</p>
+        <p class="mb-3">New to the tournament? Here's the whole journey, start to finish, in plain terms:</p>
+        <ol class="path-steps mb-4">
+          <li><strong>Right now &mdash; Pool Stage.</strong> All 25 teams are split into 5 pools of 5. Every team plays every other team in its own pool once (round robin). This is the stage happening today — check the Schedule and Standings pages to follow it.</li>
+          <li><strong>Next &mdash; Qualification.</strong> Once every pool match is done, only 8 teams move forward: the <strong>winner of each of the 5 pools</strong>, plus the <strong>3 best runner-ups</strong> across all pools (called "wildcards"), picked by who has the most points. Nobody knows who the wildcards are until every pool match is finished — it can't be decided early.</li>
+          <li><strong>Then &mdash; Knockout Rounds.</strong> Those 8 qualifiers are seeded 1&ndash;8 (best records get the easier first matchup) and play a straight knockout: lose once and you're out. Quarterfinals (4 matches) &rarr; Semifinals (2 matches) &rarr; a Third-Place Match and the Final.</li>
+          <li><strong>Finally &mdash; Champion.</strong> The winner of the Final is the Season 3 Champion.</li>
+        </ol>
+        <p class="text-muted small mb-3">The diagram below shows the same path visually — follow it left to right.</p>
         <div class="path-bracket-scroll mb-4">
           <div class="path-bracket">
             <div class="path-col">
