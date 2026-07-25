@@ -6,7 +6,7 @@ const ALLOWED_MOVES = [
   ['Attempt to strike opponents coins', true],
 ];
 
-const CASE_PENALTY = 'Case 1: the coin is pocketed — the pocketed coin is added back on the board. Case 2: no coin is pocketed — a coin is added on the board.';
+const CASE_PENALTY = '<strong>Case 1:</strong> coin pocketed — it\'s added back on the board.<br><strong>Case 2:</strong> no coin pocketed — a coin is added on the board.';
 
 const FOULS = [
   ['Touching any coin on the board with a hand', 'Chance skipped + one coin added'],
