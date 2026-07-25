@@ -260,7 +260,7 @@ export function hashString(str) {
 
 export function recomputeStandingsForTeams(teams, fixtures) {
   const reset = teams.map((t) => ({
-    ...t, played: 0, won: 0, lost: 0, drawn: 0, points: 0, scoreFor: 0, scoreAgainst: 0,
+    ...t, played: 0, won: 0, lost: 0, drawn: 0, points: 0, scoreFor: 0, scoreAgainst: 0, h2h: {},
   }));
   const byId = Object.fromEntries(reset.map((t) => [t.id, t]));
 
@@ -271,9 +271,9 @@ export function recomputeStandingsForTeams(teams, fixtures) {
     a.played++; b.played++;
     a.scoreFor += f.scoreA; a.scoreAgainst += f.scoreB;
     b.scoreFor += f.scoreB; b.scoreAgainst += f.scoreA;
-    if (f.winner === f.teamA) { a.won++; b.lost++; a.points += 2; }
-    else if (f.winner === f.teamB) { b.won++; a.lost++; b.points += 2; }
-    else if (f.winner === 'draw') { a.drawn++; b.drawn++; a.points += 1; b.points += 1; }
+    if (f.winner === f.teamA) { a.won++; b.lost++; a.points += 2; a.h2h[b.id] = 'win'; b.h2h[a.id] = 'loss'; }
+    else if (f.winner === f.teamB) { b.won++; a.lost++; b.points += 2; b.h2h[a.id] = 'win'; a.h2h[b.id] = 'loss'; }
+    else if (f.winner === 'draw') { a.drawn++; b.drawn++; a.points += 1; b.points += 1; a.h2h[b.id] = 'draw'; b.h2h[a.id] = 'draw'; }
   });
 
   return reset;
@@ -287,6 +287,11 @@ export function sortStandings(teams) {
   return [...teams].sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
     const nd = netDifference(b) - netDifference(a);
+    if (nd === 0) {
+      const h2h = a.h2h?.[b.id];
+      if (h2h === 'win') return -1;
+      if (h2h === 'loss') return 1;
+    }
     if (nd !== 0) return nd;
     return b.scoreFor - a.scoreFor;
   });
