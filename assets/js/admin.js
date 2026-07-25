@@ -64,7 +64,9 @@ function matchRow(f, teamsById) {
     <td>${f.id}</td><td>${f.pool}</td>
     <td>${teamsById[f.teamA]?.name || f.teamA}</td><td>${teamsById[f.teamB]?.name || f.teamB}</td>
     <td class="text-nowrap">${f.date} &middot; ${f.time}</td>
-    <td>${f.status === 'completed' ? `${f.scoreA} - ${f.scoreB}` : '-'}</td>
+    <td>${f.status === 'completed'
+      ? `${f.scoreA} - ${f.scoreB}${f.confirmedBy ? `<div class="small text-muted" title="${f.confirmedAt || ''}">confirmed by ${f.confirmedBy}</div>` : ''}`
+      : '-'}</td>
     <td class="text-nowrap">
       <button class="btn btn-sm btn-outline-secondary btn-reschedule-match" data-id="${f.id}" title="Reschedule"><i class="fa-solid fa-calendar-days"></i></button>
       ${f.status === 'scheduled'
