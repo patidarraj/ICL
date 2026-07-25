@@ -62,8 +62,10 @@ function matchRow(f, teamsById) {
   return `<tr data-id="${f.id}">
     <td>${f.id}</td><td>${f.pool}</td>
     <td>${teamsById[f.teamA]?.name || f.teamA}</td><td>${teamsById[f.teamB]?.name || f.teamB}</td>
+    <td class="text-nowrap">${f.date} &middot; ${f.time}</td>
     <td>${f.status === 'completed' ? `${f.scoreA} - ${f.scoreB}` : '-'}</td>
     <td class="text-nowrap">
+      <button class="btn btn-sm btn-outline-secondary btn-reschedule-match" data-id="${f.id}" title="Reschedule"><i class="fa-solid fa-calendar-days"></i></button>
       ${f.status === 'scheduled'
         ? `<button class="btn btn-sm btn-success btn-enter-result" data-id="${f.id}"><i class="fa-solid fa-check"></i> Result</button>`
         : `<button class="btn btn-sm btn-outline-warning btn-undo-match" data-id="${f.id}"><i class="fa-solid fa-rotate-left"></i> Undo</button>`}
@@ -220,7 +222,7 @@ function adminPanel(outlet) {
           </div>
           <div class="card-body table-responsive">
             <table class="table table-dark table-hover align-middle mb-0">
-              <thead><tr><th>#</th><th>Pool</th><th>Team A</th><th>Team B</th><th>Score</th><th>Action</th></tr></thead>
+              <thead><tr><th>#</th><th>Pool</th><th>Team A</th><th>Team B</th><th>Date &middot; Time</th><th>Score</th><th>Action</th></tr></thead>
               <tbody id="admin-matches-body">${fixtures.map((f) => matchRow(f, teamsById)).join('')}</tbody>
             </table>
           </div>
@@ -386,6 +388,29 @@ function adminPanel(outlet) {
         refreshMatchesBody(fx, updatedTeams);
         refreshTeamsBody(updatedTeams);
         notify.success('Result saved &middot; standings updated', 'Match Completed');
+      });
+    }));
+
+    outlet.querySelectorAll('.btn-reschedule-match').forEach((btn) => btn.addEventListener('click', () => {
+      const f = getFixtures().find((x) => x.id === btn.dataset.id);
+      const t = Object.fromEntries(getTeams().map((x) => [x.id, x]));
+      openModal(`
+        <div class="modal-header"><h5 class="modal-title">Reschedule &middot; ${t[f.teamA]?.name} vs ${t[f.teamB]?.name}</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <p class="text-muted small">Currently: ${f.date} &middot; ${f.time}</p>
+          <label class="form-label">Date</label><input type="date" class="form-control mb-2" id="m-resched-date" value="${f.date}">
+          <label class="form-label">Time</label><input class="form-control" id="m-resched-time" value="${f.time}">
+        </div>
+        <div class="modal-footer"><button class="btn btn-primary" id="m-resched-save">Save</button></div>`);
+      modalContent.querySelector('#m-resched-save').addEventListener('click', async () => {
+        const date = modalContent.querySelector('#m-resched-date').value;
+        const time = modalContent.querySelector('#m-resched-time').value;
+        if (!date || !time) { notify.warn('Enter both date and time'); return; }
+        const fx = getFixtures().map((x) => (x.id === f.id ? { ...x, date, time, day: new Date(date).toLocaleDateString('en-US', { weekday: 'long' }) } : x));
+        await saveFixtures(fx);
+        modal.hide();
+        refreshMatchesBody(fx, getTeams());
+        notify.success('Match rescheduled');
       });
     }));
 
