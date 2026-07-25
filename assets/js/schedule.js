@@ -15,8 +15,20 @@ function statusBadge(f) {
   return '<span class="badge bg-secondary">Scheduled</span>';
 }
 
+function to24Hour(timeStr) {
+  const m = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec((timeStr || '').trim());
+  if (!m) return timeStr || '';
+  let h = Number(m[1]) % 12;
+  if (/PM/i.test(m[3])) h += 12;
+  return `${String(h).padStart(2, '0')}:${m[2]}`;
+}
+
+function sortByDateTime(fixtures) {
+  return [...fixtures].sort((a, b) => `${a.date} ${to24Hour(a.time)}`.localeCompare(`${b.date} ${to24Hour(b.time)}`));
+}
+
 function filterFixtures(fixtures, teamsById, filters) {
-  return fixtures.filter((f) => {
+  return sortByDateTime(fixtures).filter((f) => {
     if (filters.pool && f.pool !== filters.pool) return false;
     if (filters.team && f.teamA !== filters.team && f.teamB !== filters.team) return false;
     if (filters.date && f.date !== filters.date) return false;
