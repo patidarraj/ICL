@@ -28,3 +28,11 @@
 .coin-white { background: #F1F5F9; }
 .coin-black { background: #1E293B; border-color: #475569; }
 .coin-red { background: #EF4444; }
+
+/* Fouls & Penalties badges hold full sentences, not short labels — Bootstrap's
+   .badge defaults to white-space:nowrap, which pushed long penalty text off-screen
+   instead of wrapping inside the table cell. */
+.table .badge {
+  white-space: normal;
+  text-align: left;
+}
