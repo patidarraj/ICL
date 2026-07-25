@@ -260,7 +260,7 @@ export function hashString(str) {
 
 export function recomputeStandingsForTeams(teams, fixtures) {
   const reset = teams.map((t) => ({
-    ...t, played: 0, won: 0, lost: 0, points: 0, scoreFor: 0, scoreAgainst: 0,
+    ...t, played: 0, won: 0, lost: 0, drawn: 0, points: 0, scoreFor: 0, scoreAgainst: 0,
   }));
   const byId = Object.fromEntries(reset.map((t) => [t.id, t]));
 
@@ -273,6 +273,7 @@ export function recomputeStandingsForTeams(teams, fixtures) {
     b.scoreFor += f.scoreB; b.scoreAgainst += f.scoreA;
     if (f.winner === f.teamA) { a.won++; b.lost++; a.points += 2; }
     else if (f.winner === f.teamB) { b.won++; a.lost++; b.points += 2; }
+    else if (f.winner === 'draw') { a.drawn++; b.drawn++; a.points += 1; b.points += 1; }
   });
 
   return reset;

@@ -374,11 +374,11 @@ function adminPanel(outlet) {
       modalContent.querySelector('#m-save-result').addEventListener('click', async () => {
         const a = Number(modalContent.querySelector('#m-score-a').value);
         const b = Number(modalContent.querySelector('#m-score-b').value);
-        if (Number.isNaN(a) || Number.isNaN(b) || a === b) { notify.warn('Enter valid, non-tied scores'); return; }
+        if (Number.isNaN(a) || Number.isNaN(b)) { notify.warn('Enter valid scores'); return; }
         const fx = getFixtures().map((x) => (x.id === f.id ? { ...x } : x));
         const match = fx.find((x) => x.id === f.id);
         match.scoreA = a; match.scoreB = b;
-        match.winner = a > b ? match.teamA : match.teamB;
+        match.winner = a === b ? 'draw' : (a > b ? match.teamA : match.teamB);
         match.status = 'completed';
         await saveFixtures(fx);
         const updatedTeams = await refreshStandings();
@@ -506,8 +506,8 @@ function adminPanel(outlet) {
 
   outlet.querySelector('#btn-export-excel').addEventListener('click', () => {
     const t = getTeams();
-    const rows = t.map((x) => `<tr><td>${x.name}</td><td>${x.players.join(' & ')}</td><td>${x.pool}</td><td>${x.played}</td><td>${x.won}</td><td>${x.lost}</td><td>${x.points}</td></tr>`).join('');
-    const html = `<table><tr><th>Team</th><th>Players</th><th>Pool</th><th>Played</th><th>Won</th><th>Lost</th><th>Points</th></tr>${rows}</table>`;
+    const rows = t.map((x) => `<tr><td>${x.name}</td><td>${x.players.join(' & ')}</td><td>${x.pool}</td><td>${x.played}</td><td>${x.won}</td><td>${x.drawn || 0}</td><td>${x.lost}</td><td>${x.points}</td></tr>`).join('');
+    const html = `<table><tr><th>Team</th><th>Players</th><th>Pool</th><th>Played</th><th>Won</th><th>Drawn</th><th>Lost</th><th>Points</th></tr>${rows}</table>`;
     downloadFile('teams_standings.xls', html, 'application/vnd.ms-excel');
     notify.success('Excel file exported');
   });
@@ -518,8 +518,8 @@ function adminPanel(outlet) {
     win.document.write(`<html><head><title>Standings</title></head><body>
       <h2>${settings.tournamentName} — Standings</h2>
       <table border="1" cellpadding="6" cellspacing="0" width="100%">
-        <tr><th>Team</th><th>Pool</th><th>Played</th><th>Won</th><th>Lost</th><th>Points</th></tr>
-        ${t.map((x) => `<tr><td>${x.name}</td><td>${x.pool}</td><td>${x.played}</td><td>${x.won}</td><td>${x.lost}</td><td>${x.points}</td></tr>`).join('')}
+        <tr><th>Team</th><th>Pool</th><th>Played</th><th>Won</th><th>Drawn</th><th>Lost</th><th>Points</th></tr>
+        ${t.map((x) => `<tr><td>${x.name}</td><td>${x.pool}</td><td>${x.played}</td><td>${x.won}</td><td>${x.drawn || 0}</td><td>${x.lost}</td><td>${x.points}</td></tr>`).join('')}
       </table></body></html>`);
     win.document.close();
     win.print();
@@ -556,7 +556,6 @@ function adminPanel(outlet) {
     if (!live) return;
     const f = getFixtures().find((x) => x.id === live.matchId);
     if (!f) { notify.error('That match no longer exists'); return; }
-    if (live.result.winner === 'draw') { notify.warn('Draws aren\'t supported for official results — resolve manually in Enter Result'); return; }
     const totalA = live.teams.A.players.reduce((s, p) => s + p.points, 0);
     const totalB = live.teams.B.players.reduce((s, p) => s + p.points, 0);
     btn.disabled = true;
@@ -564,7 +563,7 @@ function adminPanel(outlet) {
       const fx = getFixtures().map((x) => (x.id === f.id ? { ...x } : x));
       const match = fx.find((x) => x.id === f.id);
       match.scoreA = totalA; match.scoreB = totalB;
-      match.winner = live.result.winner === 'A' ? match.teamA : match.teamB;
+      match.winner = live.result.winner === 'draw' ? 'draw' : (live.result.winner === 'A' ? match.teamA : match.teamB);
       match.status = 'completed';
       await saveFixtures(fx);
       const updatedTeams = await refreshStandings();
