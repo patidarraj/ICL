@@ -5,7 +5,7 @@
 // the rest of the team's data (scores, points) to non-admin writes.
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js';
 import {
-  getFirestore, doc, collection, getDoc, getDocs, setDoc, updateDoc, writeBatch, onSnapshot, deleteField, deleteDoc,
+  getFirestore, doc, collection, getDoc, getDocs, setDoc, updateDoc, writeBatch, onSnapshot, deleteField, deleteDoc, addDoc,
 } from 'https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js';
 import {
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
@@ -19,9 +19,10 @@ const auth = getAuth(app);
 const stateRef = doc(db, 'tournaments', 'main');
 const teamsColRef = collection(db, 'teams');
 const liveScoresColRef = collection(db, 'liveScores');
+const galleryColRef = collection(db, 'gallery');
 const REFEREE_SESSION_KEY = 'icl_referee_authed';
 
-let cache = { teams: [], fixtures: [], settings: {}, bracket: null, liveScores: {} };
+let cache = { teams: [], fixtures: [], settings: {}, bracket: null, liveScores: {}, gallery: [] };
 let currentUser = null;
 const changeListeners = new Set();
 
@@ -52,6 +53,11 @@ onSnapshot(liveScoresColRef, (snap) => {
   const liveScores = {};
   snap.docs.forEach((d) => { liveScores[d.id] = d.data(); });
   cache = { ...cache, liveScores };
+  notifyChange();
+});
+
+onSnapshot(galleryColRef, (snap) => {
+  cache = { ...cache, gallery: snap.docs.map((d) => ({ id: d.id, ...d.data() })) };
   notifyChange();
 });
 
@@ -168,6 +174,37 @@ export function saveBracket(bracket) { return updateDoc(stateRef, { bracket }); 
 
 export function isAdminAuthed() { return currentUser !== null; }
 export function getAdminEmail() { return currentUser?.email || null; }
+
+// Photos are stored as base64 directly on their own Firestore doc — same trick as team
+// logos — rather than Firebase Storage, since Storage now requires the paid Blaze plan
+// even at zero usage. Firestore's Spark (free) plan caps total stored data at 1 GiB;
+// GALLERY_SAFE_BUDGET_BYTES leaves headroom under that for the rest of the app's data
+// and stops new uploads before the project could ever hit the real Firestore ceiling.
+export const GALLERY_SAFE_BUDGET_BYTES = 900 * 1024 * 1024;
+export const GALLERY_WARN_BUDGET_BYTES = 750 * 1024 * 1024;
+
+export function getGalleryPhotos() { return cache.gallery || []; }
+
+function estimatedByteLength(dataUrl) { return Math.round((dataUrl || '').length * 0.75); }
+
+/** Sum of every stored photo's encoded size (pending + approved both occupy real Firestore storage). */
+export function getGalleryUsageBytes() {
+  return getGalleryPhotos().reduce((sum, p) => sum + estimatedByteLength(p.photoBase64), 0);
+}
+
+export function submitGalleryPhoto({ photoBase64, submittedBy, caption }) {
+  return addDoc(galleryColRef, {
+    photoBase64, submittedBy: submittedBy || '', caption: caption || '', status: 'pending', createdAt: Date.now(),
+  });
+}
+
+export function approveGalleryPhoto(photoId) {
+  return updateDoc(doc(galleryColRef, photoId), { status: 'approved' });
+}
+
+export function rejectGalleryPhoto(photoId) {
+  return deleteDoc(doc(galleryColRef, photoId));
+}
 
 export async function loginAdmin(password) {
   await signInWithEmailAndPassword(auth, ADMIN_EMAIL, password);

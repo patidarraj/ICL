@@ -2,7 +2,7 @@ import {
   getTeams, saveTeams, getFixtures, saveFixtures, getSettings, saveSettings,
   isAdminAuthed, loginAdmin, logoutAdmin, refreshStandings, resetTournament, exportBackup, restoreBackup,
   approveTeamLogo, rejectTeamLogo, getLiveScores, deleteLiveScore, updateTeam, removeTeamLogo, getRefereePasscode,
-  getAdminEmail,
+  getAdminEmail, getGalleryPhotos, approveGalleryPhoto, rejectGalleryPhoto, getGalleryUsageBytes, GALLERY_SAFE_BUDGET_BYTES,
 } from './storage.js';
 import { uid, downloadFile, escapeHtml, POOL_NAMES, isoDate, VENUE, generateLogoCode } from './utilities.js';
 import { notify } from './notifications.js';
@@ -114,6 +114,26 @@ function liveScoreTile(live) {
     </div>`;
 }
 
+function galleryApprovalTile(photo) {
+  return `
+    <div class="col-6 col-sm-4 col-md-3 col-lg-2 text-center" data-id="${photo.id}">
+      <img src="${photo.photoBase64}" alt="" class="team-logo-gallery mb-2" style="aspect-ratio:4/3; object-fit:cover; width:100%;">
+      <div class="small text-muted text-truncate mb-2">${escapeHtml(photo.submittedBy || 'Anonymous')}</div>
+      <div class="d-flex gap-1">
+        <button class="btn btn-sm btn-success flex-fill btn-approve-photo" data-id="${photo.id}"><i class="fa-solid fa-check"></i></button>
+        <button class="btn btn-sm btn-outline-danger flex-fill btn-reject-photo" data-id="${photo.id}"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+    </div>`;
+}
+
+function publishedPhotoTile(photo) {
+  return `
+    <div class="col-6 col-sm-4 col-md-3 col-lg-2 text-center" data-id="${photo.id}">
+      <img src="${photo.photoBase64}" alt="" class="gallery-approval-thumb mb-2" style="aspect-ratio:4/3; object-fit:cover; width:100%;">
+      <button class="btn btn-sm btn-outline-danger w-100 btn-delete-photo" data-id="${photo.id}"><i class="fa-solid fa-trash me-1"></i>Remove</button>
+    </div>`;
+}
+
 function adminPanel(outlet) {
   const teams = getTeams();
   const fixtures = getFixtures();
@@ -121,6 +141,10 @@ function adminPanel(outlet) {
   const settings = getSettings();
   const pendingLogoTeams = teams.filter((t) => t.pendingLogoStatus === 'pending');
   const activeLiveScores = Object.values(getLiveScores());
+  const galleryPhotos = getGalleryPhotos();
+  const pendingPhotos = galleryPhotos.filter((p) => p.status === 'pending');
+  const publishedPhotos = galleryPhotos.filter((p) => p.status === 'approved');
+  const galleryUsagePct = Math.min(100, Math.round((getGalleryUsageBytes() / GALLERY_SAFE_BUDGET_BYTES) * 100));
 
   outlet.innerHTML = `
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -202,6 +226,12 @@ function adminPanel(outlet) {
         </button>
       </li>
       <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#admin-tab-gallery" type="button" role="tab" aria-selected="false">
+          <i class="fa-solid fa-images me-1"></i>Gallery
+          ${pendingPhotos.length ? `<span class="badge bg-warning text-dark ms-1">${pendingPhotos.length}</span>` : ''}
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#admin-tab-referee" type="button" role="tab" aria-selected="false">
           <i class="fa-solid fa-user-shield me-1"></i>Referee Access
         </button>
@@ -254,6 +284,31 @@ function adminPanel(outlet) {
                 <tbody id="admin-teams-body">${teams.map(teamRow).join('')}</tbody>
               </table>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="admin-tab-gallery" role="tabpanel">
+        <div class="card mb-3">
+          <div class="card-body">
+            <div class="d-flex justify-content-between small mb-1">
+              <span>Gallery storage used (free Firestore tier)</span>
+              <span>${galleryUsagePct}%</span>
+            </div>
+            <div class="progress" style="height:10px;">
+              <div class="progress-bar ${galleryUsagePct >= 100 ? 'bg-danger' : galleryUsagePct >= 83 ? 'bg-warning' : 'bg-success'}" style="width:${galleryUsagePct}%"></div>
+            </div>
+          </div>
+        </div>
+        ${pendingPhotos.length ? `
+        <div class="card mb-3 border-warning">
+          <div class="card-header"><i class="fa-solid fa-clock me-2"></i>Pending Approval <span class="badge bg-warning text-dark ms-1">${pendingPhotos.length}</span></div>
+          <div class="card-body"><div class="row g-3" id="admin-gallery-pending">${pendingPhotos.map(galleryApprovalTile).join('')}</div></div>
+        </div>` : ''}
+        <div class="card">
+          <div class="card-header"><i class="fa-solid fa-images me-2"></i>Published Photos <span class="text-muted small">(${publishedPhotos.length})</span></div>
+          <div class="card-body">
+            <div class="row g-3" id="admin-gallery-published">${publishedPhotos.map(publishedPhotoTile).join('') || '<p class="text-muted small mb-0">No photos published yet</p>'}</div>
           </div>
         </div>
       </div>
@@ -656,8 +711,26 @@ function adminPanel(outlet) {
     refreshTeamsBody(filtered);
   });
 
+  function bindGalleryActions() {
+    outlet.querySelectorAll('.btn-approve-photo').forEach((btn) => btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      try { await approveGalleryPhoto(btn.dataset.id); notify.success('Photo published'); adminPanel(outlet); } catch { notify.error('Could not approve photo'); btn.disabled = false; }
+    }));
+    outlet.querySelectorAll('.btn-reject-photo').forEach((btn) => btn.addEventListener('click', async () => {
+      if (!confirm('Discard this submitted photo?')) return;
+      btn.disabled = true;
+      try { await rejectGalleryPhoto(btn.dataset.id); notify.warn('Photo discarded'); adminPanel(outlet); } catch { notify.error('Could not discard photo'); btn.disabled = false; }
+    }));
+    outlet.querySelectorAll('.btn-delete-photo').forEach((btn) => btn.addEventListener('click', async () => {
+      if (!confirm('Remove this photo from the gallery?')) return;
+      btn.disabled = true;
+      try { await rejectGalleryPhoto(btn.dataset.id); notify.success('Photo removed'); adminPanel(outlet); } catch { notify.error('Could not remove photo'); btn.disabled = false; }
+    }));
+  }
+
   bindTeamActions();
   bindMatchActions();
+  bindGalleryActions();
 }
 
 export async function renderAdmin(outlet) {
