@@ -662,7 +662,8 @@ function adminPanel(outlet) {
       notify.success('Result confirmed &middot; standings updated', 'Match Completed');
       adminPanel(outlet);
     } catch (err) {
-      notify.error('Could not confirm result — please try again.');
+      console.error(err);
+      notify.error(`Could not confirm result — ${err.message || 'please try again'}`);
       btn.disabled = false;
     }
   }));

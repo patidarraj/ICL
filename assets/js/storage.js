@@ -214,12 +214,26 @@ export async function logoutAdmin() {
   await signOut(auth);
 }
 
-/** Recompute + persist standings after any fixture result change. */
+/**
+ * Recompute + persist standings after any fixture result change. Writes only the
+ * standings fields (played/won/lost/drawn/points/scoreFor/scoreAgainst/h2h) via a
+ * batch of partial updates — NOT saveTeams()'s full-document overwrite. Every team
+ * doc also carries its full logo image (100s of KB each); rewriting all 25 of those
+ * together on every single match confirmation was pushing the batch over Firestore's
+ * write-size limit and silently failing the whole commit once every team had a logo.
+ */
 export async function refreshStandings() {
   const teams = getTeams();
   const fixtures = getFixtures();
   const updated = sortStandings(recomputeStandingsForTeams(teams, fixtures));
-  await saveTeams(updated);
+  const batch = writeBatch(db);
+  updated.forEach((t) => {
+    batch.update(doc(teamsColRef, t.id), {
+      played: t.played, won: t.won, lost: t.lost, drawn: t.drawn,
+      points: t.points, scoreFor: t.scoreFor, scoreAgainst: t.scoreAgainst, h2h: t.h2h,
+    });
+  });
+  await batch.commit();
   return updated;
 }
 
