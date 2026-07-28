@@ -7,7 +7,7 @@ import { notify } from './notifications.js';
 // Every Firestore write (including a referee's own +/- taps) triggers the router's
 // global refreshCurrent(), which fully re-renders this page. Without persisting which
 // tab/match was open, each tap would bounce the referee back to a blank Overview tab.
-const uiState = { selectedMatchId: null, stripOpen: false };
+const uiState = { selectedMatchId: null, stripOpen: false, sheetMatchId: null };
 
 // Referee-side pacing aids (30s shot clock, 20-min match timer) — local to this browser
 // session only, not synced to Firestore, keyed by match so they survive the page's
@@ -483,13 +483,110 @@ function refereeLoginForm(outlet, onSuccess) {
   pane.querySelector('#sb-ref-passcode').addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
 }
 
+function sheetPlayerRows(teamKey, f) {
+  const players = f.playerStats?.[teamKey]?.players || [];
+  return players.map((p, idx) => {
+    const hadQueen = f.queenTakenBy === `${teamKey}-${idx}`;
+    return `<tr>
+      <td>${p.name}${hadQueen ? ' <i class="fa-solid fa-crown text-danger ms-1" title="Took the Queen"></i>' : ''}</td>
+      <td class="text-center fw-bold">${p.points}</td>
+      <td class="text-center">${p.dues}</td>
+      <td class="text-center">${p.fouls}</td>
+      <td class="text-center">${p.streak}</td>
+    </tr>`;
+  }).join('');
+}
+
+function sheetTeamCard(teamKey, f, teamsById) {
+  const teamId = teamKey === 'A' ? f.teamA : f.teamB;
+  const teamName = teamsById[teamId]?.name || teamId;
+  const score = teamKey === 'A' ? f.scoreA : f.scoreB;
+  const isWinner = f.winner === teamId;
+  return `
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center ${isWinner ? 'border-success' : ''}">
+        <span class="fw-bold">${teamName}${isWinner ? ' <i class="fa-solid fa-trophy text-warning ms-1"></i>' : ''}</span>
+        <span class="fs-5 fw-bold">${score ?? '-'}</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-dark table-hover align-middle mb-0">
+          <thead><tr><th>Player</th><th class="text-center">Points</th><th class="text-center">Dues</th><th class="text-center">Fouls</th><th class="text-center">Streak</th></tr></thead>
+          <tbody>${sheetPlayerRows(teamKey, f) || '<tr><td colspan="5" class="text-muted small">No detailed data for this match</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function resultSummary(f, teamsById) {
+  if (f.winner === 'draw') {
+    const leaderName = teamsById[f.nrrLeaderTeamId]?.name;
+    return `Match drawn${leaderName ? ` &middot; ${leaderName} ahead on NRR (+${f.nrrMargin || 0})` : ''}`;
+  }
+  const winnerName = teamsById[f.winner]?.name || 'Winner';
+  return `${winnerName} won${f.nrrMargin ? ` &middot; NRR +${f.nrrMargin}` : ''}`;
+}
+
+function scoresheetHtml(f, teamsById) {
+  return `
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="small text-muted mb-1">${f.pool} &middot; ${f.date} &middot; ${f.time}</div>
+        <div class="fw-bold">${resultSummary(f, teamsById)}</div>
+      </div>
+    </div>
+    ${sheetTeamCard('A', f, teamsById)}
+    ${sheetTeamCard('B', f, teamsById)}`;
+}
+
+function renderScoresheetPane(outlet) {
+  const teams = getTeams();
+  const teamsById = Object.fromEntries(teams.map((t) => [t.id, t]));
+  const completed = getFixtures()
+    .filter((f) => f.status === 'completed')
+    .sort((a, b) => `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`));
+
+  if (!uiState.sheetMatchId && completed.length) uiState.sheetMatchId = completed[0].id;
+  const selected = completed.find((f) => f.id === uiState.sheetMatchId);
+
+  const pane = outlet.querySelector('#sb-pane-sheet');
+  pane.innerHTML = `
+    <select class="form-select mb-3" id="sb-sheet-picker">
+      ${completed.length ? completed.map((f) => `<option value="${f.id}" ${f.id === uiState.sheetMatchId ? 'selected' : ''}>${teamsById[f.teamA]?.name} vs ${teamsById[f.teamB]?.name} &middot; ${f.date}</option>`).join('') : '<option>No completed matches yet</option>'}
+    </select>
+    <div id="sb-sheet-body">${selected ? scoresheetHtml(selected, teamsById) : '<p class="text-muted text-center py-4">No completed matches yet</p>'}</div>`;
+
+  pane.querySelector('#sb-sheet-picker')?.addEventListener('change', (e) => {
+    uiState.sheetMatchId = e.target.value;
+    renderScoresheetPane(outlet);
+  });
+}
+
 export async function renderScoreboard(outlet) {
   outlet.innerHTML = `
     <div class="d-flex justify-content-between align-items-center mb-3">
-      <h2 class="page-title mb-0"><i class="fa-solid fa-flag-checkered me-2"></i>Individual Scoring</h2>
+      <h2 class="page-title mb-0"><i class="fa-solid fa-flag-checkered me-2"></i>Scoreboard</h2>
       ${isRefereeAuthed() ? '<button class="btn btn-sm btn-outline-danger" id="sb-ref-logout"><i class="fa-solid fa-right-from-bracket me-1"></i>Lock</button>' : ''}
     </div>
-    <div id="sb-pane-scoring"></div>`;
+    <ul class="nav nav-tabs mb-3" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#sb-tab-scoring" type="button" role="tab" aria-selected="true">
+          <i class="fa-solid fa-flag-checkered me-1"></i>Individual Scoring
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#sb-tab-sheet" type="button" role="tab" aria-selected="false">
+          <i class="fa-solid fa-table-list me-1"></i>Scoresheet
+        </button>
+      </li>
+    </ul>
+    <div class="tab-content">
+      <div class="tab-pane fade show active" id="sb-tab-scoring" role="tabpanel">
+        <div id="sb-pane-scoring"></div>
+      </div>
+      <div class="tab-pane fade" id="sb-tab-sheet" role="tabpanel">
+        <div id="sb-pane-sheet"></div>
+      </div>
+    </div>`;
 
   if (isRefereeAuthed()) {
     renderMatchPicker(outlet);
@@ -501,4 +598,6 @@ export async function renderScoreboard(outlet) {
   } else {
     refereeLoginForm(outlet, () => renderScoreboard(outlet));
   }
+
+  renderScoresheetPane(outlet);
 }
