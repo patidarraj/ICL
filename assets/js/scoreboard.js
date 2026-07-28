@@ -7,7 +7,7 @@ import { notify } from './notifications.js';
 // Every Firestore write (including a referee's own +/- taps) triggers the router's
 // global refreshCurrent(), which fully re-renders this page. Without persisting which
 // tab/match was open, each tap would bounce the referee back to a blank Overview tab.
-const uiState = { selectedMatchId: null, stripOpen: false, sheetMatchId: null };
+const uiState = { selectedMatchId: null, stripOpen: false, scoringOpen: true, sheetMatchId: null };
 
 // Referee-side pacing aids (30s shot clock, 20-min match timer) — local to this browser
 // session only, not synced to Firestore, keyed by match so they survive the page's
@@ -258,17 +258,27 @@ function scoreboardHtml(f, live) {
   return `
     ${stripHtml(f.id, live)}
 
-    <div class="legend">
-      <span class="legend-points"><i class="fa-solid fa-circle-dot"></i>Points</span>
-      <span class="legend-dues"><i class="fa-solid fa-plus"></i>Dues</span>
-      <span class="legend-fouls"><i class="fa-solid fa-triangle-exclamation"></i>Fouls</span>
-      <span class="legend-streak"><i class="fa-solid fa-fire"></i>Streak</span>
-      <span class="legend-queen"><i class="fa-solid fa-crown"></i>Queen</span>
-    </div>
+    <div class="strip ${uiState.scoringOpen ? 'open' : ''}" id="sb-scoring-strip">
+      <div class="strip-head" id="sb-scoring-head">
+        <div class="strip-glance"><span class="glance-item"><i class="fa-solid fa-table-cells"></i><span>Scoring</span></span></div>
+        <i class="fa-solid fa-chevron-down chev"></i>
+      </div>
+      <div class="strip-body strip-body-lg">
+        <div class="strip-body-inner">
+          <div class="legend">
+            <span class="legend-points"><i class="fa-solid fa-circle-dot"></i>Points</span>
+            <span class="legend-dues"><i class="fa-solid fa-plus"></i>Dues</span>
+            <span class="legend-fouls"><i class="fa-solid fa-triangle-exclamation"></i>Fouls</span>
+            <span class="legend-streak"><i class="fa-solid fa-fire"></i>Streak</span>
+            <span class="legend-queen"><i class="fa-solid fa-crown"></i>Queen</span>
+          </div>
 
-    <div class="grid">
-      ${live.teams.A.players.map((p, idx) => compactPlayerCard('A', idx, p, live)).join('')}
-      ${live.teams.B.players.map((p, idx) => compactPlayerCard('B', idx, p, live)).join('')}
+          <div class="grid">
+            ${live.teams.A.players.map((p, idx) => compactPlayerCard('A', idx, p, live)).join('')}
+            ${live.teams.B.players.map((p, idx) => compactPlayerCard('B', idx, p, live)).join('')}
+          </div>
+        </div>
+      </div>
     </div>
 
     ${live.result ? `
@@ -328,6 +338,11 @@ function bindScoringActions(outlet, f, live) {
   pane.querySelector('#sb-strip-head').addEventListener('click', () => {
     uiState.stripOpen = !uiState.stripOpen;
     pane.querySelector('#sb-strip').classList.toggle('open', uiState.stripOpen);
+  });
+
+  pane.querySelector('#sb-scoring-head').addEventListener('click', () => {
+    uiState.scoringOpen = !uiState.scoringOpen;
+    pane.querySelector('#sb-scoring-strip').classList.toggle('open', uiState.scoringOpen);
   });
 
   pane.addEventListener('click', (e) => {
