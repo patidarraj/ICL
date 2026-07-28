@@ -1,5 +1,5 @@
 import { getTeams } from './storage.js';
-import { POOL_NAMES, netDifference, sortStandings, teamLogoHtml } from './utilities.js';
+import { POOL_NAMES, sortStandings, teamLogoHtml } from './utilities.js';
 
 export async function renderStandings(outlet) {
   const teams = getTeams();
@@ -15,14 +15,14 @@ export async function renderStandings(outlet) {
             <div class="card-body table-responsive p-0">
               <table class="table table-dark table-hover align-middle mb-0">
                 <thead><tr>
-                  <th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>Pts</th><th>Net Diff</th>
+                  <th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>Pts</th><th>NRR</th>
                 </tr></thead>
                 <tbody>
                   ${poolTeams.map((t, i) => `<tr>
                     <td>${i + 1}</td>
                     <td><div class="d-flex align-items-center gap-2">${teamLogoHtml(t)}<div>${t.name}<div class="small text-muted">${t.players.join(' & ')}</div></div></div></td>
                     <td>${t.played}</td><td>${t.won}</td><td>${t.drawn || 0}</td><td>${t.lost}</td><td class="fw-bold">${t.points}</td>
-                    <td class="${netDifference(t) >= 0 ? 'text-success' : 'text-danger'}">${netDifference(t) >= 0 ? '+' : ''}${netDifference(t)}</td>
+                    <td>${t.nrr || 0}</td>
                   </tr>`).join('')}
                 </tbody>
               </table>

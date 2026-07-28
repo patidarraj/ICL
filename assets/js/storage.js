@@ -230,7 +230,7 @@ export async function refreshStandings() {
   updated.forEach((t) => {
     batch.update(doc(teamsColRef, t.id), {
       played: t.played, won: t.won, lost: t.lost, drawn: t.drawn,
-      points: t.points, scoreFor: t.scoreFor, scoreAgainst: t.scoreAgainst, h2h: t.h2h,
+      points: t.points, scoreFor: t.scoreFor, scoreAgainst: t.scoreAgainst, nrr: t.nrr, h2h: t.h2h,
     });
   });
   await batch.commit();

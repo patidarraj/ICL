@@ -442,6 +442,11 @@ function adminPanel(outlet) {
         match.status = 'completed';
         match.confirmedBy = getAdminEmail();
         match.confirmedAt = new Date().toISOString();
+        // No referee-recorded Queen/coins-remaining breakdown here, so the score gap is the
+        // best available stand-in for NRR margin. A manually-entered draw has no way to know
+        // who had fewer coins, so it gets no NRR leader — both sides stay at 0 for that match.
+        match.nrrMargin = Math.abs(a - b);
+        match.nrrLeaderTeamId = a === b ? null : match.winner;
         await saveFixtures(fx);
         const updatedTeams = await refreshStandings();
         modal.hide();
@@ -654,6 +659,12 @@ function adminPanel(outlet) {
       match.confirmedAt = new Date().toISOString();
       match.playerStats = live.teams;
       match.queenTakenBy = live.queenTakenBy || null;
+      // NRR is one-sided per the rulebook: only the winner (or, in a draw, the team with
+      // fewer coins) earns it — the other side is always 0, never negative.
+      match.nrrMargin = live.result.margin || 0;
+      match.nrrLeaderTeamId = live.result.winner === 'draw'
+        ? (live.result.nrrLeader === 'A' ? match.teamA : match.teamB)
+        : match.winner;
       await saveFixtures(fx);
       const updatedTeams = await refreshStandings();
       await deleteLiveScore(live.matchId);
