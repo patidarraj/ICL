@@ -71,7 +71,8 @@ function matchRow(f, teamsById) {
       <button class="btn btn-sm btn-outline-secondary btn-reschedule-match" data-id="${f.id}" title="Reschedule"><i class="fa-solid fa-calendar-days"></i></button>
       ${f.status === 'scheduled'
         ? `<button class="btn btn-sm btn-success btn-enter-result" data-id="${f.id}"><i class="fa-solid fa-check"></i> Result</button>`
-        : `<button class="btn btn-sm btn-outline-warning btn-undo-match" data-id="${f.id}"><i class="fa-solid fa-rotate-left"></i> Undo</button>`}
+        : `<button class="btn btn-sm btn-outline-secondary btn-edit-nrr" data-id="${f.id}" title="Set/correct NRR"><i class="fa-solid fa-calculator"></i></button>
+           <button class="btn btn-sm btn-outline-warning btn-undo-match" data-id="${f.id}"><i class="fa-solid fa-rotate-left"></i> Undo</button>`}
     </td>
   </tr>`;
 }
@@ -476,6 +477,36 @@ function adminPanel(outlet) {
         modal.hide();
         refreshMatchesBody(fx, getTeams());
         notify.success('Match rescheduled');
+      });
+    }));
+
+    outlet.querySelectorAll('.btn-edit-nrr').forEach((btn) => btn.addEventListener('click', () => {
+      const f = getFixtures().find((x) => x.id === btn.dataset.id);
+      const t = Object.fromEntries(getTeams().map((x) => [x.id, x]));
+      openModal(`
+        <div class="modal-header"><h5 class="modal-title">NRR &middot; ${t[f.teamA]?.name} vs ${t[f.teamB]?.name}</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <p class="text-muted small mb-2">Per the rulebook, only one team earns NRR for a match — the other stays at 0.</p>
+          <label class="form-label">Team that earns NRR this match</label>
+          <select class="form-select mb-2" id="m-nrr-leader">
+            <option value="">None (0 for both)</option>
+            <option value="${f.teamA}" ${f.nrrLeaderTeamId === f.teamA ? 'selected' : ''}>${t[f.teamA]?.name}</option>
+            <option value="${f.teamB}" ${f.nrrLeaderTeamId === f.teamB ? 'selected' : ''}>${t[f.teamB]?.name}</option>
+          </select>
+          <label class="form-label">NRR margin</label>
+          <input type="number" min="0" class="form-control" id="m-nrr-margin" value="${f.nrrMargin || 0}">
+        </div>
+        <div class="modal-footer"><button class="btn btn-primary" id="m-nrr-save">Save</button></div>`);
+      modalContent.querySelector('#m-nrr-save').addEventListener('click', async () => {
+        const leader = modalContent.querySelector('#m-nrr-leader').value || null;
+        const margin = Number(modalContent.querySelector('#m-nrr-margin').value) || 0;
+        const fx = getFixtures().map((x) => (x.id === f.id ? { ...x, nrrLeaderTeamId: leader, nrrMargin: margin } : x));
+        await saveFixtures(fx);
+        const updatedTeams = await refreshStandings();
+        modal.hide();
+        refreshMatchesBody(fx, updatedTeams);
+        refreshTeamsBody(updatedTeams);
+        notify.success('NRR updated &middot; standings recalculated');
       });
     }));
 
