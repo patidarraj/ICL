@@ -608,15 +608,15 @@ function printBlankScoresheet(matchDate, matches) {
   const win = window.open('', '_blank');
   win.document.write(`<!DOCTYPE html><html><head><title>Carrom Scoresheet</title>
     <style>
-      body { font-family: Arial, Helvetica, sans-serif; color: #111; margin: 24mm 16mm; }
-      h2 { margin-bottom: 4px; }
-      h3 { margin: 22px 0 2px; }
-      .meta { margin-bottom: 4px; }
-      .toss-line { margin: 6px 0 14px; }
-      table { width: 100%; border-collapse: collapse; margin-bottom: 10px; table-layout: fixed; }
-      th, td { border: 1px solid #333; padding: 6px 8px; text-align: left; font-size: 12px; vertical-align: top; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      body { font-family: Arial, Helvetica, sans-serif; color: #111; margin: 24mm 16mm; line-height: 1.4; }
+      h2 { margin-bottom: 6px; }
+      h3 { margin: 42px 0 10px; }
+      .meta { margin-bottom: 6px; }
+      .toss-line { margin: 10px 0 20px; }
+      table { width: 100%; border-collapse: collapse; margin-bottom: 20px; table-layout: fixed; }
+      th, td { border: 1px solid #333; padding: 14px 12px; text-align: left; font-size: 12px; vertical-align: top; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       th { background: #eee; font-size: 11.5px; }
-      td { height: 28px; white-space: normal; }
+      td { height: 40px; white-space: normal; }
       @media print { @page { size: A4; margin: 16mm; } }
     </style>
     </head><body>
