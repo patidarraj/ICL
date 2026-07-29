@@ -585,36 +585,45 @@ function blankScoreRow(teamName, playerName) {
   </tr>`;
 }
 
-function printBlankScoresheet({ teamAName, playerA1, playerA2, teamBName, playerB1, playerB2, matchDate, pool }) {
+function matchBlockHtml(m, idx) {
+  return `
+    <h3>Match ${idx}: ${m.teamAName} vs ${m.teamBName}</h3>
+    <div class="toss-line"><strong>Toss Won by:</strong> ______________________</div>
+    <table>
+      <colgroup>
+        <col style="width:14%"><col style="width:13%"><col style="width:12%"><col style="width:12%">
+        <col style="width:11%"><col style="width:11%"><col style="width:14%"><col style="width:13%">
+      </colgroup>
+      <thead><tr><th>Team Name</th><th>Player Name</th><th>Points Scored</th><th>Queen Acquired</th><th>Dues Scored</th><th>Fouls Scored</th><th>Consecutive Shots</th><th>NRR</th></tr></thead>
+      <tbody>
+        ${blankScoreRow(m.teamAName, m.playerA1)}
+        ${blankScoreRow(m.teamAName, m.playerA2)}
+        ${blankScoreRow(m.teamBName, m.playerB1)}
+        ${blankScoreRow(m.teamBName, m.playerB2)}
+      </tbody>
+    </table>`;
+}
+
+function printBlankScoresheet(matchDate, matches) {
   const win = window.open('', '_blank');
   win.document.write(`<!DOCTYPE html><html><head><title>Carrom Scoresheet</title>
     <style>
       body { font-family: Arial, Helvetica, sans-serif; color: #111; margin: 24mm 16mm; }
       h2 { margin-bottom: 4px; }
+      h3 { margin: 22px 0 2px; }
       .meta { margin-bottom: 4px; }
-      .toss-line { margin: 10px 0 18px; }
-      table { width: 100%; border-collapse: collapse; margin-bottom: 22px; }
-      th, td { border: 1px solid #333; padding: 8px 10px; text-align: left; font-size: 13px; }
-      th { background: #eee; }
-      td:empty { min-height: 26px; }
+      .toss-line { margin: 6px 0 14px; }
+      table { width: 100%; border-collapse: collapse; margin-bottom: 10px; table-layout: fixed; }
+      th, td { border: 1px solid #333; padding: 6px 8px; text-align: left; font-size: 12px; vertical-align: top; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      th { background: #eee; font-size: 11.5px; }
+      td { height: 28px; white-space: normal; }
       @media print { @page { size: A4; margin: 16mm; } }
     </style>
     </head><body>
       <h2>Infytrix Carrom Tournament Scorecard</h2>
       <div class="meta"><strong>Date:</strong> ${matchDate}</div>
       <div class="meta"><strong>Venue:</strong> ${VENUE}</div>
-      <div class="meta"><strong>Pool:</strong> ${pool || ''}</div>
-      <h3>${teamAName} vs ${teamBName}</h3>
-      <div class="toss-line"><strong>Toss Won by:</strong> ______________________</div>
-      <table>
-        <thead><tr><th>Team Name</th><th>Player Name</th><th>Points Scored</th><th>Queen Acquired</th><th>Dues Scored</th><th>Fouls Scored</th><th>Consecutive Shots</th><th>NRR</th></tr></thead>
-        <tbody>
-          ${blankScoreRow(teamAName, playerA1)}
-          ${blankScoreRow(teamAName, playerA2)}
-          ${blankScoreRow(teamBName, playerB1)}
-          ${blankScoreRow(teamBName, playerB2)}
-        </tbody>
-      </table>
+      ${matches.map((m, i) => matchBlockHtml(m, i + 1)).join('')}
     </body></html>`);
   win.document.close();
   win.focus();
@@ -625,6 +634,25 @@ function printSheetOptionsHtml(teams) {
   return teams.map((t) => `<option value="${t.id}">${t.name}</option>`).join('');
 }
 
+function matchPickerBlockHtml(n, teams) {
+  return `
+    <h6 class="mt-3">Match ${n}${n === 2 ? ' <span class="text-muted small">(optional — leave blank if only one match today)</span>' : ''}</h6>
+    <div class="row g-2 mb-2">
+      <div class="col-md-6">
+        <label class="form-label small">Team A</label>
+        <select class="form-select mb-2" id="ps${n}-team-a"><option value="">Select…</option>${printSheetOptionsHtml(teams)}</select>
+        <input class="form-control mb-2" id="ps${n}-player-a1" placeholder="Player 1">
+        <input class="form-control" id="ps${n}-player-a2" placeholder="Player 2">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label small">Team B</label>
+        <select class="form-select mb-2" id="ps${n}-team-b"><option value="">Select…</option>${printSheetOptionsHtml(teams)}</select>
+        <input class="form-control mb-2" id="ps${n}-player-b1" placeholder="Player 1">
+        <input class="form-control" id="ps${n}-player-b2" placeholder="Player 2">
+      </div>
+    </div>`;
+}
+
 function renderPrintSheetPane(outlet) {
   const teams = getTeams();
   const byId = Object.fromEntries(teams.map((t) => [t.id, t]));
@@ -633,55 +661,46 @@ function renderPrintSheetPane(outlet) {
   pane.innerHTML = `
     <div class="card">
       <div class="card-body">
-        <p class="text-muted small mb-3">Generate a blank paper scoresheet for a referee to fill in by hand — pick both teams (player names prefill but can be edited, e.g. for a substitute), set the date, then print on A4.</p>
-        <div class="row g-2 mb-2">
-          <div class="col-md-6">
-            <label class="form-label small">Team A</label>
-            <select class="form-select mb-2" id="ps-team-a"><option value="">Select…</option>${printSheetOptionsHtml(teams)}</select>
-            <input class="form-control mb-2" id="ps-player-a1" placeholder="Player 1">
-            <input class="form-control" id="ps-player-a2" placeholder="Player 2">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label small">Team B</label>
-            <select class="form-select mb-2" id="ps-team-b"><option value="">Select…</option>${printSheetOptionsHtml(teams)}</select>
-            <input class="form-control mb-2" id="ps-player-b1" placeholder="Player 1">
-            <input class="form-control" id="ps-player-b2" placeholder="Player 2">
-          </div>
-        </div>
-        <div class="row g-2 mb-3">
-          <div class="col-md-6">
-            <label class="form-label small">Date</label>
-            <input type="date" class="form-control" id="ps-date" value="${isoDate(new Date())}">
-          </div>
-        </div>
-        <button class="btn btn-primary" id="ps-print"><i class="fa-solid fa-print me-2"></i>Print Scoresheet</button>
+        <p class="text-muted small mb-3">Generate a blank paper scoresheet for a referee to fill in by hand — pick teams (player names prefill but can be edited, e.g. for a substitute), add a second match if two are happening the same day, then print on A4.</p>
+        <label class="form-label small">Date</label>
+        <input type="date" class="form-control mb-2" id="ps-date" value="${isoDate(new Date())}" style="max-width:220px;">
+        ${matchPickerBlockHtml(1, teams)}
+        ${matchPickerBlockHtml(2, teams)}
+        <button class="btn btn-primary mt-2" id="ps-print"><i class="fa-solid fa-print me-2"></i>Print Scoresheet</button>
       </div>
     </div>`;
 
-  const fillPlayers = (teamSelectId, p1Id, p2Id) => {
-    pane.querySelector(`#${teamSelectId}`).addEventListener('change', (e) => {
-      const team = byId[e.target.value];
-      pane.querySelector(`#${p1Id}`).value = team?.players?.[0] || '';
-      pane.querySelector(`#${p2Id}`).value = team?.players?.[1] || '';
-    });
+  const fillPlayers = (n) => {
+    const bind = (teamSelectId, p1Id, p2Id) => {
+      pane.querySelector(`#${teamSelectId}`).addEventListener('change', (e) => {
+        const team = byId[e.target.value];
+        pane.querySelector(`#${p1Id}`).value = team?.players?.[0] || '';
+        pane.querySelector(`#${p2Id}`).value = team?.players?.[1] || '';
+      });
+    };
+    bind(`ps${n}-team-a`, `ps${n}-player-a1`, `ps${n}-player-a2`);
+    bind(`ps${n}-team-b`, `ps${n}-player-b1`, `ps${n}-player-b2`);
   };
-  fillPlayers('ps-team-a', 'ps-player-a1', 'ps-player-a2');
-  fillPlayers('ps-team-b', 'ps-player-b1', 'ps-player-b2');
+  fillPlayers(1);
+  fillPlayers(2);
 
   pane.querySelector('#ps-print').addEventListener('click', () => {
-    const teamA = byId[pane.querySelector('#ps-team-a').value];
-    const teamB = byId[pane.querySelector('#ps-team-b').value];
-    if (!teamA || !teamB) { notify.warn('Select both teams first'); return; }
-    printBlankScoresheet({
-      teamAName: teamA.name,
-      playerA1: pane.querySelector('#ps-player-a1').value,
-      playerA2: pane.querySelector('#ps-player-a2').value,
-      teamBName: teamB.name,
-      playerB1: pane.querySelector('#ps-player-b1').value,
-      playerB2: pane.querySelector('#ps-player-b2').value,
-      matchDate: pane.querySelector('#ps-date').value,
-      pool: teamA.pool,
-    });
+    const readMatch = (n) => {
+      const teamA = byId[pane.querySelector(`#ps${n}-team-a`).value];
+      const teamB = byId[pane.querySelector(`#ps${n}-team-b`).value];
+      if (!teamA || !teamB) return null;
+      return {
+        teamAName: teamA.name,
+        playerA1: pane.querySelector(`#ps${n}-player-a1`).value,
+        playerA2: pane.querySelector(`#ps${n}-player-a2`).value,
+        teamBName: teamB.name,
+        playerB1: pane.querySelector(`#ps${n}-player-b1`).value,
+        playerB2: pane.querySelector(`#ps${n}-player-b2`).value,
+      };
+    };
+    const matches = [readMatch(1), readMatch(2)].filter(Boolean);
+    if (!matches.length) { notify.warn('Select both teams for at least Match 1'); return; }
+    printBlankScoresheet(pane.querySelector('#ps-date').value, matches);
   });
 }
 
