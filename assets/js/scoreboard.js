@@ -608,15 +608,17 @@ function printBlankScoresheet(matchDate, matches) {
   const win = window.open('', '_blank');
   win.document.write(`<!DOCTYPE html><html><head><title>Carrom Scoresheet</title>
     <style>
-      body { font-family: Arial, Helvetica, sans-serif; color: #111; margin: 24mm 16mm; line-height: 1.4; }
+      /* @page already reserves margin around the printable area — body must not add its
+         own on top of that (doubling up pushed the second match onto a page 2 overflow). */
+      body { font-family: Arial, Helvetica, sans-serif; color: #111; margin: 0; line-height: 1.3; }
       h2 { margin-bottom: 6px; }
-      h3 { margin: 42px 0 10px; }
-      .meta { margin-bottom: 6px; }
-      .toss-line { margin: 10px 0 20px; }
-      table { width: 100%; border-collapse: collapse; margin-bottom: 20px; table-layout: fixed; }
-      th, td { border: 1px solid #333; padding: 14px 12px; text-align: left; font-size: 12px; vertical-align: top; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      h3 { margin: 22px 0 6px; }
+      .meta { margin-bottom: 4px; }
+      .toss-line { margin: 6px 0 12px; }
+      table { width: 100%; border-collapse: collapse; margin-bottom: 10px; table-layout: fixed; page-break-inside: avoid; }
+      th, td { border: 1px solid #333; padding: 8px 10px; text-align: left; font-size: 12px; vertical-align: top; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       th { background: #eee; font-size: 11.5px; }
-      td { height: 40px; white-space: normal; }
+      td { height: 30px; white-space: normal; }
       @media print { @page { size: A4; margin: 16mm; } }
     </style>
     </head><body>
