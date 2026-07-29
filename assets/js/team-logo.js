@@ -69,7 +69,9 @@ function compressImage(file, maxEncodedBytes) {
 
 function galleryTile(team) {
   return `
-    <div class="logo-gallery-tile text-center">
+    <div class="logo-gallery-tile text-center position-relative">
+      <input type="checkbox" class="form-check-input tl-print-check" data-id="${team.id}" checked
+        style="position:absolute; top:6px; left:6px; width:1.2em; height:1.2em;" title="Include in print">
       ${teamLogoHtml(team, 'team-logo-gallery')}
       <div class="fw-semibold mt-2">${team.name}</div>
       <div class="small text-muted">${team.players.join(' & ')}</div>
@@ -126,8 +128,15 @@ function printGridCell(team) {
     </div>`;
 }
 
-/** Best rows x cols split for N cells per A4 page, biased slightly wider than tall to match A4's proportions. */
+/**
+ * Best rows x cols split for N cells per A4 page, biased slightly wider than tall to
+ * match A4's proportions. 2-per-page is special-cased to stack vertically (1 col x 2
+ * rows, upper-center / lower-center) rather than side-by-side — a 2-column split only
+ * gives each logo half the page width, noticeably smaller than the 4-per-page option;
+ * stacking instead gives each of the 2 logos the full page width to grow into.
+ */
 function gridDimsFor(perPage) {
+  if (perPage === 2) return { cols: 1, rows: 2 };
   const cols = Math.ceil(Math.sqrt(perPage * (210 / 297)));
   const rows = Math.ceil(perPage / cols);
   return { cols, rows };
@@ -198,7 +207,10 @@ export async function renderTeamLogo(outlet) {
       <div class="tab-pane fade show active" id="tl-pane-gallery" role="tabpanel">
         <div class="card">
           <div class="card-body">
-            <div class="d-flex justify-content-end align-items-center gap-2 mb-3">
+            <p class="text-muted small mb-2">Uncheck any team above to leave it out of printing.</p>
+            <div class="d-flex justify-content-end align-items-center gap-2 mb-3 flex-wrap">
+              <button class="btn btn-sm btn-outline-secondary" id="tl-select-all">Select All</button>
+              <button class="btn btn-sm btn-outline-secondary" id="tl-select-none">Select None</button>
               <button class="btn btn-sm btn-outline-secondary" id="tl-print"><i class="fa-solid fa-print me-1"></i>Print Logos</button>
               <select class="form-select form-select-sm" id="tl-per-page" style="width: auto;" title="Logos per printed page">
                 <option value="1">1 per page</option>
@@ -243,10 +255,30 @@ export async function renderTeamLogo(outlet) {
       </div>
     </div>`;
 
-  outlet.querySelector('#tl-print').addEventListener('click', () => printLogoGallery(teams, getSettings()));
+  function selectedTeams() {
+    const checkedIds = new Set(
+      [...outlet.querySelectorAll('.tl-print-check:checked')].map((cb) => cb.dataset.id),
+    );
+    return teams.filter((t) => checkedIds.has(t.id));
+  }
+
+  outlet.querySelector('#tl-select-all').addEventListener('click', () => {
+    outlet.querySelectorAll('.tl-print-check').forEach((cb) => { cb.checked = true; });
+  });
+  outlet.querySelector('#tl-select-none').addEventListener('click', () => {
+    outlet.querySelectorAll('.tl-print-check').forEach((cb) => { cb.checked = false; });
+  });
+
+  outlet.querySelector('#tl-print').addEventListener('click', () => {
+    const chosen = selectedTeams();
+    if (!chosen.length) { notify.warn('Select at least one team to print'); return; }
+    printLogoGallery(chosen, getSettings());
+  });
   outlet.querySelector('#tl-print-custom').addEventListener('click', () => {
+    const chosen = selectedTeams();
+    if (!chosen.length) { notify.warn('Select at least one team to print'); return; }
     const perPage = Number(outlet.querySelector('#tl-per-page').value);
-    printLogosPerPage(teams, perPage);
+    printLogosPerPage(chosen, perPage);
   });
 
   const teamSearchInput = outlet.querySelector('#tl-team-search');
