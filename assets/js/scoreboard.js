@@ -591,8 +591,8 @@ function matchBlockHtml(m, idx) {
     <div class="toss-line"><strong>Toss Won by:</strong> ______________________</div>
     <table>
       <colgroup>
-        <col style="width:14%"><col style="width:13%"><col style="width:12%"><col style="width:12%">
-        <col style="width:11%"><col style="width:11%"><col style="width:14%"><col style="width:13%">
+        <col style="width:14.6%"><col style="width:14.6%"><col style="width:13.3%"><col style="width:11.6%">
+        <col style="width:9.5%"><col style="width:9.9%"><col style="width:14.7%"><col style="width:11.8%">
       </colgroup>
       <thead><tr><th>Team Name</th><th>Player Name</th><th>Points Scored</th><th>Queen Acquired</th><th>Dues Scored</th><th>Fouls Scored</th><th>Consecutive Shots</th><th>NRR</th></tr></thead>
       <tbody>
@@ -609,17 +609,19 @@ function printBlankScoresheet(matchDate, matches) {
   win.document.write(`<!DOCTYPE html><html><head><title>Carrom Scoresheet</title>
     <style>
       /* @page already reserves margin around the printable area — body must not add its
-         own on top of that (doubling up pushed the second match onto a page 2 overflow). */
+         own on top of that (doubling up pushed the second match onto a page 2 overflow).
+         Page size/margins/column widths/row height below are copied directly from the
+         reference .docx (US Letter, 1in top/bottom, 0.75in left/right margins). */
       body { font-family: Arial, Helvetica, sans-serif; color: #111; margin: 0; line-height: 1.3; }
       h2 { margin-bottom: 6px; }
       h3 { margin: 22px 0 6px; }
       .meta { margin-bottom: 4px; }
       .toss-line { margin: 6px 0 12px; }
       table { width: 100%; border-collapse: collapse; margin-bottom: 10px; table-layout: fixed; page-break-inside: avoid; }
-      th, td { border: 1px solid #333; padding: 8px 10px; text-align: left; font-size: 12px; vertical-align: top; }
-      th { background: #eee; font-size: 10.5px; white-space: normal; }
-      td { height: 30px; white-space: normal; overflow: hidden; text-overflow: ellipsis; }
-      @media print { @page { size: A4; margin: 16mm; } }
+      th, td { border: 1px solid #333; padding: 8px 10px; text-align: center; font-size: 12px; vertical-align: middle; }
+      th { background: #eee; font-size: 10.5px; font-weight: bold; white-space: normal; }
+      td { height: 16mm; white-space: normal; overflow: hidden; text-overflow: ellipsis; }
+      @media print { @page { size: A4; margin: 15mm 12mm; } }
     </style>
     </head><body>
       <h2>Infytrix Carrom Tournament Scorecard</h2>
