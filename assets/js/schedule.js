@@ -1,5 +1,5 @@
 import { getTeams, getFixtures, getSettings, getLiveScore } from './storage.js';
-import { formatDate, POOL_NAMES, toCSV, downloadFile, teamLogoHtml, isoDate, escapeHtml } from './utilities.js';
+import { formatDate, POOL_NAMES, toCSV, downloadFile, teamLogoHtml, isoDate, escapeHtml, sortByDateTime } from './utilities.js';
 import { notify } from './notifications.js';
 
 let viewMode = 'list';
@@ -13,18 +13,6 @@ function statusBadge(f) {
     return `<span class="badge bg-danger"><i class="fa-solid fa-circle fa-2xs me-1"></i>LIVE ${totalA}-${totalB}</span>`;
   }
   return '<span class="badge bg-secondary">Scheduled</span>';
-}
-
-function to24Hour(timeStr) {
-  const m = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec((timeStr || '').trim());
-  if (!m) return timeStr || '';
-  let h = Number(m[1]) % 12;
-  if (/PM/i.test(m[3])) h += 12;
-  return `${String(h).padStart(2, '0')}:${m[2]}`;
-}
-
-function sortByDateTime(fixtures) {
-  return [...fixtures].sort((a, b) => `${a.date} ${to24Hour(a.time)}`.localeCompare(`${b.date} ${to24Hour(b.time)}`));
 }
 
 function filterFixtures(fixtures, teamsById, filters) {

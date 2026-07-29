@@ -1,5 +1,5 @@
 import { getTeams, getFixtures, getSettings, getLiveScore } from './storage.js';
-import { formatDate, POOL_NAMES, teamLogoHtml } from './utilities.js';
+import { formatDate, POOL_NAMES, teamLogoHtml, sortByDateTime } from './utilities.js';
 import { goTo } from './router.js';
 import { getMyTeamId, setMyTeamId, notificationsSupported, permissionState, requestPermission } from './match-alerts.js';
 import { notify } from './notifications.js';
@@ -60,7 +60,7 @@ function matchRow(f, teamsById) {
 }
 
 function nextMatchCard(fixtures, teamsById) {
-  const next = fixtures.find((f) => f.status === 'scheduled');
+  const next = sortByDateTime(fixtures.filter((f) => f.status === 'scheduled'))[0];
   if (!next) return `<div class="card"><div class="card-body text-center text-muted">All matches completed</div></div>`;
   return `
     <div class="card next-match-card">
@@ -121,9 +121,9 @@ export async function renderDashboard(outlet) {
   const settings = getSettings();
   const teamsById = Object.fromEntries(teams.map((t) => [t.id, t]));
   const todayIso = new Date().toISOString().slice(0, 10);
-  const todayMatches = fixtures.filter((f) => f.date === todayIso);
-  const upcoming = fixtures.filter((f) => f.status === 'scheduled').slice(0, 5);
-  const latestResults = [...fixtures].filter((f) => f.status === 'completed').slice(-5).reverse();
+  const todayMatches = sortByDateTime(fixtures.filter((f) => f.date === todayIso));
+  const upcoming = sortByDateTime(fixtures.filter((f) => f.status === 'scheduled')).slice(0, 5);
+  const latestResults = sortByDateTime(fixtures.filter((f) => f.status === 'completed')).slice(-5).reverse();
 
   const featuredHtml = getFeaturedMatchesHtml();
 

@@ -21,6 +21,19 @@ export const MATCHES_PER_DAY = 2;
 export const VENUE = 'Carrom Championship Arena';
 export const MATCH_TIMES = ['06:00 PM', '06:30 PM'];
 
+function to24Hour(timeStr) {
+  const m = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec((timeStr || '').trim());
+  if (!m) return timeStr || '';
+  let h = Number(m[1]) % 12;
+  if (/PM/i.test(m[3])) h += 12;
+  return `${String(h).padStart(2, '0')}:${m[2]}`;
+}
+
+/** Sorts fixtures by actual date+time — match IDs/array order don't track this after a reschedule. */
+export function sortByDateTime(fixtures) {
+  return [...fixtures].sort((a, b) => `${a.date} ${to24Hour(a.time)}`.localeCompare(`${b.date} ${to24Hour(b.time)}`));
+}
+
 /**
  * Fixed real player roster, one pair per team. Indices 0, 1, 8, 10 (Aditya, Esha,
  * Shubham/Tejas Hiwarde, Ankit/Megan) are treated as priority teams by generateTeams() —
