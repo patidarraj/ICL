@@ -3,6 +3,7 @@ import {
   isRefereeAuthed, loginReferee, logoutReferee,
 } from './storage.js';
 import { notify } from './notifications.js';
+import { isoDate, VENUE } from './utilities.js';
 
 // Every Firestore write (including a referee's own +/- taps) triggers the router's
 // global refreshCurrent(), which fully re-renders this page. Without persisting which
@@ -576,6 +577,114 @@ function renderScoresheetPane(outlet) {
   });
 }
 
+function blankScoreRow(teamName, playerName) {
+  return `<tr>
+    <td>${teamName || ''}</td>
+    <td>${playerName || ''}</td>
+    <td></td><td></td><td></td><td></td><td></td><td></td>
+  </tr>`;
+}
+
+function printBlankScoresheet({ teamAName, playerA1, playerA2, teamBName, playerB1, playerB2, matchDate, pool }) {
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>Carrom Scoresheet</title>
+    <style>
+      body { font-family: Arial, Helvetica, sans-serif; color: #111; margin: 24mm 16mm; }
+      h2 { margin-bottom: 4px; }
+      .meta { margin-bottom: 4px; }
+      .toss-line { margin: 10px 0 18px; }
+      table { width: 100%; border-collapse: collapse; margin-bottom: 22px; }
+      th, td { border: 1px solid #333; padding: 8px 10px; text-align: left; font-size: 13px; }
+      th { background: #eee; }
+      td:empty { min-height: 26px; }
+      @media print { @page { size: A4; margin: 16mm; } }
+    </style>
+    </head><body>
+      <h2>Infytrix Carrom Tournament Scorecard</h2>
+      <div class="meta"><strong>Date:</strong> ${matchDate}</div>
+      <div class="meta"><strong>Venue:</strong> ${VENUE}</div>
+      <div class="meta"><strong>Pool:</strong> ${pool || ''}</div>
+      <h3>${teamAName} vs ${teamBName}</h3>
+      <div class="toss-line"><strong>Toss Won by:</strong> ______________________</div>
+      <table>
+        <thead><tr><th>Team Name</th><th>Player Name</th><th>Points Scored</th><th>Queen Acquired</th><th>Dues Scored</th><th>Fouls Scored</th><th>Consecutive Shots</th><th>NRR</th></tr></thead>
+        <tbody>
+          ${blankScoreRow(teamAName, playerA1)}
+          ${blankScoreRow(teamAName, playerA2)}
+          ${blankScoreRow(teamBName, playerB1)}
+          ${blankScoreRow(teamBName, playerB2)}
+        </tbody>
+      </table>
+    </body></html>`);
+  win.document.close();
+  win.focus();
+  win.print();
+}
+
+function printSheetOptionsHtml(teams) {
+  return teams.map((t) => `<option value="${t.id}">${t.name}</option>`).join('');
+}
+
+function renderPrintSheetPane(outlet) {
+  const teams = getTeams();
+  const byId = Object.fromEntries(teams.map((t) => [t.id, t]));
+  const pane = outlet.querySelector('#sb-pane-print');
+
+  pane.innerHTML = `
+    <div class="card">
+      <div class="card-body">
+        <p class="text-muted small mb-3">Generate a blank paper scoresheet for a referee to fill in by hand — pick both teams (player names prefill but can be edited, e.g. for a substitute), set the date, then print on A4.</p>
+        <div class="row g-2 mb-2">
+          <div class="col-md-6">
+            <label class="form-label small">Team A</label>
+            <select class="form-select mb-2" id="ps-team-a"><option value="">Select…</option>${printSheetOptionsHtml(teams)}</select>
+            <input class="form-control mb-2" id="ps-player-a1" placeholder="Player 1">
+            <input class="form-control" id="ps-player-a2" placeholder="Player 2">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small">Team B</label>
+            <select class="form-select mb-2" id="ps-team-b"><option value="">Select…</option>${printSheetOptionsHtml(teams)}</select>
+            <input class="form-control mb-2" id="ps-player-b1" placeholder="Player 1">
+            <input class="form-control" id="ps-player-b2" placeholder="Player 2">
+          </div>
+        </div>
+        <div class="row g-2 mb-3">
+          <div class="col-md-6">
+            <label class="form-label small">Date</label>
+            <input type="date" class="form-control" id="ps-date" value="${isoDate(new Date())}">
+          </div>
+        </div>
+        <button class="btn btn-primary" id="ps-print"><i class="fa-solid fa-print me-2"></i>Print Scoresheet</button>
+      </div>
+    </div>`;
+
+  const fillPlayers = (teamSelectId, p1Id, p2Id) => {
+    pane.querySelector(`#${teamSelectId}`).addEventListener('change', (e) => {
+      const team = byId[e.target.value];
+      pane.querySelector(`#${p1Id}`).value = team?.players?.[0] || '';
+      pane.querySelector(`#${p2Id}`).value = team?.players?.[1] || '';
+    });
+  };
+  fillPlayers('ps-team-a', 'ps-player-a1', 'ps-player-a2');
+  fillPlayers('ps-team-b', 'ps-player-b1', 'ps-player-b2');
+
+  pane.querySelector('#ps-print').addEventListener('click', () => {
+    const teamA = byId[pane.querySelector('#ps-team-a').value];
+    const teamB = byId[pane.querySelector('#ps-team-b').value];
+    if (!teamA || !teamB) { notify.warn('Select both teams first'); return; }
+    printBlankScoresheet({
+      teamAName: teamA.name,
+      playerA1: pane.querySelector('#ps-player-a1').value,
+      playerA2: pane.querySelector('#ps-player-a2').value,
+      teamBName: teamB.name,
+      playerB1: pane.querySelector('#ps-player-b1').value,
+      playerB2: pane.querySelector('#ps-player-b2').value,
+      matchDate: pane.querySelector('#ps-date').value,
+      pool: teamA.pool,
+    });
+  });
+}
+
 export async function renderScoreboard(outlet) {
   outlet.innerHTML = `
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -593,6 +702,11 @@ export async function renderScoreboard(outlet) {
           <i class="fa-solid fa-table-list me-1"></i>Scoresheet
         </button>
       </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#sb-tab-print" type="button" role="tab" aria-selected="false">
+          <i class="fa-solid fa-print me-1"></i>Print Sheet
+        </button>
+      </li>
     </ul>
     <div class="tab-content">
       <div class="tab-pane fade show active" id="sb-tab-scoring" role="tabpanel">
@@ -600,6 +714,9 @@ export async function renderScoreboard(outlet) {
       </div>
       <div class="tab-pane fade" id="sb-tab-sheet" role="tabpanel">
         <div id="sb-pane-sheet"></div>
+      </div>
+      <div class="tab-pane fade" id="sb-tab-print" role="tabpanel">
+        <div id="sb-pane-print"></div>
       </div>
     </div>`;
 
@@ -615,4 +732,5 @@ export async function renderScoreboard(outlet) {
   }
 
   renderScoresheetPane(outlet);
+  renderPrintSheetPane(outlet);
 }
