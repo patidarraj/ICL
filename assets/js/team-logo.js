@@ -161,8 +161,13 @@ function printLogosPerPage(teams, perPage) {
       @page { size: A4 portrait; margin: 0; }
       * { box-sizing: border-box; }
       body { font-family: Arial, Helvetica, sans-serif; color: #111; margin: 0; }
+      /* Requesting @page margin:0 isn't reliably honored by every browser/print-destination
+         combo (e.g. "Save to PDF" with Margins: Default can still enforce its own non-zero
+         margin) — a full 210x297mm page then overflows onto a second physical sheet. Sizing
+         slightly under full A4 leaves a safety buffer so N-per-page still fits on one sheet
+         even when the browser adds an unrequested margin. */
       .print-page {
-        width: 210mm; height: 297mm;
+        width: 190mm; height: 273mm; margin: 0 auto;
         display: grid;
         break-after: page; page-break-after: always;
       }
