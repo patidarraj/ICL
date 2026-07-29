@@ -129,7 +129,10 @@ export async function renderRules(outlet) {
       </ul>`)}
 
     ${section('fa-indian-rupee-sign', '8. Penalty Policy', `
-      <p class="mb-0">A <strong>₹1,000 penalty</strong> applies for match absence. This comes from the absent player's own contribution rather than being a compulsory charge on the whole team, and is intended to encourage attendance.</p>`)}
+      <ul class="mb-0">
+        <li>A <strong>₹1,000 penalty</strong> applies for match absence. This comes from the absent player's own contribution rather than being a compulsory charge on the whole team, and is intended to encourage attendance.</li>
+        <li>If a player is unavailable for their team's scheduled match, that match may be <strong>rescheduled</strong> to a later date — but the absence penalty still applies regardless.</li>
+      </ul>`)}
 
     ${section('fa-note-sticky', 'Final Notes', `
       <ul class="mb-0">
