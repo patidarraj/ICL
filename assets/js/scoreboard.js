@@ -616,9 +616,9 @@ function printBlankScoresheet(matchDate, matches) {
       .meta { margin-bottom: 4px; }
       .toss-line { margin: 6px 0 12px; }
       table { width: 100%; border-collapse: collapse; margin-bottom: 10px; table-layout: fixed; page-break-inside: avoid; }
-      th, td { border: 1px solid #333; padding: 8px 10px; text-align: left; font-size: 12px; vertical-align: top; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      th { background: #eee; font-size: 11.5px; }
-      td { height: 30px; white-space: normal; }
+      th, td { border: 1px solid #333; padding: 8px 10px; text-align: left; font-size: 12px; vertical-align: top; }
+      th { background: #eee; font-size: 10.5px; white-space: normal; }
+      td { height: 30px; white-space: normal; overflow: hidden; text-overflow: ellipsis; }
       @media print { @page { size: A4; margin: 16mm; } }
     </style>
     </head><body>
