@@ -1,6 +1,7 @@
 import { getTeams, getFixtures, getSettings, getLiveScore } from './storage.js';
 import { formatDate, POOL_NAMES, toCSV, downloadFile, teamLogoHtml, isoDate, escapeHtml, sortByDateTime } from './utilities.js';
 import { notify } from './notifications.js';
+import { goTo } from './router.js';
 
 let viewMode = 'list';
 
@@ -45,7 +46,7 @@ function matchListRow(f, teamsById) {
   const aWon = done && f.winner === f.teamA;
   const bWon = done && f.winner === f.teamB;
   return `
-    <div class="schedule-list-row ${done ? 'schedule-list-row-done' : ''}" style="--pool-accent:${poolAccent(f.pool)};">
+    <div class="schedule-list-row ${done ? 'schedule-list-row-done schedule-list-row-clickable' : ''}" style="--pool-accent:${poolAccent(f.pool)};" ${done ? `data-fixture="${f.id}"` : ''}>
       <div class="schedule-list-date">
         <div class="fw-semibold">${formatDate(f.date)}</div>
         <div class="small text-muted"><i class="fa-regular fa-clock me-1"></i>${f.time}</div>
@@ -86,7 +87,7 @@ function matchTimelineCard(f, teamsById) {
   const aWon = done && f.winner === f.teamA;
   const bWon = done && f.winner === f.teamB;
   return `
-    <div class="schedule-match-card ${done ? 'schedule-match-done' : ''}">
+    <div class="schedule-match-card ${done ? 'schedule-match-done schedule-list-row-clickable' : ''}" ${done ? `data-fixture="${f.id}"` : ''}>
       <div class="schedule-match-meta">
         <span class="badge bg-primary">${f.pool}</span>
         <span class="small text-muted">#${f.matchNumber}</span>
@@ -257,6 +258,12 @@ export async function renderSchedule(outlet) {
   function update() {
     const filtered = filterFixtures(fixtures, teamsById, filters);
     container.innerHTML = viewMode === 'list' ? listTable(filtered, teamsById) : calendarView(filtered, teamsById);
+    container.querySelectorAll('[data-fixture]').forEach((el) => {
+      el.addEventListener('click', () => {
+        sessionStorage.setItem('carrom_open_scoresheet', el.dataset.fixture);
+        goTo('scoreboard');
+      });
+    });
   }
 
   ['pool', 'team', 'date', 'status', 'search'].forEach((key) => {

@@ -709,6 +709,11 @@ function renderPrintSheetPane(outlet) {
 }
 
 export async function renderScoreboard(outlet) {
+  const openMatchId = sessionStorage.getItem('carrom_open_scoresheet');
+  sessionStorage.removeItem('carrom_open_scoresheet');
+  if (openMatchId) uiState.sheetMatchId = openMatchId;
+  const openSheet = Boolean(openMatchId);
+
   outlet.innerHTML = `
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h2 class="page-title mb-0"><i class="fa-solid fa-flag-checkered me-2"></i>Scoreboard</h2>
@@ -716,12 +721,12 @@ export async function renderScoreboard(outlet) {
     </div>
     <ul class="nav nav-tabs mb-3" role="tablist">
       <li class="nav-item" role="presentation">
-        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#sb-tab-scoring" type="button" role="tab" aria-selected="true">
+        <button class="nav-link ${openSheet ? '' : 'active'}" data-bs-toggle="tab" data-bs-target="#sb-tab-scoring" type="button" role="tab" aria-selected="${!openSheet}">
           <i class="fa-solid fa-flag-checkered me-1"></i>Individual Scoring
         </button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#sb-tab-sheet" type="button" role="tab" aria-selected="false">
+        <button class="nav-link ${openSheet ? 'active' : ''}" data-bs-toggle="tab" data-bs-target="#sb-tab-sheet" type="button" role="tab" aria-selected="${openSheet}">
           <i class="fa-solid fa-table-list me-1"></i>Scoresheet
         </button>
       </li>
@@ -732,10 +737,10 @@ export async function renderScoreboard(outlet) {
       </li>
     </ul>
     <div class="tab-content">
-      <div class="tab-pane fade show active" id="sb-tab-scoring" role="tabpanel">
+      <div class="tab-pane fade ${openSheet ? '' : 'show active'}" id="sb-tab-scoring" role="tabpanel">
         <div id="sb-pane-scoring"></div>
       </div>
-      <div class="tab-pane fade" id="sb-tab-sheet" role="tabpanel">
+      <div class="tab-pane fade ${openSheet ? 'show active' : ''}" id="sb-tab-sheet" role="tabpanel">
         <div id="sb-pane-sheet"></div>
       </div>
       <div class="tab-pane fade" id="sb-tab-print" role="tabpanel">
