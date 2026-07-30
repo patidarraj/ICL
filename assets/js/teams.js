@@ -76,6 +76,7 @@ export async function renderTeams(outlet) {
     grid.querySelectorAll('.btn-view-fixtures, .btn-view-results').forEach((btn) => {
       btn.addEventListener('click', () => {
         sessionStorage.setItem('carrom_team_filter', btn.dataset.team);
+        sessionStorage.setItem('carrom_status_filter', btn.classList.contains('btn-view-results') ? 'completed' : 'scheduled');
         goTo('schedule');
       });
     });

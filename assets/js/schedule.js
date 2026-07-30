@@ -196,7 +196,11 @@ export async function renderSchedule(outlet) {
   const teams = getTeams();
   const teamsById = Object.fromEntries(teams.map((t) => [t.id, t]));
   const fixtures = getFixtures();
-  const filters = { pool: '', team: '', date: '', status: '', search: '' };
+  const presetTeam = sessionStorage.getItem('carrom_team_filter') || '';
+  const presetStatus = sessionStorage.getItem('carrom_status_filter') || '';
+  sessionStorage.removeItem('carrom_team_filter');
+  sessionStorage.removeItem('carrom_status_filter');
+  const filters = { pool: '', team: presetTeam, date: '', status: presetStatus, search: '' };
 
   outlet.innerHTML = `
     <h2 class="page-title"><i class="fa-solid fa-calendar-days me-2"></i>Match Schedule</h2>
@@ -214,7 +218,7 @@ export async function renderSchedule(outlet) {
             <label class="form-label small">Team</label>
             <select class="form-select form-select-sm" id="f-team">
               <option value="">All Teams</option>
-              ${teams.map((t) => `<option value="${t.id}">${t.name}</option>`).join('')}
+              ${teams.map((t) => `<option value="${t.id}" ${t.id === presetTeam ? 'selected' : ''}>${t.name}</option>`).join('')}
             </select>
           </div>
           <div class="col-md-2">
@@ -224,9 +228,9 @@ export async function renderSchedule(outlet) {
           <div class="col-md-2">
             <label class="form-label small">Status</label>
             <select class="form-select form-select-sm" id="f-status">
-              <option value="">All</option>
-              <option value="scheduled">Scheduled</option>
-              <option value="completed">Completed</option>
+              <option value="" ${presetStatus === '' ? 'selected' : ''}>All</option>
+              <option value="scheduled" ${presetStatus === 'scheduled' ? 'selected' : ''}>Scheduled</option>
+              <option value="completed" ${presetStatus === 'completed' ? 'selected' : ''}>Completed</option>
             </select>
           </div>
           <div class="col-md-2">
