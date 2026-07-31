@@ -4,7 +4,7 @@ import {
   approveTeamLogo, rejectTeamLogo, getLiveScores, deleteLiveScore, updateTeam, removeTeamLogo, getRefereePasscode,
   getAdminEmail, getGalleryPhotos, approveGalleryPhoto, rejectGalleryPhoto, getGalleryUsageBytes, GALLERY_SAFE_BUDGET_BYTES,
 } from './storage.js';
-import { uid, downloadFile, escapeHtml, POOL_NAMES, isoDate, VENUE, generateLogoCode } from './utilities.js';
+import { uid, downloadFile, escapeHtml, POOL_NAMES, isoDate, VENUE, generateLogoCode, sortByDateTime } from './utilities.js';
 import { notify } from './notifications.js';
 import { generateBracket } from './bracket.js';
 
@@ -61,7 +61,7 @@ function teamRow(team) {
 
 function matchRow(f, teamsById) {
   return `<tr data-id="${f.id}">
-    <td>${f.id}</td><td>${f.pool}</td>
+    <td>M${String(f.matchNumber).padStart(3, '0')}</td><td>${f.pool}</td>
     <td>${teamsById[f.teamA]?.name || f.teamA}</td><td>${teamsById[f.teamB]?.name || f.teamB}</td>
     <td class="text-nowrap">${f.date} &middot; ${f.time}</td>
     <td>${f.status === 'completed'
@@ -252,12 +252,15 @@ function adminPanel(outlet) {
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
             <span><i class="fa-solid fa-table-list me-2"></i>Matches</span>
-            <button class="btn btn-sm btn-success" id="btn-create-match"><i class="fa-solid fa-plus me-1"></i>Create Match</button>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-secondary" id="btn-renumber-matches" title="Reassign match numbers 1..N in chronological date/time order"><i class="fa-solid fa-arrow-down-1-9 me-1"></i>Renumber by Date</button>
+              <button class="btn btn-sm btn-success" id="btn-create-match"><i class="fa-solid fa-plus me-1"></i>Create Match</button>
+            </div>
           </div>
           <div class="card-body table-responsive">
             <table class="table table-dark table-hover align-middle mb-0">
               <thead><tr><th>#</th><th>Pool</th><th>Team A</th><th>Team B</th><th>Date &middot; Time</th><th>Score</th><th>Action</th></tr></thead>
-              <tbody id="admin-matches-body">${fixtures.map((f) => matchRow(f, teamsById)).join('')}</tbody>
+              <tbody id="admin-matches-body">${sortByDateTime(fixtures).map((f) => matchRow(f, teamsById)).join('')}</tbody>
             </table>
           </div>
         </div>
@@ -349,7 +352,7 @@ function adminPanel(outlet) {
 
   function refreshMatchesBody(fx, teamList) {
     const t = Object.fromEntries((teamList || getTeams()).map((x) => [x.id, x]));
-    outlet.querySelector('#admin-matches-body').innerHTML = fx.map((f) => matchRow(f, t)).join('');
+    outlet.querySelector('#admin-matches-body').innerHTML = sortByDateTime(fx).map((f) => matchRow(f, t)).join('');
     bindMatchActions();
   }
 
@@ -581,6 +584,14 @@ function adminPanel(outlet) {
       refreshMatchesBody(fx);
       notify.success('Match created');
     });
+  });
+
+  outlet.querySelector('#btn-renumber-matches').addEventListener('click', async () => {
+    const ordered = sortByDateTime(getFixtures());
+    const fx = ordered.map((f, i) => ({ ...f, matchNumber: i + 1 }));
+    await saveFixtures(fx);
+    refreshMatchesBody(fx, getTeams());
+    notify.success('Match numbers reassigned by date/time');
   });
 
   outlet.querySelector('#btn-save-tournament-info').addEventListener('click', async () => {
