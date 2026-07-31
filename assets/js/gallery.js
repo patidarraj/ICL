@@ -160,24 +160,47 @@ export async function renderGallery(outlet) {
   outlet.innerHTML = `
     <h2 class="page-title"><i class="fa-solid fa-images me-2"></i>Photo &amp; Video Gallery</h2>
 
-    <div class="card mb-4">
-      <div class="card-header"><i class="fa-solid fa-upload me-2"></i>Share Photos or Videos</div>
-      <div class="card-body">
-        ${atLimit
-          ? `<div class="alert alert-danger mb-0"><i class="fa-solid fa-triangle-exclamation me-2"></i>The gallery has reached its free storage limit for now — new photo uploads are paused until an admin clears some space. Thanks for understanding!</div>`
-          : `
-          ${nearLimit ? `<div class="alert alert-warning small mb-3"><i class="fa-solid fa-circle-info me-2"></i>The gallery is getting close to its free storage limit — photo uploads may be paused soon if it fills up.</div>` : ''}
-          <p class="text-muted small">You can select multiple photos and videos at once. Everything is reviewed by an admin before it appears here publicly. Videos are compressed in your browser before uploading, so longer clips may take a bit.</p>
-          <input type="file" accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime" class="form-control mb-2" id="gal-file" multiple>
-          <input type="text" class="form-control mb-2" id="gal-name" placeholder="Your name (optional)">
-          <input type="text" class="form-control mb-2" id="gal-caption" placeholder="Caption (optional, applied to all selected files)">
-          <button class="btn btn-primary" id="gal-submit"><i class="fa-solid fa-paper-plane me-1"></i>Submit for Review</button>
-          <div class="small text-muted mt-2" id="gal-progress"></div>`}
-      </div>
-    </div>
+    <ul class="nav nav-tabs mb-4" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#gal-pane-gallery" type="button" role="tab" aria-selected="true">
+          <i class="fa-solid fa-images me-1"></i>Photos &amp; Videos
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#gal-pane-upload" type="button" role="tab" aria-selected="false">
+          <i class="fa-solid fa-upload me-1"></i>Upload
+        </button>
+      </li>
+    </ul>
 
-    <div class="gallery-grid">
-      ${approved.map(mediaTile).join('') || '<p class="text-muted text-center py-4">No photos or videos yet — be the first to share one!</p>'}
+    <div class="tab-content">
+      <div class="tab-pane fade show active" id="gal-pane-gallery" role="tabpanel">
+        <div class="gallery-grid">
+          ${approved.map(mediaTile).join('') || '<p class="text-muted text-center py-4">No photos or videos yet — be the first to share one!</p>'}
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="gal-pane-upload" role="tabpanel">
+        <div class="row justify-content-center">
+          <div class="col-lg-6">
+            <div class="card">
+              <div class="card-header"><i class="fa-solid fa-upload me-2"></i>Share Photos or Videos</div>
+              <div class="card-body">
+                ${atLimit
+                  ? `<div class="alert alert-danger mb-0"><i class="fa-solid fa-triangle-exclamation me-2"></i>The gallery has reached its free storage limit for now — new photo uploads are paused until an admin clears some space. Thanks for understanding!</div>`
+                  : `
+                  ${nearLimit ? `<div class="alert alert-warning small mb-3"><i class="fa-solid fa-circle-info me-2"></i>The gallery is getting close to its free storage limit — photo uploads may be paused soon if it fills up.</div>` : ''}
+                  <p class="text-muted small">You can select multiple photos and videos at once. Everything is reviewed by an admin before it appears here publicly. Videos are compressed in your browser before uploading, so longer clips may take a bit.</p>
+                  <input type="file" accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime" class="form-control mb-2" id="gal-file" multiple>
+                  <input type="text" class="form-control mb-2" id="gal-name" placeholder="Your name (optional)">
+                  <input type="text" class="form-control mb-2" id="gal-caption" placeholder="Caption (optional, applied to all selected files)">
+                  <button class="btn btn-primary w-100" id="gal-submit"><i class="fa-solid fa-paper-plane me-1"></i>Submit for Review</button>
+                  <div class="small text-muted mt-2" id="gal-progress"></div>`}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>`;
 
   if (atLimit) return;
