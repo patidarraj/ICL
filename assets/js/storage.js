@@ -10,12 +10,16 @@ import {
 import {
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
 } from 'https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js';
+import {
+  getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject,
+} from 'https://www.gstatic.com/firebasejs/10.13.1/firebase-storage.js';
 import { firebaseConfig, ADMIN_EMAIL, REFEREE_PASSCODE } from './firebase-config.js';
 import { generateTeams, generateFixtures, generateSettings, recomputeStandingsForTeams, sortStandings } from './utilities.js';
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+const storage = getStorage(app);
 const stateRef = doc(db, 'tournaments', 'main');
 const teamsColRef = collection(db, 'teams');
 const liveScoresColRef = collection(db, 'liveScores');
@@ -194,7 +198,27 @@ export function getGalleryUsageBytes() {
 
 export function submitGalleryPhoto({ photoBase64, submittedBy, caption }) {
   return addDoc(galleryColRef, {
-    photoBase64, submittedBy: submittedBy || '', caption: caption || '', status: 'pending', createdAt: Date.now(),
+    type: 'photo', photoBase64, submittedBy: submittedBy || '', caption: caption || '', status: 'pending', createdAt: Date.now(),
+  });
+}
+
+// Videos live in Firebase Storage (not base64-in-Firestore like photos) — requires the
+// Blaze plan and Firebase Storage enabled in the console; see README for setup steps.
+export function uploadGalleryVideo(blob, onProgress) {
+  const path = `gallery-videos/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.webm`;
+  const fileRef = storageRef(storage, path);
+  const task = uploadBytesResumable(fileRef, blob, { contentType: blob.type || 'video/webm' });
+  return new Promise((resolve, reject) => {
+    task.on('state_changed',
+      (snap) => onProgress?.(snap.bytesTransferred / snap.totalBytes),
+      reject,
+      async () => resolve({ videoUrl: await getDownloadURL(task.snapshot.ref), storagePath: path }));
+  });
+}
+
+export function submitGalleryVideo({ videoUrl, storagePath, submittedBy, caption }) {
+  return addDoc(galleryColRef, {
+    type: 'video', videoUrl, storagePath, submittedBy: submittedBy || '', caption: caption || '', status: 'pending', createdAt: Date.now(),
   });
 }
 
@@ -203,6 +227,8 @@ export function approveGalleryPhoto(photoId) {
 }
 
 export function rejectGalleryPhoto(photoId) {
+  const item = getGalleryPhotos().find((p) => p.id === photoId);
+  if (item?.storagePath) deleteObject(storageRef(storage, item.storagePath)).catch(() => {});
   return deleteDoc(doc(galleryColRef, photoId));
 }
 

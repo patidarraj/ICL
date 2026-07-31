@@ -115,12 +115,18 @@ function liveScoreTile(live) {
     </div>`;
 }
 
+function galleryMediaEl(photo) {
+  return photo.type === 'video'
+    ? `<video src="${photo.videoUrl}" controls preload="metadata" style="aspect-ratio:4/3; object-fit:cover; width:100%; background:#000;"></video>`
+    : `<img src="${photo.photoBase64}" alt="" class="team-logo-gallery" style="aspect-ratio:4/3; object-fit:cover; width:100%;">`;
+}
+
 function galleryApprovalTile(photo) {
   return `
     <div class="col-6 col-sm-4 col-md-3 col-lg-2 text-center" data-id="${photo.id}">
       <div class="position-relative mb-2">
         <input type="checkbox" class="form-check-input gallery-select-check position-absolute top-0 start-0 m-1" data-id="${photo.id}" style="z-index:2;">
-        <img src="${photo.photoBase64}" alt="" class="team-logo-gallery" style="aspect-ratio:4/3; object-fit:cover; width:100%;">
+        ${galleryMediaEl(photo)}
       </div>
       <div class="small text-muted text-truncate mb-2">${escapeHtml(photo.submittedBy || 'Anonymous')}</div>
       <div class="d-flex gap-1">
@@ -135,7 +141,7 @@ function publishedPhotoTile(photo) {
     <div class="col-6 col-sm-4 col-md-3 col-lg-2 text-center" data-id="${photo.id}">
       <div class="position-relative mb-2">
         <input type="checkbox" class="form-check-input gallery-select-check position-absolute top-0 start-0 m-1" data-id="${photo.id}" style="z-index:2;">
-        <img src="${photo.photoBase64}" alt="" class="gallery-approval-thumb" style="aspect-ratio:4/3; object-fit:cover; width:100%;">
+        ${galleryMediaEl(photo)}
       </div>
       <button class="btn btn-sm btn-outline-danger w-100 btn-delete-photo" data-id="${photo.id}"><i class="fa-solid fa-trash me-1"></i>Remove</button>
     </div>`;

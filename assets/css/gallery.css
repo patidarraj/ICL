@@ -18,6 +18,14 @@
   display: block;
 }
 
+.gallery-tile-video {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+  background: #000;
+}
+
 .gallery-tile-caption {
   padding: 0.5rem 0.7rem;
   font-size: 0.82rem;
