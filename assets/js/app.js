@@ -79,13 +79,16 @@ function hideLogoFloatCard() {
 }
 
 const ZOOMABLE_SELECTOR = '.team-logo-zoomable, .gallery-photo-zoomable';
+// Team logos zoom on hover (small thumbnails, quick preview); gallery photos are much
+// bigger tiles already, so they only zoom on click/tap — hovering would be distracting.
+const HOVER_ZOOMABLE_SELECTOR = '.team-logo-zoomable';
 
 document.addEventListener('mouseover', (e) => {
-  const el = e.target.closest(ZOOMABLE_SELECTOR);
+  const el = e.target.closest(HOVER_ZOOMABLE_SELECTOR);
   if (el) showLogoFloatCard(el);
 });
 document.addEventListener('mouseout', (e) => {
-  const el = e.target.closest(ZOOMABLE_SELECTOR);
+  const el = e.target.closest(HOVER_ZOOMABLE_SELECTOR);
   if (el && !el.contains(e.relatedTarget)) hideLogoFloatCard();
 });
 document.addEventListener('click', (e) => {
