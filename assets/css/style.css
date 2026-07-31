@@ -235,6 +235,31 @@ a { text-decoration: none; }
   color: var(--text, #E2E8F0);
 }
 
+.gallery-photo-zoomable {
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
+}
+.gallery-photo-zoomable:hover,
+.gallery-photo-zoomable:focus-visible {
+  box-shadow: 0 0 0 3px rgba(249,115,22,0.5);
+  outline: none;
+}
+
+.logo-float-card-photo {
+  width: min(90vw, 720px);
+  padding: 1.25rem;
+}
+.logo-float-card-photo img {
+  max-width: 100%;
+  width: auto;
+  height: min(80vh, 640px);
+  padding: 0;
+}
+.logo-float-card-photo .logo-float-name {
+  font-weight: 500;
+  font-size: 1rem;
+}
+
 .team-logo {
   width: 32px;
   height: 32px;

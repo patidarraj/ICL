@@ -52,13 +52,22 @@ logoFloatCard.className = 'logo-float-card';
 document.body.appendChild(logoFloatCard);
 
 function showLogoFloatCard(target) {
-  const name = target.dataset.teamName || '';
-  if (target.dataset.teamLogo) {
-    logoFloatCard.innerHTML = `<img src="${target.dataset.teamLogo}" alt=""><div class="logo-float-name">${name}</div>`;
+  if (target.dataset.photoSrc) {
+    const caption = target.dataset.photoCaption || '';
+    const by = target.dataset.photoBy || '';
+    logoFloatCard.classList.add('logo-float-card-photo');
+    logoFloatCard.innerHTML = `<img src="${target.dataset.photoSrc}" alt="">
+      ${caption || by ? `<div class="logo-float-name">${caption}${caption && by ? '<br>' : ''}${by ? `<span class="small text-muted">by ${by}</span>` : ''}</div>` : ''}`;
   } else {
-    const icon = target.dataset.teamIcon || 'fa-shield-halved';
-    const color = target.dataset.teamColor || '#F97316';
-    logoFloatCard.innerHTML = `<div class="logo-float-placeholder" style="color:${color}"><i class="fa-solid ${icon}"></i></div><div class="logo-float-name">${name}</div>`;
+    logoFloatCard.classList.remove('logo-float-card-photo');
+    const name = target.dataset.teamName || '';
+    if (target.dataset.teamLogo) {
+      logoFloatCard.innerHTML = `<img src="${target.dataset.teamLogo}" alt=""><div class="logo-float-name">${name}</div>`;
+    } else {
+      const icon = target.dataset.teamIcon || 'fa-shield-halved';
+      const color = target.dataset.teamColor || '#F97316';
+      logoFloatCard.innerHTML = `<div class="logo-float-placeholder" style="color:${color}"><i class="fa-solid ${icon}"></i></div><div class="logo-float-name">${name}</div>`;
+    }
   }
   logoFloatCard.classList.add('is-visible');
   logoFloatBackdrop.classList.add('is-visible');
@@ -69,19 +78,21 @@ function hideLogoFloatCard() {
   logoFloatBackdrop.classList.remove('is-visible');
 }
 
+const ZOOMABLE_SELECTOR = '.team-logo-zoomable, .gallery-photo-zoomable';
+
 document.addEventListener('mouseover', (e) => {
-  const logo = e.target.closest('.team-logo-zoomable');
-  if (logo) showLogoFloatCard(logo);
+  const el = e.target.closest(ZOOMABLE_SELECTOR);
+  if (el) showLogoFloatCard(el);
 });
 document.addEventListener('mouseout', (e) => {
-  const logo = e.target.closest('.team-logo-zoomable');
-  if (logo && !logo.contains(e.relatedTarget)) hideLogoFloatCard();
+  const el = e.target.closest(ZOOMABLE_SELECTOR);
+  if (el && !el.contains(e.relatedTarget)) hideLogoFloatCard();
 });
 document.addEventListener('click', (e) => {
-  const logo = e.target.closest('.team-logo-zoomable');
-  if (logo) {
+  const el = e.target.closest(ZOOMABLE_SELECTOR);
+  if (el) {
     e.stopPropagation();
-    showLogoFloatCard(logo);
+    showLogoFloatCard(el);
   } else {
     hideLogoFloatCard();
   }

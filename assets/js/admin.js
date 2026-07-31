@@ -118,7 +118,10 @@ function liveScoreTile(live) {
 function galleryApprovalTile(photo) {
   return `
     <div class="col-6 col-sm-4 col-md-3 col-lg-2 text-center" data-id="${photo.id}">
-      <img src="${photo.photoBase64}" alt="" class="team-logo-gallery mb-2" style="aspect-ratio:4/3; object-fit:cover; width:100%;">
+      <div class="position-relative mb-2">
+        <input type="checkbox" class="form-check-input gallery-select-check position-absolute top-0 start-0 m-1" data-id="${photo.id}" style="z-index:2;">
+        <img src="${photo.photoBase64}" alt="" class="team-logo-gallery" style="aspect-ratio:4/3; object-fit:cover; width:100%;">
+      </div>
       <div class="small text-muted text-truncate mb-2">${escapeHtml(photo.submittedBy || 'Anonymous')}</div>
       <div class="d-flex gap-1">
         <button class="btn btn-sm btn-success flex-fill btn-approve-photo" data-id="${photo.id}"><i class="fa-solid fa-check"></i></button>
@@ -130,7 +133,10 @@ function galleryApprovalTile(photo) {
 function publishedPhotoTile(photo) {
   return `
     <div class="col-6 col-sm-4 col-md-3 col-lg-2 text-center" data-id="${photo.id}">
-      <img src="${photo.photoBase64}" alt="" class="gallery-approval-thumb mb-2" style="aspect-ratio:4/3; object-fit:cover; width:100%;">
+      <div class="position-relative mb-2">
+        <input type="checkbox" class="form-check-input gallery-select-check position-absolute top-0 start-0 m-1" data-id="${photo.id}" style="z-index:2;">
+        <img src="${photo.photoBase64}" alt="" class="gallery-approval-thumb" style="aspect-ratio:4/3; object-fit:cover; width:100%;">
+      </div>
       <button class="btn btn-sm btn-outline-danger w-100 btn-delete-photo" data-id="${photo.id}"><i class="fa-solid fa-trash me-1"></i>Remove</button>
     </div>`;
 }
@@ -306,11 +312,20 @@ function adminPanel(outlet) {
         </div>
         ${pendingPhotos.length ? `
         <div class="card mb-3 border-warning">
-          <div class="card-header"><i class="fa-solid fa-clock me-2"></i>Pending Approval <span class="badge bg-warning text-dark ms-1">${pendingPhotos.length}</span></div>
+          <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span><i class="fa-solid fa-clock me-2"></i>Pending Approval <span class="badge bg-warning text-dark ms-1">${pendingPhotos.length}</span></span>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-success btn-bulk-approve" data-scope="pending" disabled><i class="fa-solid fa-check me-1"></i>Approve Selected</button>
+              <button class="btn btn-sm btn-outline-danger btn-bulk-reject" data-scope="pending" disabled><i class="fa-solid fa-xmark me-1"></i>Reject Selected</button>
+            </div>
+          </div>
           <div class="card-body"><div class="row g-3" id="admin-gallery-pending">${pendingPhotos.map(galleryApprovalTile).join('')}</div></div>
         </div>` : ''}
         <div class="card">
-          <div class="card-header"><i class="fa-solid fa-images me-2"></i>Published Photos <span class="text-muted small">(${publishedPhotos.length})</span></div>
+          <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span><i class="fa-solid fa-images me-2"></i>Published Photos <span class="text-muted small">(${publishedPhotos.length})</span></span>
+            <button class="btn btn-sm btn-outline-danger btn-bulk-delete" data-scope="published" disabled><i class="fa-solid fa-trash me-1"></i>Delete Selected</button>
+          </div>
           <div class="card-body">
             <div class="row g-3" id="admin-gallery-published">${publishedPhotos.map(publishedPhotoTile).join('') || '<p class="text-muted small mb-0">No photos published yet</p>'}</div>
           </div>
@@ -780,6 +795,40 @@ function adminPanel(outlet) {
       btn.disabled = true;
       try { await rejectGalleryPhoto(btn.dataset.id); notify.success('Photo removed'); adminPanel(outlet); } catch { notify.error('Could not remove photo'); btn.disabled = false; }
     }));
+
+    function selectedIds(scope) {
+      return outlet.querySelectorAll(`#admin-gallery-${scope} .gallery-select-check:checked`);
+    }
+    outlet.querySelectorAll('.gallery-select-check').forEach((cb) => cb.addEventListener('change', () => {
+      const scope = cb.closest('[id^="admin-gallery-"]').id.replace('admin-gallery-', '');
+      const any = selectedIds(scope).length > 0;
+      outlet.querySelector(`.btn-bulk-approve[data-scope="${scope}"]`)?.toggleAttribute('disabled', !any);
+      outlet.querySelector(`.btn-bulk-reject[data-scope="${scope}"]`)?.toggleAttribute('disabled', !any);
+      outlet.querySelector(`.btn-bulk-delete[data-scope="${scope}"]`)?.toggleAttribute('disabled', !any);
+    }));
+    outlet.querySelector('.btn-bulk-approve')?.addEventListener('click', async (e) => {
+      const ids = [...selectedIds('pending')].map((cb) => cb.dataset.id);
+      if (!ids.length) return;
+      e.target.disabled = true;
+      try { await Promise.all(ids.map((id) => approveGalleryPhoto(id))); notify.success(`${ids.length} photo(s) published`); adminPanel(outlet); }
+      catch { notify.error('Could not approve selected photos'); e.target.disabled = false; }
+    });
+    outlet.querySelector('.btn-bulk-reject')?.addEventListener('click', async (e) => {
+      const ids = [...selectedIds('pending')].map((cb) => cb.dataset.id);
+      if (!ids.length) return;
+      if (!confirm(`Discard ${ids.length} selected photo(s)?`)) return;
+      e.target.disabled = true;
+      try { await Promise.all(ids.map((id) => rejectGalleryPhoto(id))); notify.warn(`${ids.length} photo(s) discarded`); adminPanel(outlet); }
+      catch { notify.error('Could not discard selected photos'); e.target.disabled = false; }
+    });
+    outlet.querySelector('.btn-bulk-delete')?.addEventListener('click', async (e) => {
+      const ids = [...selectedIds('published')].map((cb) => cb.dataset.id);
+      if (!ids.length) return;
+      if (!confirm(`Remove ${ids.length} selected photo(s) from the gallery?`)) return;
+      e.target.disabled = true;
+      try { await Promise.all(ids.map((id) => rejectGalleryPhoto(id))); notify.success(`${ids.length} photo(s) removed`); adminPanel(outlet); }
+      catch { notify.error('Could not remove selected photos'); e.target.disabled = false; }
+    });
   }
 
   bindTeamActions();

@@ -55,7 +55,9 @@ function formatMB(bytes) { return `${Math.round(bytes / (1024 * 1024))} MB`; }
 function photoTile(p) {
   return `
     <div class="gallery-tile">
-      <img src="${p.photoBase64}" alt="${escapeHtml(p.caption || 'Tournament photo')}" loading="lazy">
+      <img src="${p.photoBase64}" alt="${escapeHtml(p.caption || 'Tournament photo')}" loading="lazy"
+        class="gallery-photo-zoomable" tabindex="0"
+        data-photo-src="${p.photoBase64}" data-photo-caption="${escapeHtml(p.caption || '')}" data-photo-by="${escapeHtml(p.submittedBy || '')}">
       ${p.caption || p.submittedBy ? `<div class="gallery-tile-caption">
         ${p.caption ? `<div>${escapeHtml(p.caption)}</div>` : ''}
         ${p.submittedBy ? `<div class="small text-muted">by ${escapeHtml(p.submittedBy)}</div>` : ''}
