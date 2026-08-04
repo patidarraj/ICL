@@ -17,6 +17,14 @@
 <meta name="twitter:title" content="Carrom Tournament Manager">
 <meta name="twitter:description" content="Live scores, schedule, standings, and bracket for the Infytrix Carrom League.">
 
+<!-- Kick off DNS+TLS for these origins immediately instead of only once the parser reaches
+     the tag that actually references them — saves a full round trip per origin, which adds
+     up badly on high-latency connections given how many separate CDNs this page depends on. -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
@@ -73,8 +81,9 @@
   <a class="bottom-nav-link" href="#/admin" data-route="admin"><i class="fa-solid fa-user-shield"></i><span>Admin</span></a>
 </nav>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<!-- Chart.js (205KB) is only used on the Statistics page — loaded on demand by charts.js
+     instead of blocking every other page's load. -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
 <script type="module" src="assets/js/app.js"></script>
 </body>
 </html>

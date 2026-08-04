@@ -1,11 +1,28 @@
 // Chart.js wrapper helpers with the app's dark theme baked in.
+// Chart.js itself (205KB) is only needed on the Statistics page, so it's loaded on demand
+// here rather than as a blocking <script> tag on every page — see ensureChartLib() below.
 const activeCharts = new Map();
 
 const PALETTE = ['#3B82F6', '#22C55E', '#EF4444', '#FACC15', '#A855F7', '#06B6D4', '#F97316', '#EC4899'];
 
-Chart.defaults.color = '#94A3B8';
-Chart.defaults.borderColor = 'rgba(148,163,184,0.15)';
-Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
+let chartLibPromise = null;
+function ensureChartLib() {
+  if (window.Chart) return Promise.resolve();
+  if (chartLibPromise) return chartLibPromise;
+  chartLibPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js';
+    script.onload = () => {
+      Chart.defaults.color = '#94A3B8';
+      Chart.defaults.borderColor = 'rgba(148,163,184,0.15)';
+      Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
+      resolve();
+    };
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+  return chartLibPromise;
+}
 
 function destroy(id) {
   if (activeCharts.has(id)) {
@@ -14,7 +31,8 @@ function destroy(id) {
   }
 }
 
-export function renderChart(canvasId, config) {
+export async function renderChart(canvasId, config) {
+  await ensureChartLib();
   const canvas = document.getElementById(canvasId);
   if (!canvas) return null;
   destroy(canvasId);
