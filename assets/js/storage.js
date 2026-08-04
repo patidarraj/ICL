@@ -127,7 +127,9 @@ export function updateTeam(teamId, fields) {
 
 /** Admin-only: clears a team's live logo without touching anything else on the doc. */
 export function removeTeamLogo(teamId) {
-  return updateDoc(doc(teamsColRef, teamId), { logoBase64: deleteField() });
+  const team = getTeams().find((t) => t.id === teamId);
+  if (team?.logoPath) deleteObject(storageRef(storage, team.logoPath)).catch(() => {});
+  return updateDoc(doc(teamsColRef, teamId), { logoBase64: deleteField(), logoUrl: deleteField(), logoPath: deleteField() });
 }
 
 /** Upserts every team in the array and deletes any team docs no longer present. */
@@ -142,29 +144,61 @@ export async function saveTeams(teams) {
 
 /**
  * Narrow, rules-friendly update touching only a team's *pending* logo — usable by
- * non-admins. The live/public `logoBase64` field is only ever set by an admin
- * approval, so an uploaded image never goes public without review.
+ * non-admins. The live/public `logoUrl` field is only ever set by an admin approval,
+ * so an uploaded image never goes public without review. Logos live in Firebase Storage
+ * (not base64-in-Firestore) so document reads stay tiny and images become normal,
+ * browser-cacheable HTTP resources instead of one giant blocking Firestore payload.
  */
-export function updateTeamLogo(teamId, logoBase64) {
-  return updateDoc(doc(teamsColRef, teamId), { pendingLogoBase64: logoBase64, pendingLogoStatus: 'pending' });
+export async function updateTeamLogo(teamId, blob) {
+  const path = `team-logos/${teamId}/pending_${Date.now()}.jpg`;
+  const fileRef = storageRef(storage, path);
+  await uploadBytesResumable(fileRef, blob, { contentType: blob.type || 'image/jpeg' });
+  const url = await getDownloadURL(fileRef);
+  const team = getTeams().find((t) => t.id === teamId);
+  if (team?.pendingLogoPath) deleteObject(storageRef(storage, team.pendingLogoPath)).catch(() => {});
+  return updateDoc(doc(teamsColRef, teamId), { pendingLogoUrl: url, pendingLogoPath: path, pendingLogoStatus: 'pending' });
 }
 
 /** Admin-only: promotes a team's pending logo to the live, publicly-shown logo. */
 export function approveTeamLogo(teamId) {
   const team = getTeams().find((t) => t.id === teamId);
+  if (team?.logoPath) deleteObject(storageRef(storage, team.logoPath)).catch(() => {});
   return updateDoc(doc(teamsColRef, teamId), {
-    logoBase64: team.pendingLogoBase64,
-    pendingLogoBase64: deleteField(),
+    logoUrl: team.pendingLogoUrl,
+    logoPath: team.pendingLogoPath,
+    logoBase64: deleteField(),
+    pendingLogoUrl: deleteField(),
+    pendingLogoPath: deleteField(),
     pendingLogoStatus: deleteField(),
   });
 }
 
 /** Admin-only: discards a team's pending logo without changing the live logo. */
 export function rejectTeamLogo(teamId) {
+  const team = getTeams().find((t) => t.id === teamId);
+  if (team?.pendingLogoPath) deleteObject(storageRef(storage, team.pendingLogoPath)).catch(() => {});
   return updateDoc(doc(teamsColRef, teamId), {
-    pendingLogoBase64: deleteField(),
+    pendingLogoUrl: deleteField(),
+    pendingLogoPath: deleteField(),
     pendingLogoStatus: deleteField(),
   });
+}
+
+/**
+ * Admin-only, one-time cleanup: teams that got their logo before Storage support existed
+ * still have it as base64-in-Firestore. Re-uploads a team's own logoBase64 to Storage and
+ * swaps the doc over to logoUrl, without requiring the team to re-submit anything.
+ */
+export async function migrateLegacyLogoToStorage(teamId) {
+  const team = getTeams().find((t) => t.id === teamId);
+  if (!team?.logoBase64) return;
+  const res = await fetch(team.logoBase64);
+  const blob = await res.blob();
+  const path = `team-logos/${teamId}/legacy_${Date.now()}.jpg`;
+  const fileRef = storageRef(storage, path);
+  await uploadBytesResumable(fileRef, blob, { contentType: blob.type || 'image/jpeg' });
+  const url = await getDownloadURL(fileRef);
+  await updateDoc(doc(teamsColRef, teamId), { logoUrl: url, logoPath: path, logoBase64: deleteField() });
 }
 
 export function getFixtures() { return cache.fixtures || []; }

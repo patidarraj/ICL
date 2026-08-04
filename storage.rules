@@ -11,5 +11,15 @@ service firebase.storage {
       allow update: if false;
       allow delete: if request.auth != null;
     }
+    // Team logos: submitted publicly (gated by the team's access code at the app layer,
+    // same trust model as the pendingLogoBase64 flow it replaces), but only ever goes
+    // live/public via the `pendingLogo* -> logo*` Firestore field promotion an admin does.
+    match /team-logos/{teamId}/{fileName} {
+      allow read: if true;
+      allow create: if request.resource.size < 5 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*');
+      allow update: if false;
+      allow delete: if request.auth != null;
+    }
   }
 }

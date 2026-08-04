@@ -4,63 +4,36 @@ import { notify } from './notifications.js';
 
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 const MAX_RAW_BYTES = 8 * 1024 * 1024;
-// Firestore caps a whole DOCUMENT at ~1MB, and a team's existing approved logoBase64
-// keeps sitting in that same document alongside a newly-submitted pendingLogoBase64 until
-// an admin reviews it — so re-uploading a replacement logo must leave room for both to
-// coexist, not just budget the new image on its own (that under-budgeted case previously
-// made re-uploads fail for any team that already had a sizeable approved logo).
-const TOTAL_DOC_BUDGET = 900 * 1024;
-const PER_IMAGE_MAX = 650 * 1024;
-const PER_IMAGE_MIN = 150 * 1024;
-// Progressively shrink dimension/quality until the encoded logo fits its budget —
-// most uploads succeed on the first (highest-quality) attempt.
-const COMPRESSION_LADDER = [
-  { dimension: 480, format: 'png' },
-  { dimension: 480, format: 'jpeg', quality: 0.85 },
-  { dimension: 320, format: 'jpeg', quality: 0.75 },
-  { dimension: 200, format: 'jpeg', quality: 0.6 },
-];
+// Logos now upload to Firebase Storage instead of living as base64 inside the team's
+// Firestore document, so there's no tight ~1MB document budget to juggle anymore — a
+// single reasonably-sized, high-quality compression pass is enough.
+const LOGO_MAX_DIMENSION = 640;
+const LOGO_QUALITY = 0.9;
 
-function encodedByteLength(dataUrl) {
-  return Math.round(dataUrl.length * 0.75);
-}
-
-/** Leaves room for a team's existing approved logo to coexist during the review window. */
-function budgetFor(existingLogoBase64) {
-  const existingLen = existingLogoBase64 ? encodedByteLength(existingLogoBase64) : 0;
-  return Math.min(PER_IMAGE_MAX, Math.max(PER_IMAGE_MIN, TOTAL_DOC_BUDGET - existingLen));
-}
-
-function renderAtSize(img, dimension, format, quality) {
-  let { width, height } = img;
-  if (width > height && width > dimension) {
-    height = Math.round((height * dimension) / width);
-    width = dimension;
-  } else if (height > dimension) {
-    width = Math.round((width * dimension) / height);
-    height = dimension;
-  }
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext('2d');
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(img, 0, 0, width, height);
-  return format === 'png' ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', quality);
-}
-
-function compressImage(file, maxEncodedBytes) {
+function compressImage(file) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
-      // PNG keeps logo artwork (flat colors, sharp edges, text) crisp on the first,
-      // highest-quality attempt; JPEG steps down further only if that's still too big.
-      for (const step of COMPRESSION_LADDER) {
-        const dataUrl = renderAtSize(img, step.dimension, step.format, step.quality);
-        if (encodedByteLength(dataUrl) <= maxEncodedBytes) { resolve(dataUrl); return; }
+      let { width, height } = img;
+      if (width > height && width > LOGO_MAX_DIMENSION) {
+        height = Math.round((height * LOGO_MAX_DIMENSION) / width);
+        width = LOGO_MAX_DIMENSION;
+      } else if (height > LOGO_MAX_DIMENSION) {
+        width = Math.round((width * LOGO_MAX_DIMENSION) / height);
+        height = LOGO_MAX_DIMENSION;
       }
-      reject(new Error('too-large-after-compression'));
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, width, height);
+      // PNG for source PNGs keeps logo artwork (flat colors, sharp edges, text) crisp;
+      // everything else compresses to JPEG.
+      const useAsPng = file.type === 'image/png';
+      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Could not process that image'))),
+        useAsPng ? 'image/png' : 'image/jpeg', useAsPng ? undefined : LOGO_QUALITY);
     };
     img.onerror = () => reject(new Error('Could not read image'));
     img.src = URL.createObjectURL(file);
@@ -80,7 +53,8 @@ function galleryTile(team) {
 
 /** Small inline logo for the print view — a real uploaded logo, or a colored initial badge if none yet. */
 function printLogo(team) {
-  if (team?.logoBase64) return `<img src="${team.logoBase64}" alt="" class="print-logo">`;
+  const logoSrc = team?.logoUrl || team?.logoBase64;
+  if (logoSrc) return `<img src="${logoSrc}" alt="" class="print-logo">`;
   const initial = (team?.name || '?').trim()[0]?.toUpperCase() || '?';
   return `<span class="print-logo print-logo-placeholder">${initial}</span>`;
 }
@@ -290,14 +264,14 @@ export async function renderTeamLogo(outlet) {
   const teamIdInput = outlet.querySelector('#tl-team-id');
   const teamDropdown = outlet.querySelector('#tl-team-dropdown');
   const previewWrap = outlet.querySelector('#tl-preview-wrap');
-  let pendingDataUrl = null;
+  let pendingBlob = null;
 
   function teamLabel(t) {
     return `${t.players.join(' & ')} · ${t.name} · ${t.pool}`;
   }
 
   function showCurrentLogo() {
-    pendingDataUrl = null;
+    pendingBlob = null;
     if (!teamIdInput.value) {
       previewWrap.innerHTML = '<p class="text-muted small mb-0">Search and select your team above to see its current logo.</p>';
       return;
@@ -353,15 +327,10 @@ export async function renderTeamLogo(outlet) {
     if (!ALLOWED_TYPES.includes(file.type)) { notify.warn('Please choose a PNG, JPEG, or WEBP image'); return; }
     if (file.size > MAX_RAW_BYTES) { notify.warn('Image is too large — please choose a file under 8MB'); return; }
     try {
-      const team = getTeams().find((t) => t.id === teamIdInput.value);
-      pendingDataUrl = await compressImage(file, budgetFor(team?.logoBase64));
-      previewWrap.innerHTML = `<img src="${pendingDataUrl}" alt="" class="team-logo-preview">`;
+      pendingBlob = await compressImage(file);
+      previewWrap.innerHTML = `<img src="${URL.createObjectURL(pendingBlob)}" alt="" class="team-logo-preview">`;
     } catch (err) {
-      if (err.message === 'too-large-after-compression') {
-        notify.error('This image is too complex/detailed to fit our size limit — please try a simpler graphic or a lower-resolution image.');
-      } else {
-        notify.error('Could not read that image, try another file');
-      }
+      notify.error('Could not read that image, try another file');
     }
   });
 
@@ -374,12 +343,12 @@ export async function renderTeamLogo(outlet) {
     if (!team) { notify.warn('Search and select your team first'); return; }
     if (!code) { notify.warn('Enter your team access code'); return; }
     if (team.logoCode && code !== team.logoCode) { notify.error('That access code doesn\'t match this team'); return; }
-    if (!pendingDataUrl) { notify.warn('Choose an image file'); return; }
+    if (!pendingBlob) { notify.warn('Choose an image file'); return; }
 
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Uploading...';
     try {
-      await updateTeamLogo(teamId, pendingDataUrl);
+      await updateTeamLogo(teamId, pendingBlob);
       notify.success('Your logo has been submitted and is awaiting admin approval.', 'Submitted for Review');
       showCurrentLogo();
     } catch (err) {
