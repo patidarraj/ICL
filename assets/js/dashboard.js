@@ -119,6 +119,19 @@ export async function renderDashboard(outlet) {
   const teams = getTeams();
   const fixtures = getFixtures();
   const settings = getSettings();
+
+  // Live Firestore data streams in asynchronously and can be a beat behind the very first
+  // paint (the page shell renders immediately rather than blocking on it) — show a brief
+  // loading state instead of "undefined" text until settings actually arrive.
+  if (!settings.tournamentName) {
+    outlet.innerHTML = `
+      <div class="text-center text-muted py-5">
+        <i class="fa-solid fa-circle-notch fa-spin fa-2x mb-3"></i>
+        <div>Loading tournament data...</div>
+      </div>`;
+    return;
+  }
+
   const teamsById = Object.fromEntries(teams.map((t) => [t.id, t]));
   const todayIso = new Date().toISOString().slice(0, 10);
   const todayMatches = sortByDateTime(fixtures.filter((f) => f.date === todayIso));

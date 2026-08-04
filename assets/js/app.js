@@ -13,7 +13,13 @@ import { renderScoreboard } from './scoreboard.js';
 import { renderGallery } from './gallery.js';
 import { startMatchAlertWatcher } from './match-alerts.js';
 
-await initData();
+// initData() is deliberately NOT awaited here — it does a getDocs() over the whole teams
+// collection (every team's full base64 logo, ~10MB combined) plus the tournament state doc,
+// and used to block the entire app behind that one round trip before anything rendered.
+// The onSnapshot listeners in storage.js populate the same data independently and already
+// trigger a re-render via onDataChange, so the router can start immediately and the page
+// fills in as data streams in, instead of showing a blank screen until it all arrives.
+initData();
 startMatchAlertWatcher();
 
 registerRoute('dashboard', renderDashboard);
