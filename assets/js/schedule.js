@@ -135,8 +135,7 @@ function calendarView(fixtures, teamsById) {
 
 /** Small inline logo for the print view — a real uploaded logo, or a colored initial badge if none yet. */
 function printLogo(team) {
-  const logoSrc = team?.logoUrl || team?.logoBase64;
-  if (logoSrc) return `<img src="${logoSrc}" alt="" class="print-logo">`;
+  if (team?.logoBase64) return `<img src="${team.logoBase64}" alt="" class="print-logo">`;
   const initial = (team?.name || '?').trim()[0]?.toUpperCase() || '?';
   return `<span class="print-logo print-logo-placeholder">${initial}</span>`;
 }

@@ -10,16 +10,12 @@ import {
 import {
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
 } from 'https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js';
-import {
-  getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject,
-} from 'https://www.gstatic.com/firebasejs/10.13.1/firebase-storage.js';
 import { firebaseConfig, ADMIN_EMAIL, REFEREE_PASSCODE } from './firebase-config.js';
 import { generateTeams, generateFixtures, generateSettings, recomputeStandingsForTeams, sortStandings } from './utilities.js';
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
-const storage = getStorage(app);
 const stateRef = doc(db, 'tournaments', 'main');
 const teamsColRef = collection(db, 'teams');
 const liveScoresColRef = collection(db, 'liveScores');
@@ -127,9 +123,7 @@ export function updateTeam(teamId, fields) {
 
 /** Admin-only: clears a team's live logo without touching anything else on the doc. */
 export function removeTeamLogo(teamId) {
-  const team = getTeams().find((t) => t.id === teamId);
-  if (team?.logoPath) deleteObject(storageRef(storage, team.logoPath)).catch(() => {});
-  return updateDoc(doc(teamsColRef, teamId), { logoBase64: deleteField(), logoUrl: deleteField(), logoPath: deleteField() });
+  return updateDoc(doc(teamsColRef, teamId), { logoBase64: deleteField() });
 }
 
 /** Upserts every team in the array and deletes any team docs no longer present. */
@@ -144,61 +138,29 @@ export async function saveTeams(teams) {
 
 /**
  * Narrow, rules-friendly update touching only a team's *pending* logo — usable by
- * non-admins. The live/public `logoUrl` field is only ever set by an admin approval,
- * so an uploaded image never goes public without review. Logos live in Firebase Storage
- * (not base64-in-Firestore) so document reads stay tiny and images become normal,
- * browser-cacheable HTTP resources instead of one giant blocking Firestore payload.
+ * non-admins. The live/public `logoBase64` field is only ever set by an admin
+ * approval, so an uploaded image never goes public without review.
  */
-export async function updateTeamLogo(teamId, blob) {
-  const path = `team-logos/${teamId}/pending_${Date.now()}.jpg`;
-  const fileRef = storageRef(storage, path);
-  await uploadBytesResumable(fileRef, blob, { contentType: blob.type || 'image/jpeg' });
-  const url = await getDownloadURL(fileRef);
-  const team = getTeams().find((t) => t.id === teamId);
-  if (team?.pendingLogoPath) deleteObject(storageRef(storage, team.pendingLogoPath)).catch(() => {});
-  return updateDoc(doc(teamsColRef, teamId), { pendingLogoUrl: url, pendingLogoPath: path, pendingLogoStatus: 'pending' });
+export function updateTeamLogo(teamId, logoBase64) {
+  return updateDoc(doc(teamsColRef, teamId), { pendingLogoBase64: logoBase64, pendingLogoStatus: 'pending' });
 }
 
 /** Admin-only: promotes a team's pending logo to the live, publicly-shown logo. */
 export function approveTeamLogo(teamId) {
   const team = getTeams().find((t) => t.id === teamId);
-  if (team?.logoPath) deleteObject(storageRef(storage, team.logoPath)).catch(() => {});
   return updateDoc(doc(teamsColRef, teamId), {
-    logoUrl: team.pendingLogoUrl,
-    logoPath: team.pendingLogoPath,
-    logoBase64: deleteField(),
-    pendingLogoUrl: deleteField(),
-    pendingLogoPath: deleteField(),
+    logoBase64: team.pendingLogoBase64,
+    pendingLogoBase64: deleteField(),
     pendingLogoStatus: deleteField(),
   });
 }
 
 /** Admin-only: discards a team's pending logo without changing the live logo. */
 export function rejectTeamLogo(teamId) {
-  const team = getTeams().find((t) => t.id === teamId);
-  if (team?.pendingLogoPath) deleteObject(storageRef(storage, team.pendingLogoPath)).catch(() => {});
   return updateDoc(doc(teamsColRef, teamId), {
-    pendingLogoUrl: deleteField(),
-    pendingLogoPath: deleteField(),
+    pendingLogoBase64: deleteField(),
     pendingLogoStatus: deleteField(),
   });
-}
-
-/**
- * Admin-only, one-time cleanup: teams that got their logo before Storage support existed
- * still have it as base64-in-Firestore. Re-uploads a team's own logoBase64 to Storage and
- * swaps the doc over to logoUrl, without requiring the team to re-submit anything.
- */
-export async function migrateLegacyLogoToStorage(teamId) {
-  const team = getTeams().find((t) => t.id === teamId);
-  if (!team?.logoBase64) return;
-  const res = await fetch(team.logoBase64);
-  const blob = await res.blob();
-  const path = `team-logos/${teamId}/legacy_${Date.now()}.jpg`;
-  const fileRef = storageRef(storage, path);
-  await uploadBytesResumable(fileRef, blob, { contentType: blob.type || 'image/jpeg' });
-  const url = await getDownloadURL(fileRef);
-  await updateDoc(doc(teamsColRef, teamId), { logoUrl: url, logoPath: path, logoBase64: deleteField() });
 }
 
 export function getFixtures() { return cache.fixtures || []; }
@@ -232,27 +194,7 @@ export function getGalleryUsageBytes() {
 
 export function submitGalleryPhoto({ photoBase64, submittedBy, caption }) {
   return addDoc(galleryColRef, {
-    type: 'photo', photoBase64, submittedBy: submittedBy || '', caption: caption || '', status: 'pending', createdAt: Date.now(),
-  });
-}
-
-// Videos live in Firebase Storage (not base64-in-Firestore like photos) — requires the
-// Blaze plan and Firebase Storage enabled in the console; see README for setup steps.
-export function uploadGalleryVideo(blob, onProgress) {
-  const path = `gallery-videos/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.webm`;
-  const fileRef = storageRef(storage, path);
-  const task = uploadBytesResumable(fileRef, blob, { contentType: blob.type || 'video/webm' });
-  return new Promise((resolve, reject) => {
-    task.on('state_changed',
-      (snap) => onProgress?.(snap.bytesTransferred / snap.totalBytes),
-      reject,
-      async () => resolve({ videoUrl: await getDownloadURL(task.snapshot.ref), storagePath: path }));
-  });
-}
-
-export function submitGalleryVideo({ videoUrl, storagePath, submittedBy, caption }) {
-  return addDoc(galleryColRef, {
-    type: 'video', videoUrl, storagePath, submittedBy: submittedBy || '', caption: caption || '', status: 'pending', createdAt: Date.now(),
+    photoBase64, submittedBy: submittedBy || '', caption: caption || '', status: 'pending', createdAt: Date.now(),
   });
 }
 
@@ -261,8 +203,6 @@ export function approveGalleryPhoto(photoId) {
 }
 
 export function rejectGalleryPhoto(photoId) {
-  const item = getGalleryPhotos().find((p) => p.id === photoId);
-  if (item?.storagePath) deleteObject(storageRef(storage, item.storagePath)).catch(() => {});
   return deleteDoc(doc(galleryColRef, photoId));
 }
 

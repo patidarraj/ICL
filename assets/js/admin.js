@@ -3,7 +3,6 @@ import {
   isAdminAuthed, loginAdmin, logoutAdmin, refreshStandings, resetTournament, exportBackup, restoreBackup,
   approveTeamLogo, rejectTeamLogo, getLiveScores, deleteLiveScore, updateTeam, removeTeamLogo, getRefereePasscode,
   getAdminEmail, getGalleryPhotos, approveGalleryPhoto, rejectGalleryPhoto, getGalleryUsageBytes, GALLERY_SAFE_BUDGET_BYTES,
-  migrateLegacyLogoToStorage,
 } from './storage.js';
 import { uid, downloadFile, escapeHtml, POOL_NAMES, isoDate, VENUE, generateLogoCode, sortByDateTime } from './utilities.js';
 import { notify } from './notifications.js';
@@ -54,7 +53,7 @@ function teamRow(team) {
     </td>
     <td class="text-nowrap">
       <button class="btn btn-sm btn-outline-primary btn-edit-team" data-id="${team.id}"><i class="fa-solid fa-pen"></i></button>
-      ${(team.logoUrl || team.logoBase64) ? `<button class="btn btn-sm btn-outline-warning btn-remove-logo" data-id="${team.id}" title="Remove this team's logo"><i class="fa-solid fa-image-slash"></i></button>` : ''}
+      ${team.logoBase64 ? `<button class="btn btn-sm btn-outline-warning btn-remove-logo" data-id="${team.id}" title="Remove this team's logo"><i class="fa-solid fa-image-slash"></i></button>` : ''}
       <button class="btn btn-sm btn-outline-danger btn-delete-team" data-id="${team.id}"><i class="fa-solid fa-trash"></i></button>
     </td>
   </tr>`;
@@ -81,7 +80,7 @@ function matchRow(f, teamsById) {
 function logoApprovalTile(team) {
   return `
     <div class="col-6 col-sm-4 col-md-3 col-lg-2 text-center" data-id="${team.id}">
-      <img src="${team.pendingLogoUrl || team.pendingLogoBase64}" alt="" class="team-logo-gallery mb-2">
+      <img src="${team.pendingLogoBase64}" alt="" class="team-logo-gallery mb-2">
       <div class="fw-semibold text-truncate">${team.players.join(' & ')}</div>
       <div class="small text-muted text-truncate mb-2">${team.name}</div>
       <div class="d-flex gap-1">
@@ -116,18 +115,12 @@ function liveScoreTile(live) {
     </div>`;
 }
 
-function galleryMediaEl(photo) {
-  return photo.type === 'video'
-    ? `<video src="${photo.videoUrl}" controls preload="metadata" style="aspect-ratio:4/3; object-fit:cover; width:100%; background:#000;"></video>`
-    : `<img src="${photo.photoBase64}" alt="" class="team-logo-gallery" style="aspect-ratio:4/3; object-fit:cover; width:100%;">`;
-}
-
 function galleryApprovalTile(photo) {
   return `
     <div class="col-6 col-sm-4 col-md-3 col-lg-2 text-center" data-id="${photo.id}">
       <div class="position-relative mb-2">
         <input type="checkbox" class="form-check-input gallery-select-check position-absolute top-0 start-0 m-1" data-id="${photo.id}" style="z-index:2;">
-        ${galleryMediaEl(photo)}
+        <img src="${photo.photoBase64}" alt="" class="team-logo-gallery" style="aspect-ratio:4/3; object-fit:cover; width:100%;">
       </div>
       <div class="small text-muted text-truncate mb-2">${escapeHtml(photo.submittedBy || 'Anonymous')}</div>
       <div class="d-flex gap-1">
@@ -142,7 +135,7 @@ function publishedPhotoTile(photo) {
     <div class="col-6 col-sm-4 col-md-3 col-lg-2 text-center" data-id="${photo.id}">
       <div class="position-relative mb-2">
         <input type="checkbox" class="form-check-input gallery-select-check position-absolute top-0 start-0 m-1" data-id="${photo.id}" style="z-index:2;">
-        ${galleryMediaEl(photo)}
+        <img src="${photo.photoBase64}" alt="" class="gallery-approval-thumb" style="aspect-ratio:4/3; object-fit:cover; width:100%;">
       </div>
       <button class="btn btn-sm btn-outline-danger w-100 btn-delete-photo" data-id="${photo.id}"><i class="fa-solid fa-trash me-1"></i>Remove</button>
     </div>`;
@@ -154,7 +147,6 @@ function adminPanel(outlet) {
   const teamsById = Object.fromEntries(teams.map((t) => [t.id, t]));
   const settings = getSettings();
   const pendingLogoTeams = teams.filter((t) => t.pendingLogoStatus === 'pending');
-  const legacyLogoTeams = teams.filter((t) => t.logoBase64 && !t.logoUrl);
   const activeLiveScores = Object.values(getLiveScores());
   const galleryPhotos = getGalleryPhotos();
   const pendingPhotos = galleryPhotos.filter((p) => p.status === 'pending');
@@ -281,11 +273,6 @@ function adminPanel(outlet) {
       </div>
 
       <div class="tab-pane fade" id="admin-tab-teams" role="tabpanel">
-        ${legacyLogoTeams.length ? `
-        <div class="alert alert-info d-flex justify-content-between align-items-center flex-wrap gap-2">
-          <span><i class="fa-solid fa-circle-info me-2"></i>${legacyLogoTeams.length} team logo(s) are still stored the old way (slows down every page load for everyone). Move them to faster storage — no re-upload needed.</span>
-          <button class="btn btn-sm btn-primary" id="btn-migrate-logos"><i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Migrate Now</button>
-        </div>` : ''}
         ${pendingLogoTeams.length ? `
         <div class="card mb-3 border-warning">
           <div class="card-header"><i class="fa-solid fa-image me-2"></i>Logo Approvals <span class="badge bg-warning text-dark ms-1">${pendingLogoTeams.length}</span></div>
@@ -620,20 +607,6 @@ function adminPanel(outlet) {
     await saveFixtures(fx);
     refreshMatchesBody(fx, getTeams());
     notify.success('Match numbers reassigned by date/time');
-  });
-
-  outlet.querySelector('#btn-migrate-logos')?.addEventListener('click', async (e) => {
-    const btn = e.target.closest('button');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Migrating...';
-    const targets = getTeams().filter((t) => t.logoBase64 && !t.logoUrl);
-    let ok = 0;
-    let failed = 0;
-    for (const t of targets) {
-      try { await migrateLegacyLogoToStorage(t.id); ok += 1; } catch { failed += 1; }
-    }
-    notify.success(`${ok} logo(s) migrated${failed ? `, ${failed} failed` : ''}`);
-    adminPanel(outlet);
   });
 
   outlet.querySelector('#btn-save-tournament-info').addEventListener('click', async () => {

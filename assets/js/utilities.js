@@ -169,11 +169,8 @@ function hashSeed(str) {
  */
 export function teamLogoHtml(team, sizeClass = 'team-logo') {
   const name = (team?.name || '').replace(/"/g, '&quot;');
-  // logoUrl (Firebase Storage) is the current format; logoBase64 is a fallback for any
-  // team not yet migrated off the old base64-in-Firestore storage — see migrateLegacyLogoToStorage.
-  const logoSrc = team?.logoUrl || team?.logoBase64;
-  if (team && logoSrc) {
-    return `<img src="${logoSrc}" alt="" class="${sizeClass} team-logo-zoomable" tabindex="0" data-team-name="${name}" data-team-logo="${logoSrc}" loading="lazy">`;
+  if (team && team.logoBase64) {
+    return `<img src="${team.logoBase64}" alt="" class="${sizeClass} team-logo-zoomable" tabindex="0" data-team-name="${name}" data-team-logo="${team.logoBase64}">`;
   }
   const seed = hashSeed(team?.id || 'x');
   const scrambled = (seed * 2654435761) >>> 0; // Knuth multiplicative hash, decorrelates near-sequential ids

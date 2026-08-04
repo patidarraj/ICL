@@ -11,7 +11,7 @@ service cloud.firestore {
       allow create: if !exists(/databases/$(database)/documents/teams/$(teamId));
       allow delete: if request.auth != null;
       allow update: if request.auth != null
-  || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pendingLogoUrl', 'pendingLogoPath', 'pendingLogoStatus', 'pendingLogoBase64']);
+  || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pendingLogoBase64', 'pendingLogoStatus']);
 		}
     match /liveScores/{matchId} {
       allow read: if true;
@@ -20,13 +20,9 @@ service cloud.firestore {
     }
     match /gallery/{photoId} {
       allow read: if true;
-      allow create: if request.resource.data.status == 'pending' && (
-                      (request.resource.data.type == 'photo'
-                        && request.resource.data.photoBase64 is string
-                        && request.resource.data.photoBase64.size() < 900000)
-                      || (request.resource.data.type == 'video'
-                        && request.resource.data.videoUrl is string)
-                    );
+      allow create: if request.resource.data.status == 'pending'
+                    && request.resource.data.photoBase64 is string
+                    && request.resource.data.photoBase64.size() < 900000;
       allow update, delete: if request.auth != null;
     }
   }
