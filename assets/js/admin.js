@@ -1,7 +1,7 @@
 import {
   getTeams, saveTeams, getFixtures, saveFixtures, getSettings, saveSettings,
   isAdminAuthed, loginAdmin, logoutAdmin, refreshStandings, resetTournament, exportBackup, restoreBackup,
-  approveTeamLogo, rejectTeamLogo, getLiveScores, deleteLiveScore, updateTeam, removeTeamLogo, getRefereePasscode,
+  approveTeamLogo, rejectTeamLogo, getLiveScores, deleteLiveScore, updateTeam, removeTeamLogo, regenerateRefereePasscode,
   getAdminEmail, getGalleryPhotos, approveGalleryPhoto, rejectGalleryPhoto, getGalleryUsageBytes, GALLERY_SAFE_BUDGET_BYTES,
 } from './storage.js';
 import { uid, downloadFile, escapeHtml, POOL_NAMES, isoDate, VENUE, generateLogoCode, sortByDateTime } from './utilities.js';
@@ -336,11 +336,9 @@ function adminPanel(outlet) {
         <div class="card mb-3">
           <div class="card-header"><i class="fa-solid fa-user-shield me-2"></i>Referee Access</div>
           <div class="card-body">
-            <p class="text-muted small mb-2">Share this passcode with match referees to unlock the Scoreboard's Individual Scoring tab. Regenerating it immediately invalidates the old one for anyone still using it.</p>
-            <div class="d-flex align-items-center gap-2">
-              <code class="text-warning fs-5" id="referee-code-display">${getRefereePasscode()}</code>
-              <button class="btn btn-sm btn-outline-secondary" id="btn-copy-referee-code" title="Copy"><i class="fa-solid fa-copy"></i></button>
-              <button class="btn btn-sm btn-outline-warning" id="btn-regen-referee-code" title="Generate a new code (invalidates the old one)"><i class="fa-solid fa-rotate me-1"></i>Regenerate</button>
+            <p class="text-muted small mb-2">Only a one-way hash of this passcode is stored — for security, it can't be displayed again once you close this, only regenerated. Copy it down and share it with match referees before navigating away.</p>
+            <div id="referee-code-area">
+              <button class="btn btn-sm btn-outline-warning" id="btn-regen-referee-code"><i class="fa-solid fa-rotate me-1"></i>Generate New Passcode</button>
             </div>
           </div>
         </div>
@@ -621,22 +619,24 @@ function adminPanel(outlet) {
     notify.success('Tournament info updated');
   });
 
-  outlet.querySelector('#btn-copy-referee-code').addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(getRefereePasscode());
-      notify.success('Referee passcode copied');
-    } catch {
-      notify.error('Could not copy — clipboard access blocked');
-    }
-  });
-
-  outlet.querySelector('#btn-regen-referee-code').addEventListener('click', async () => {
-    if (!confirm('Generate a new referee passcode? The old one will stop working immediately.')) return;
-    const refereePasscode = generateLogoCode(8);
-    await saveSettings({ ...getSettings(), refereePasscode });
-    outlet.querySelector('#referee-code-display').textContent = refereePasscode;
-    notify.success(`New referee passcode: ${refereePasscode}`);
-  });
+  async function doRegenerateRefereeCode(skipConfirm) {
+    if (!skipConfirm && !confirm('Generate a new referee passcode? The old one will stop working immediately.')) return;
+    const passcode = await regenerateRefereePasscode();
+    const area = outlet.querySelector('#referee-code-area');
+    area.innerHTML = `
+      <div class="alert alert-warning small mb-2"><i class="fa-solid fa-triangle-exclamation me-1"></i>Copy this now — it won't be shown again.</div>
+      <div class="d-flex align-items-center gap-2">
+        <code class="text-warning fs-5">${passcode}</code>
+        <button class="btn btn-sm btn-outline-secondary" id="btn-copy-referee-code" title="Copy"><i class="fa-solid fa-copy"></i></button>
+        <button class="btn btn-sm btn-outline-warning" id="btn-regen-referee-code-2"><i class="fa-solid fa-rotate me-1"></i>Generate Another</button>
+      </div>`;
+    area.querySelector('#btn-copy-referee-code').addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(passcode); notify.success('Referee passcode copied'); }
+      catch { notify.error('Could not copy — clipboard access blocked'); }
+    });
+    area.querySelector('#btn-regen-referee-code-2').addEventListener('click', () => doRegenerateRefereeCode(false));
+  }
+  outlet.querySelector('#btn-regen-referee-code').addEventListener('click', () => doRegenerateRefereeCode(false));
 
   outlet.querySelector('#btn-generate-knockout').addEventListener('click', async () => {
     const b = await generateBracket();

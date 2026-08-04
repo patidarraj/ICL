@@ -146,6 +146,16 @@ export function generateLogoCode(len = 6) {
   return code;
 }
 
+/**
+ * One-way SHA-256 hash (hex), used so secrets like the referee passcode never sit in
+ * plaintext inside a publicly-readable Firestore document — only this hash does, and it
+ * can't be reversed back into the original code by anyone reading it off the network/console.
+ */
+export async function sha256Hex(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 const PLACEHOLDER_ICONS = [
   'fa-shield-halved', 'fa-chess-rook', 'fa-bolt', 'fa-fire', 'fa-star',
   'fa-crown', 'fa-dragon', 'fa-paw', 'fa-feather-pointed', 'fa-gem',

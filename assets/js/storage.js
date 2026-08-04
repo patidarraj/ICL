@@ -11,7 +11,7 @@ import {
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
 } from 'https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js';
 import { firebaseConfig, ADMIN_EMAIL, REFEREE_PASSCODE } from './firebase-config.js';
-import { generateTeams, generateFixtures, generateSettings, recomputeStandingsForTeams, sortStandings } from './utilities.js';
+import { generateTeams, generateFixtures, generateSettings, recomputeStandingsForTeams, sortStandings, sha256Hex, generateLogoCode } from './utilities.js';
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -238,18 +238,41 @@ export async function refreshStandings() {
 }
 
 // --- Referee access (light social gate, same tier as team logo access codes) ---
+// Only a SHA-256 hash of the passcode is ever stored in `settings` — that document has
+// `allow read: if true` in Firestore rules (every visitor's client loads it), so storing
+// the plaintext there would hand the code to anyone opening the browser's Network/Console
+// tab, without even needing to try logging in. The hash can't be reversed back into the
+// original code just by reading it.
 export function isRefereeAuthed() { return sessionStorage.getItem(REFEREE_SESSION_KEY) === '1'; }
 
-/** Admin can rotate this from the Admin panel; falls back to the static default until they do. */
-export function getRefereePasscode() { return getSettings().refereePasscode || REFEREE_PASSCODE; }
+let defaultPasscodeHash = null;
+async function getRefereePasscodeHash() {
+  if (getSettings().refereePasscodeHash) return getSettings().refereePasscodeHash;
+  if (!defaultPasscodeHash) defaultPasscodeHash = await sha256Hex(REFEREE_PASSCODE);
+  return defaultPasscodeHash;
+}
 
-export function loginReferee(passcode) {
-  if (passcode !== getRefereePasscode()) return false;
+export async function loginReferee(passcode) {
+  const hash = await sha256Hex(passcode);
+  if (hash !== await getRefereePasscodeHash()) return false;
   sessionStorage.setItem(REFEREE_SESSION_KEY, '1');
   return true;
 }
 
 export function logoutReferee() { sessionStorage.removeItem(REFEREE_SESSION_KEY); }
+
+/** Admin-only: generates a new passcode, stores only its hash, and returns the plaintext
+ *  once so the admin can copy it down — it can never be read back after this. */
+export async function regenerateRefereePasscode() {
+  const passcode = generateLogoCode(8);
+  const refereePasscodeHash = await sha256Hex(passcode);
+  // saveSettings() replaces the whole `settings` map in one write, so dropping the old
+  // plaintext `refereePasscode` key just means leaving it out of this new object entirely
+  // (a nested deleteField() sentinel isn't valid inside a wholesale map replacement).
+  const { refereePasscode, ...rest } = getSettings();
+  await saveSettings({ ...rest, refereePasscodeHash });
+  return passcode;
+}
 
 // --- Live scoring (per-match scratch scorecard, referee-writable, admin confirms into fixtures) ---
 export function getLiveScores() { return cache.liveScores || {}; }

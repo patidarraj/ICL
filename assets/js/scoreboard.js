@@ -490,9 +490,9 @@ function refereeLoginForm(outlet, onSuccess) {
         </div></div>
       </div>
     </div>`;
-  const submit = () => {
+  const submit = async () => {
     const pw = pane.querySelector('#sb-ref-passcode').value;
-    if (loginReferee(pw)) { notify.success('Referee access granted'); onSuccess(); }
+    if (await loginReferee(pw)) { notify.success('Referee access granted'); onSuccess(); }
     else notify.error('Incorrect passcode');
   };
   pane.querySelector('#sb-ref-login').addEventListener('click', submit);
