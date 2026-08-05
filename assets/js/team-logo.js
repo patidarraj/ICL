@@ -69,6 +69,15 @@ function compressImage(file, maxEncodedBytes) {
 
 function galleryTile(team) {
   return `
+    <div class="logo-gallery-tile text-center">
+      ${teamLogoHtml(team, 'team-logo-gallery')}
+      <div class="fw-semibold mt-2">${team.name}</div>
+      <div class="small text-muted">${team.players.join(' & ')}</div>
+    </div>`;
+}
+
+function printSelectTile(team) {
+  return `
     <div class="logo-gallery-tile text-center position-relative">
       <input type="checkbox" class="form-check-input tl-print-check" data-id="${team.id}" checked
         style="position:absolute; top:6px; left:6px; width:1.2em; height:1.2em;" title="Include in print">
@@ -206,10 +215,25 @@ export async function renderTeamLogo(outlet) {
           <i class="fa-solid fa-upload me-1"></i>Upload
         </button>
       </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tl-pane-print" type="button" role="tab" aria-selected="false">
+          <i class="fa-solid fa-print me-1"></i>Print
+        </button>
+      </li>
     </ul>
 
     <div class="tab-content">
       <div class="tab-pane fade show active" id="tl-pane-gallery" role="tabpanel">
+        <div class="card">
+          <div class="card-body">
+            <div class="logo-gallery-grid">
+              ${teams.map(galleryTile).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="tl-pane-print" role="tabpanel">
         <div class="card">
           <div class="card-body">
             <p class="text-muted small mb-2">Uncheck any team above to leave it out of printing.</p>
@@ -228,7 +252,7 @@ export async function renderTeamLogo(outlet) {
               <button class="btn btn-sm btn-outline-secondary" id="tl-print-custom" title="Full-bleed grid, no borders or wasted space"><i class="fa-solid fa-file-image me-1"></i>Print Custom Layout</button>
             </div>
             <div class="logo-gallery-grid">
-              ${teams.map(galleryTile).join('')}
+              ${teams.map(printSelectTile).join('')}
             </div>
           </div>
         </div>
