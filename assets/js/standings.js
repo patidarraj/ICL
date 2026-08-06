@@ -34,22 +34,22 @@ function leaderboardPane(teams) {
   const ranked = sortStandings(teams);
   const [first, second, third] = ranked;
   return `
-    <div class="leaderboard-glow mb-4">
+    <div class="leaderboard-glow">
       <div class="leaderboard-podium">
         ${podiumSpot(second, 2)}
         ${podiumSpot(first, 1)}
         ${podiumSpot(third, 3)}
       </div>
-    </div>
-    <div class="card">
-      <div class="card-header"><i class="fa-solid fa-list-ol me-2"></i>Full Leaderboard</div>
-      <div class="card-body table-responsive p-0">
-        <table class="table table-dark table-hover align-middle mb-0">
-          <thead><tr>
-            <th>#</th><th>Team</th><th>Pool</th><th>P</th><th>W</th><th>D</th><th>L</th><th>Pts</th><th>NRR</th>
-          </tr></thead>
-          <tbody>${ranked.map(leaderboardRow).join('')}</tbody>
-        </table>
+      <div class="card leaderboard-table-card">
+        <div class="card-header"><i class="fa-solid fa-list-ol me-2"></i>Full Leaderboard</div>
+        <div class="card-body table-responsive p-0">
+          <table class="table table-dark table-hover align-middle mb-0">
+            <thead><tr>
+              <th>#</th><th>Team</th><th>Pool</th><th>P</th><th>W</th><th>D</th><th>L</th><th>Pts</th><th>NRR</th>
+            </tr></thead>
+            <tbody>${ranked.map(leaderboardRow).join('')}</tbody>
+          </table>
+        </div>
       </div>
     </div>`;
 }

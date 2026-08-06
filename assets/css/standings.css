@@ -6,11 +6,29 @@
   border-radius: 20px;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 60% 55% at 50% 30%, rgba(249,115,22,0.35), transparent 70%),
-    radial-gradient(ellipse 90% 60% at 50% 100%, rgba(194,65,12,0.25), transparent 70%),
+    radial-gradient(ellipse 70% 45% at 50% 15%, rgba(249,115,22,0.35), transparent 70%),
+    radial-gradient(ellipse 100% 70% at 50% 100%, rgba(194,65,12,0.22), transparent 70%),
     #0B0704;
   border: 1px solid rgba(249,115,22,0.25);
+  padding-bottom: 1.5rem;
 }
+
+.leaderboard-table-card {
+  position: relative;
+  z-index: 1;
+  margin: 0 1rem;
+  background: rgba(20,11,6,0.75);
+  border: 1px solid rgba(249,115,22,0.25);
+  backdrop-filter: blur(2px);
+}
+.leaderboard-table-card .card-header {
+  background: rgba(41,24,13,0.85);
+  border-bottom: 1px solid rgba(249,115,22,0.25);
+}
+.leaderboard-table-card table { background: transparent; }
+.leaderboard-table-card thead th { background: rgba(41,24,13,0.6); border-color: rgba(249,115,22,0.2); }
+.leaderboard-table-card tbody tr { border-color: rgba(249,115,22,0.12); }
+.leaderboard-table-card tbody tr:hover { background: rgba(249,115,22,0.08); }
 
 .leaderboard-podium {
   position: relative;
