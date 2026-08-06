@@ -79,7 +79,7 @@
 .path-box-pool { background: #F97316; }
 .path-box-seed { background: #EAB308; color: #2b2004; }
 .path-box-qf { background: #22C55E; color: #06280f; }
-.path-box-sf { background: #3B82F6; }
+.path-box-sf { background: var(--primary); }
 .path-box-champ {
   background: linear-gradient(135deg, #F97316, #FACC15);
   font-size: 0.95rem;
