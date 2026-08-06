@@ -1,2 +1,79 @@
 .row-qualified { background: rgba(34,197,94,0.08); }
 .row-wildcard { background: rgba(250,204,21,0.08); }
+
+.leaderboard-podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 2.5rem 1rem 0;
+  flex-wrap: wrap;
+}
+
+.podium-spot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 200px;
+  text-align: center;
+}
+.podium-empty { visibility: hidden; }
+
+.podium-crown {
+  font-size: 1.4rem;
+  color: #FACC15;
+  margin-bottom: 0.35rem;
+  height: 1.4rem;
+  visibility: hidden;
+}
+.podium-rank-1 .podium-crown { visibility: visible; }
+
+.podium-avatar { margin-bottom: 0.6rem; }
+.podium-avatar .podium-logo,
+.podium-avatar .team-logo-placeholder {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--border);
+}
+.podium-rank-1 .podium-avatar .podium-logo,
+.podium-rank-1 .podium-avatar .team-logo-placeholder { width: 92px; height: 92px; border-color: #FACC15; }
+.podium-rank-2 .podium-avatar .podium-logo,
+.podium-rank-2 .podium-avatar .team-logo-placeholder { border-color: #CBD5E1; }
+.podium-rank-3 .podium-avatar .podium-logo,
+.podium-rank-3 .podium-avatar .team-logo-placeholder { border-color: #D97706; }
+
+.podium-name { font-weight: 700; font-size: 1.05rem; color: var(--text, #E2E8F0); }
+.podium-players { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.75rem; }
+
+.podium-pedestal {
+  width: 100%;
+  background: linear-gradient(180deg, var(--card-bg-2, #24324A), var(--card-bg, #1E293B));
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 14px 14px 0 0;
+  padding: 0.9rem 0.5rem;
+  position: relative;
+}
+.podium-rank-1 .podium-pedestal { height: 130px; border-top: 3px solid #FACC15; }
+.podium-rank-2 .podium-pedestal { height: 96px; border-top: 3px solid #CBD5E1; }
+.podium-rank-3 .podium-pedestal { height: 74px; border-top: 3px solid #D97706; }
+
+.podium-medal { font-size: 1.3rem; margin-bottom: 0.25rem; }
+.podium-rank-1 .podium-medal { color: #FACC15; }
+.podium-rank-2 .podium-medal { color: #CBD5E1; }
+.podium-rank-3 .podium-medal { color: #D97706; }
+
+.podium-points { font-weight: 800; font-size: 1.15rem; color: var(--text, #E2E8F0); }
+.podium-points span { font-weight: 400; font-size: 0.75rem; color: var(--text-muted); }
+.podium-rank-number { position: absolute; top: 0.5rem; right: 0.7rem; font-size: 0.75rem; color: var(--text-muted); }
+
+@media (max-width: 640px) {
+  .leaderboard-podium { gap: 0.5rem; padding-top: 1.5rem; }
+  .podium-spot { width: 30%; }
+  .podium-avatar .podium-logo, .podium-avatar .team-logo-placeholder { width: 52px; height: 52px; }
+  .podium-rank-1 .podium-avatar .podium-logo, .podium-rank-1 .podium-avatar .team-logo-placeholder { width: 64px; height: 64px; }
+  .podium-name { font-size: 0.85rem; }
+  .podium-players { font-size: 0.68rem; }
+}

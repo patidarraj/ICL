@@ -1,11 +1,59 @@
 import { getTeams } from './storage.js';
 import { POOL_NAMES, sortStandings, teamLogoHtml } from './utilities.js';
 
-export async function renderStandings(outlet) {
-  const teams = getTeams();
+const MEDAL = ['fa-trophy', 'fa-medal', 'fa-medal'];
 
-  outlet.innerHTML = `
-    <h2 class="page-title"><i class="fa-solid fa-ranking-star me-2"></i>Standings</h2>
+function podiumSpot(team, rank) {
+  if (!team) return '<div class="podium-spot podium-empty"></div>';
+  return `
+    <div class="podium-spot podium-rank-${rank}">
+      <div class="podium-crown"><i class="fa-solid fa-crown"></i></div>
+      <div class="podium-avatar">${teamLogoHtml(team, 'podium-logo')}</div>
+      <div class="podium-name">${team.name}</div>
+      <div class="podium-players">${team.players.join(' & ')}</div>
+      <div class="podium-pedestal">
+        <div class="podium-medal"><i class="fa-solid ${MEDAL[rank - 1]}"></i></div>
+        <div class="podium-points">${team.points} <span>pts</span></div>
+        <div class="podium-rank-number">#${rank}</div>
+      </div>
+    </div>`;
+}
+
+function leaderboardRow(t, i) {
+  return `<tr>
+    <td class="text-muted">#${String(i + 1).padStart(3, '0')}</td>
+    <td><div class="d-flex align-items-center gap-2">${teamLogoHtml(t)}<div>${t.name}<div class="small text-muted">${t.players.join(' & ')}</div></div></div></td>
+    <td>${t.pool}</td>
+    <td>${t.played}</td><td>${t.won}</td><td>${t.drawn || 0}</td><td>${t.lost}</td>
+    <td class="fw-bold">${t.points}</td>
+    <td>${t.nrr || 0}</td>
+  </tr>`;
+}
+
+function leaderboardPane(teams) {
+  const ranked = sortStandings(teams);
+  const [first, second, third] = ranked;
+  return `
+    <div class="leaderboard-podium mb-4">
+      ${podiumSpot(second, 2)}
+      ${podiumSpot(first, 1)}
+      ${podiumSpot(third, 3)}
+    </div>
+    <div class="card">
+      <div class="card-header"><i class="fa-solid fa-list-ol me-2"></i>Full Leaderboard</div>
+      <div class="card-body table-responsive p-0">
+        <table class="table table-dark table-hover align-middle mb-0">
+          <thead><tr>
+            <th>#</th><th>Team</th><th>Pool</th><th>P</th><th>W</th><th>D</th><th>L</th><th>Pts</th><th>NRR</th>
+          </tr></thead>
+          <tbody>${ranked.map(leaderboardRow).join('')}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function standingsPane(teams) {
+  return `
     <div class="row g-3">
       ${POOL_NAMES.map((pool) => {
         const poolTeams = sortStandings(teams.filter((t) => t.pool === pool));
@@ -30,5 +78,34 @@ export async function renderStandings(outlet) {
           </div>
         </div>`;
       }).join('')}
+    </div>`;
+}
+
+export async function renderStandings(outlet) {
+  const teams = getTeams();
+
+  outlet.innerHTML = `
+    <h2 class="page-title"><i class="fa-solid fa-ranking-star me-2"></i>Standings</h2>
+
+    <ul class="nav nav-tabs mb-4" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#st-pane-leaderboard" type="button" role="tab" aria-selected="true">
+          <i class="fa-solid fa-trophy me-1"></i>Leaderboard
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#st-pane-standings" type="button" role="tab" aria-selected="false">
+          <i class="fa-solid fa-layer-group me-1"></i>Standings
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content">
+      <div class="tab-pane fade show active" id="st-pane-leaderboard" role="tabpanel">
+        ${leaderboardPane(teams)}
+      </div>
+      <div class="tab-pane fade" id="st-pane-standings" role="tabpanel">
+        ${standingsPane(teams)}
+      </div>
     </div>`;
 }
