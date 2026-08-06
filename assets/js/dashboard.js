@@ -125,8 +125,11 @@ export async function renderDashboard(outlet) {
   // loading state instead of "undefined" text until settings actually arrive.
   if (!settings.tournamentName) {
     outlet.innerHTML = `
-      <div class="text-center text-muted py-5">
-        <i class="fa-solid fa-circle-notch fa-spin fa-2x mb-3"></i>
+      <div class="app-loading-state">
+        <div class="carrom-loader">
+          <div class="carrom-loader-coin"></div>
+          <div class="carrom-loader-center"></div>
+        </div>
         <div>Loading tournament data...</div>
       </div>`;
     return;

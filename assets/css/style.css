@@ -164,6 +164,61 @@ a { text-decoration: none; }
 
 .chart-box { position: relative; height: 260px; }
 
+/* Carrom-board-inspired loading state: a striker orbits a center coin the way a real
+   striker circles the board before a shot, instead of a generic spinner icon. */
+.app-loading-state {
+  min-height: calc(100vh - 60px - 3rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.carrom-loader {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 1rem;
+}
+.carrom-loader::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px dashed var(--border);
+}
+.carrom-loader-coin {
+  position: absolute;
+  inset: 0;
+  animation: carrom-orbit 1.1s linear infinite;
+}
+.carrom-loader-coin::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 10px var(--primary-glow, rgba(67,97,238,0.6));
+}
+.carrom-loader-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #CBD5E1 60%, #94A3B8);
+  box-shadow: 0 0 6px rgba(0,0,0,0.4);
+}
+@keyframes carrom-orbit { to { transform: rotate(360deg); } }
+
 .team-logo-zoomable {
   cursor: pointer;
   transition: box-shadow 0.2s ease;
