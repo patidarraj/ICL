@@ -107,12 +107,6 @@
   border-radius: 0 6px 6px 0;
 }
 
-.pt-0 { background: #F97316; clip-path: polygon(0% 0%, 100% 0%, 86% 100%, 14% 100%); }
-.pt-1 { background: #EAB308; clip-path: polygon(14% 0%, 86% 0%, 75% 100%, 25% 100%); }
-.pt-2 { background: #22C55E; clip-path: polygon(25% 0%, 75% 0%, 65% 100%, 35% 100%); }
-.pt-3 { background: #3B82F6; clip-path: polygon(35% 0%, 65% 0%, 56% 100%, 44% 100%); }
-.pt-4 { background: linear-gradient(135deg, #F97316, #FACC15); clip-path: polygon(44% 0%, 56% 0%, 50% 100%, 50% 100%); }
-
 .bracket-stage {
   display: grid;
   grid-template-columns: 32px 1fr;
