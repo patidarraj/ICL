@@ -146,9 +146,7 @@ export async function renderDashboard(outlet) {
         <h1>${settings.tournamentName}</h1>
         <p class="mb-1"><i class="fa-solid fa-user-tie me-2"></i>${settings.organizer}</p>
         <p class="mb-1"><i class="fa-solid fa-location-dot me-2"></i>${settings.venue}</p>
-        <p class="mb-0"><i class="fa-regular fa-calendar me-2"></i>${formatDate(settings.startDate)} &nbsp;
-          <span class="badge bg-warning text-dark ms-2">${settings.status}</span>
-        </p>
+        <p class="mb-0"><i class="fa-regular fa-calendar me-2"></i>${formatDate(settings.startDate)}</p>
       </div>
     </div>
     ${summaryCards(teams, fixtures)}
