@@ -6,9 +6,9 @@
   border-radius: 20px;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 70% 45% at 50% 15%, var(--primary-glow, rgba(31,224,160,0.35)), transparent 70%),
-    radial-gradient(ellipse 100% 70% at 50% 100%, rgba(15,184,138,0.25), transparent 70%),
-    var(--bg, #081411);
+    radial-gradient(ellipse 70% 45% at 50% 15%, var(--primary-glow, rgba(225,6,0,0.35)), transparent 70%),
+    radial-gradient(ellipse 100% 70% at 50% 100%, rgba(140,4,0,0.3), transparent 70%),
+    var(--bg, #0A0A0A);
   border: 1px solid var(--border);
   padding-bottom: 1.5rem;
 }
@@ -22,13 +22,13 @@
   backdrop-filter: blur(2px);
 }
 .leaderboard-table-card .card-header {
-  background: rgba(22,51,41,0.85);
+  background: rgba(31,23,23,0.85);
   border-bottom: 1px solid var(--border);
 }
 .leaderboard-table-card table { background: transparent; }
-.leaderboard-table-card thead th { background: rgba(22,51,41,0.6); border-color: var(--border); }
+.leaderboard-table-card thead th { background: rgba(31,23,23,0.6); border-color: var(--border); }
 .leaderboard-table-card tbody tr { border-color: var(--border); }
-.leaderboard-table-card tbody tr:hover { background: rgba(31,224,160,0.08); }
+.leaderboard-table-card tbody tr:hover { background: rgba(225,6,0,0.08); }
 
 .leaderboard-podium {
   position: relative;
@@ -80,7 +80,7 @@
 
 .podium-pedestal {
   width: 100%;
-  background: linear-gradient(180deg, rgba(22,51,41,0.9), rgba(8,20,17,0.9));
+  background: linear-gradient(180deg, rgba(31,23,23,0.9), rgba(10,10,10,0.9));
   border: 1px solid var(--border);
   border-bottom: none;
   border-radius: 14px 14px 0 0;
