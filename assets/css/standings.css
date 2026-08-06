@@ -1,12 +1,25 @@
 .row-qualified { background: rgba(34,197,94,0.08); }
 .row-wildcard { background: rgba(250,204,21,0.08); }
 
+.leaderboard-glow {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 60% 55% at 50% 30%, rgba(249,115,22,0.35), transparent 70%),
+    radial-gradient(ellipse 90% 60% at 50% 100%, rgba(194,65,12,0.25), transparent 70%),
+    #0B0704;
+  border: 1px solid rgba(249,115,22,0.25);
+}
+
 .leaderboard-podium {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: flex-end;
   justify-content: center;
   gap: 1.25rem;
-  padding: 2.5rem 1rem 0;
+  padding: 2.5rem 1rem 1.5rem;
   flex-wrap: wrap;
 }
 
@@ -49,12 +62,13 @@
 
 .podium-pedestal {
   width: 100%;
-  background: linear-gradient(180deg, var(--card-bg-2, #24324A), var(--card-bg, #1E293B));
-  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(41,24,13,0.9), rgba(20,11,6,0.9));
+  border: 1px solid rgba(249,115,22,0.25);
   border-bottom: none;
   border-radius: 14px 14px 0 0;
   padding: 0.9rem 0.5rem;
   position: relative;
+  backdrop-filter: blur(2px);
 }
 .podium-rank-1 .podium-pedestal { height: 130px; border-top: 3px solid #FACC15; }
 .podium-rank-2 .podium-pedestal { height: 96px; border-top: 3px solid #CBD5E1; }

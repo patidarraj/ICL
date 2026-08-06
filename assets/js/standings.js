@@ -34,10 +34,12 @@ function leaderboardPane(teams) {
   const ranked = sortStandings(teams);
   const [first, second, third] = ranked;
   return `
-    <div class="leaderboard-podium mb-4">
-      ${podiumSpot(second, 2)}
-      ${podiumSpot(first, 1)}
-      ${podiumSpot(third, 3)}
+    <div class="leaderboard-glow mb-4">
+      <div class="leaderboard-podium">
+        ${podiumSpot(second, 2)}
+        ${podiumSpot(first, 1)}
+        ${podiumSpot(third, 3)}
+      </div>
     </div>
     <div class="card">
       <div class="card-header"><i class="fa-solid fa-list-ol me-2"></i>Full Leaderboard</div>
