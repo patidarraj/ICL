@@ -125,12 +125,16 @@ export async function renderDashboard(outlet) {
   // loading state instead of "undefined" text until settings actually arrive.
   if (!settings.tournamentName) {
     outlet.innerHTML = `
-      <div class="app-loading-state">
-        <div class="carrom-loader">
-          <div class="carrom-loader-coin"></div>
-          <div class="carrom-loader-center"></div>
+      <div class="skeleton-hero card mb-4"></div>
+      <div class="row g-3 mb-4">${Array.from({ length: 6 }).map(() => `
+        <div class="col-6 col-md-4 col-xl-2"><div class="skeleton-stat card h-100"></div></div>`).join('')}
+      </div>
+      <div class="row g-3">
+        <div class="col-lg-8"><div class="skeleton-block card"></div></div>
+        <div class="col-lg-4 d-flex flex-column gap-3">
+          <div class="skeleton-block card" style="height:120px"></div>
+          <div class="skeleton-block card" style="height:120px"></div>
         </div>
-        <div>Loading tournament data...</div>
       </div>`;
     return;
   }

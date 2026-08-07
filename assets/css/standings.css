@@ -92,6 +92,19 @@
 .podium-rank-2 .podium-pedestal { height: 96px; border-top: 3px solid #CBD5E1; }
 .podium-rank-3 .podium-pedestal { height: 74px; border-top: 3px solid #D97706; }
 
+/* Staged podium reveal: 3rd, then 2nd, then 1st drop in with a bounce, medal-ceremony style. */
+.podium-spot:not(.podium-empty) { animation: podium-drop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.podium-spot.podium-rank-3 { animation-delay: 0.05s; }
+.podium-spot.podium-rank-2 { animation-delay: 0.35s; }
+.podium-spot.podium-rank-1 { animation-delay: 0.65s; }
+@keyframes podium-drop {
+  from { opacity: 0; transform: translateY(-24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .podium-spot:not(.podium-empty) { animation: none; }
+}
+
 .podium-medal { font-size: 1.3rem; margin-bottom: 0.25rem; }
 .podium-rank-1 .podium-medal { color: #FACC15; }
 .podium-rank-2 .podium-medal { color: #CBD5E1; }

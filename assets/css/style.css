@@ -219,6 +219,55 @@ a { text-decoration: none; }
 }
 @keyframes carrom-orbit { to { transform: rotate(360deg); } }
 
+/* Skeleton loading placeholders: content-shaped shimmer instead of a blank spinner screen. */
+.skeleton-hero, .skeleton-stat, .skeleton-block {
+  position: relative;
+  overflow: hidden;
+  background: var(--card-bg-2);
+  border-color: var(--border);
+}
+.skeleton-hero { height: 148px; }
+.skeleton-stat { height: 110px; }
+.skeleton-block { height: 360px; }
+.skeleton-hero::after, .skeleton-stat::after, .skeleton-block::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Staggered fade+slide entrance for cards on page load. */
+.app-outlet > .card,
+.app-outlet > .row > [class*="col-"] > .card,
+.app-outlet > .row > [class*="col-"] {
+  animation: card-fade-in 0.35s ease both;
+}
+.app-outlet > .row > [class*="col-"]:nth-child(1),
+.app-outlet > .card:nth-of-type(1) { animation-delay: 0.02s; }
+.app-outlet > .row > [class*="col-"]:nth-child(2),
+.app-outlet > .card:nth-of-type(2) { animation-delay: 0.06s; }
+.app-outlet > .row > [class*="col-"]:nth-child(3),
+.app-outlet > .card:nth-of-type(3) { animation-delay: 0.1s; }
+.app-outlet > .row > [class*="col-"]:nth-child(4),
+.app-outlet > .card:nth-of-type(4) { animation-delay: 0.14s; }
+.app-outlet > .row > [class*="col-"]:nth-child(5),
+.app-outlet > .card:nth-of-type(5) { animation-delay: 0.18s; }
+.app-outlet > .row > [class*="col-"]:nth-child(6),
+.app-outlet > .card:nth-of-type(6) { animation-delay: 0.22s; }
+@keyframes card-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-outlet > .card, .app-outlet > .row > [class*="col-"] { animation: none; }
+  .skeleton-hero::after, .skeleton-stat::after, .skeleton-block::after { animation: none; }
+}
+
 .team-logo-zoomable {
   cursor: pointer;
   transition: box-shadow 0.2s ease;
