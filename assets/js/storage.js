@@ -169,6 +169,12 @@ export function saveFixtures(fixtures) { return updateDoc(stateRef, { fixtures }
 export function getSettings() { return cache.settings || {}; }
 export function saveSettings(settings) { return updateDoc(stateRef, { settings }); }
 
+export function getSwapLog() { return getSettings().swapLog || []; }
+export function logTeamSwap(entry) {
+  const settings = getSettings();
+  return saveSettings({ ...settings, swapLog: [...(settings.swapLog || []), entry] });
+}
+
 export function getBracket() { return cache.bracket || null; }
 export function saveBracket(bracket) { return updateDoc(stateRef, { bracket }); }
 

@@ -3,6 +3,7 @@ import {
   isAdminAuthed, loginAdmin, logoutAdmin, refreshStandings, resetTournament, exportBackup, restoreBackup,
   approveTeamLogo, rejectTeamLogo, getLiveScores, deleteLiveScore, updateTeam, removeTeamLogo, regenerateRefereePasscode,
   getAdminEmail, getGalleryPhotos, approveGalleryPhoto, rejectGalleryPhoto, getGalleryUsageBytes, GALLERY_SAFE_BUDGET_BYTES,
+  getSwapLog, logTeamSwap,
 } from './storage.js';
 import { uid, downloadFile, escapeHtml, POOL_NAMES, isoDate, VENUE, generateLogoCode, sortByDateTime } from './utilities.js';
 import { notify } from './notifications.js';
@@ -244,6 +245,11 @@ function adminPanel(outlet) {
           <i class="fa-solid fa-user-shield me-1"></i>Referee Access
         </button>
       </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#admin-tab-swaps" type="button" role="tab" aria-selected="false">
+          <i class="fa-solid fa-right-left me-1"></i>Swaps
+        </button>
+      </li>
     </ul>
 
     <div class="tab-content">
@@ -344,6 +350,27 @@ function adminPanel(outlet) {
           </div>
         </div>
       </div>
+
+      <div class="tab-pane fade" id="admin-tab-swaps" role="tabpanel">
+        <div class="card mb-3">
+          <div class="card-header"><i class="fa-solid fa-users-rectangle me-2"></i>Teams Swapped &middot; Count</div>
+          <div class="card-body table-responsive">
+            <table class="table table-dark table-hover align-middle mb-0">
+              <thead><tr><th>Team</th><th>Players</th><th>Pool</th><th>Times Swapped</th></tr></thead>
+              <tbody id="admin-swap-summary-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><i class="fa-solid fa-clock-rotate-left me-2"></i>Swap History</div>
+          <div class="card-body table-responsive">
+            <table class="table table-dark table-hover align-middle mb-0">
+              <thead><tr><th>When</th><th>Pool</th><th>Team A</th><th>Team B</th><th>Match Change</th><th>By</th></tr></thead>
+              <tbody id="admin-swap-history-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="modal fade" id="genericModal" tabindex="-1">
@@ -362,6 +389,31 @@ function adminPanel(outlet) {
   function refreshTeamsBody(list) {
     outlet.querySelector('#admin-teams-body').innerHTML = list.map(teamRow).join('');
     bindTeamActions();
+  }
+
+  function renderSwapsBody() {
+    const log = getSwapLog();
+    const t = Object.fromEntries(getTeams().map((x) => [x.id, x]));
+
+    const counts = {};
+    log.forEach((entry) => {
+      [entry.teamAId, entry.teamBId].forEach((id) => { counts[id] = (counts[id] || 0) + 1; });
+    });
+    const summaryRows = Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([teamId, count]) => {
+      const team = t[teamId];
+      return `<tr><td>${team?.name || teamId}</td><td>${(team?.players || []).join(' & ')}</td><td>${team?.pool || '-'}</td><td><span class="badge bg-info text-dark">${count}</span></td></tr>`;
+    }).join('');
+    outlet.querySelector('#admin-swap-summary-body').innerHTML = summaryRows || '<tr><td colspan="4" class="text-muted">No swaps yet</td></tr>';
+
+    const historyRows = [...log].reverse().map((entry) => `<tr>
+      <td class="text-nowrap small">${new Date(entry.at).toLocaleString()}</td>
+      <td>${entry.pool}</td>
+      <td>${entry.teamAName || entry.teamAId}<div class="small text-muted">${(entry.teamAPlayers || []).join(' & ')}</div></td>
+      <td>${entry.teamBName || entry.teamBId}<div class="small text-muted">${(entry.teamBPlayers || []).join(' & ')}</div></td>
+      <td class="small">${entry.fromMatch} (${entry.fromDate}) &harr; ${entry.toMatch} (${entry.toDate})</td>
+      <td class="small text-muted">${entry.by || '-'}</td>
+    </tr>`).join('');
+    outlet.querySelector('#admin-swap-history-body').innerHTML = historyRows || '<tr><td colspan="6" class="text-muted">No swaps yet</td></tr>';
   }
 
   function refreshMatchesBody(fx, teamList) {
@@ -549,8 +601,17 @@ function adminPanel(outlet) {
         if (matchA.teamA === chosenTeamId) matchA.teamA = swapTeamId; else matchA.teamB = swapTeamId;
         if (matchB.teamA === swapTeamId) matchB.teamA = chosenTeamId; else matchB.teamB = chosenTeamId;
         await saveFixtures(fx);
+        const chosenTeam = t[chosenTeamId];
+        const swapTeam = t[swapTeamId];
+        await logTeamSwap({
+          at: new Date().toISOString(), by: getAdminEmail(), pool: f.pool,
+          teamAId: chosenTeamId, teamAName: chosenTeam?.name, teamAPlayers: chosenTeam?.players || [],
+          teamBId: swapTeamId, teamBName: swapTeam?.name, teamBPlayers: swapTeam?.players || [],
+          fromMatch: f.id, fromDate: f.date, toMatch: targetMatchId, toDate: matchB.date,
+        });
         modal.hide();
         refreshMatchesBody(fx, getTeams());
+        renderSwapsBody();
         notify.success('Team swapped between matches');
       });
     }));
@@ -893,6 +954,7 @@ function adminPanel(outlet) {
   bindTeamActions();
   bindMatchActions();
   bindGalleryActions();
+  renderSwapsBody();
 }
 
 export async function renderAdmin(outlet) {
