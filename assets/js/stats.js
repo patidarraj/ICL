@@ -72,93 +72,111 @@ export async function renderStats(outlet) {
 
   outlet.innerHTML = `
     <h2 class="page-title"><i class="fa-solid fa-chart-column me-2"></i>Statistics</h2>
-    <div class="row g-3 mb-3">
-      <div class="col-lg-4">
-        <div class="card h-100"><div class="card-header">Completed vs Remaining</div>
-          <div class="card-body"><div class="chart-box"><canvas id="chart-completion"></canvas></div></div></div>
-      </div>
-      <div class="col-lg-4">
-        <div class="card h-100"><div class="card-header">Pool Performance (Wins)</div>
-          <div class="card-body"><div class="chart-box"><canvas id="chart-pool-wins"></canvas></div></div></div>
-      </div>
-      <div class="col-lg-4">
-        <div class="card h-100"><div class="card-header">Best Performing Team</div>
-          <div class="card-body text-center d-flex flex-column justify-content-center h-100">
-            ${best ? `<i class="fa-solid fa-medal fa-2x text-warning mb-2"></i>
-              <h5>${best.name}</h5>
-              <p class="text-muted mb-0">${best.won} wins &middot; ${best.points} pts &middot; ${best.pool}</p>` : '<p class="text-muted">No data yet</p>'}
+    <ul class="nav nav-tabs mb-3" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#stats-tab-overview" type="button" role="tab" aria-selected="true">
+          <i class="fa-solid fa-chart-column me-1"></i>Overview
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#stats-tab-players" type="button" role="tab" aria-selected="false">
+          <i class="fa-solid fa-users me-1"></i>All Players
+        </button>
+      </li>
+    </ul>
+    <div class="tab-content">
+      <div class="tab-pane fade show active" id="stats-tab-overview" role="tabpanel">
+        <div class="row g-3 mb-3">
+          <div class="col-lg-4">
+            <div class="card h-100"><div class="card-header">Completed vs Remaining</div>
+              <div class="card-body"><div class="chart-box"><canvas id="chart-completion"></canvas></div></div></div>
+          </div>
+          <div class="col-lg-4">
+            <div class="card h-100"><div class="card-header">Pool Performance (Wins)</div>
+              <div class="card-body"><div class="chart-box"><canvas id="chart-pool-wins"></canvas></div></div></div>
+          </div>
+          <div class="col-lg-4">
+            <div class="card h-100"><div class="card-header">Best Performing Team</div>
+              <div class="card-body text-center d-flex flex-column justify-content-center h-100">
+                ${best ? `<i class="fa-solid fa-medal fa-2x text-warning mb-2"></i>
+                  <h5>${best.name}</h5>
+                  <p class="text-muted mb-0">${best.won} wins &middot; ${best.points} pts &middot; ${best.pool}</p>` : '<p class="text-muted">No data yet</p>'}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-lg-6">
+            <div class="card"><div class="card-header">Tournament Progress</div>
+              <div class="card-body"><div class="chart-box"><canvas id="chart-progress"></canvas></div></div></div>
+          </div>
+          <div class="col-lg-6">
+            <div class="card"><div class="card-header">Matches Per Day</div>
+              <div class="card-body"><div class="chart-box"><canvas id="chart-per-day"></canvas></div></div></div>
+          </div>
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-lg-6">
+            <div class="card"><div class="card-header">Win Percentage (Top 8)</div>
+              <div class="card-body"><div class="chart-box"><canvas id="chart-winpct"></canvas></div></div></div>
+          </div>
+          <div class="col-lg-6">
+            <div class="card"><div class="card-header">Pool Comparison (Avg Points)</div>
+              <div class="card-body"><div class="chart-box"><canvas id="chart-pool-compare"></canvas></div></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">Most Wins</div>
+          <div class="card-body table-responsive">
+            <table class="table table-dark table-hover mb-0">
+              <thead><tr><th>#</th><th>Team</th><th>Pool</th><th>Won</th><th>Points</th></tr></thead>
+              <tbody>${topTeams.map((t, i) => `<tr><td>${i + 1}</td><td>${t.name}</td><td>${t.pool}</td><td>${t.won}</td><td>${t.points}</td></tr>`).join('') || '<tr><td colspan="5" class="text-muted">No data yet</td></tr>'}</tbody>
+            </table>
+          </div>
+        </div>
+        <div class="row g-3 mt-1">
+          <div class="col-lg-4">
+            <div class="card h-100"><div class="card-header"><i class="fa-solid fa-circle-dot me-2"></i>Top Scorers</div>
+              <div class="card-body">
+                ${leaderboard.topScorers.length ? `<table class="table table-dark table-sm mb-0">
+                  <tbody>${leaderboard.topScorers.map((p, i) => `<tr><td>${i + 1}</td><td>${p.name}<div class="small text-muted">${p.teamName}</div></td><td class="text-end fw-bold">${p.points}</td></tr>`).join('')}</tbody>
+                </table>` : '<p class="text-muted small mb-0">No completed matches yet</p>'}
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="card h-100"><div class="card-header"><i class="fa-solid fa-crown me-2"></i>Most Queens Taken</div>
+              <div class="card-body">
+                ${leaderboard.topQueens.length ? `<table class="table table-dark table-sm mb-0">
+                  <tbody>${leaderboard.topQueens.map((p, i) => `<tr><td>${i + 1}</td><td>${p.name}<div class="small text-muted">${p.teamName}</div></td><td class="text-end fw-bold">${p.queens}</td></tr>`).join('')}</tbody>
+                </table>` : '<p class="text-muted small mb-0">No Queens taken yet</p>'}
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="card h-100"><div class="card-header"><i class="fa-solid fa-shield-halved me-2"></i>Cleanest Play (Fewest Fouls)</div>
+              <div class="card-body">
+                ${leaderboard.cleanest.length ? `<table class="table table-dark table-sm mb-0">
+                  <tbody>${leaderboard.cleanest.map((p, i) => `<tr><td>${i + 1}</td><td>${p.name}<div class="small text-muted">${p.teamName}</div></td><td class="text-end fw-bold">${p.fouls}</td></tr>`).join('')}</tbody>
+                </table>` : '<p class="text-muted small mb-0">No data yet</p>'}
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    <div class="row g-3 mb-3">
-      <div class="col-lg-6">
-        <div class="card"><div class="card-header">Tournament Progress</div>
-          <div class="card-body"><div class="chart-box"><canvas id="chart-progress"></canvas></div></div></div>
-      </div>
-      <div class="col-lg-6">
-        <div class="card"><div class="card-header">Matches Per Day</div>
-          <div class="card-body"><div class="chart-box"><canvas id="chart-per-day"></canvas></div></div></div>
-      </div>
-    </div>
-    <div class="row g-3 mb-3">
-      <div class="col-lg-6">
-        <div class="card"><div class="card-header">Win Percentage (Top 8)</div>
-          <div class="card-body"><div class="chart-box"><canvas id="chart-winpct"></canvas></div></div></div>
-      </div>
-      <div class="col-lg-6">
-        <div class="card"><div class="card-header">Pool Comparison (Avg Points)</div>
-          <div class="card-body"><div class="chart-box"><canvas id="chart-pool-compare"></canvas></div></div></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header">Most Wins</div>
-      <div class="card-body table-responsive">
-        <table class="table table-dark table-hover mb-0">
-          <thead><tr><th>#</th><th>Team</th><th>Pool</th><th>Won</th><th>Points</th></tr></thead>
-          <tbody>${topTeams.map((t, i) => `<tr><td>${i + 1}</td><td>${t.name}</td><td>${t.pool}</td><td>${t.won}</td><td>${t.points}</td></tr>`).join('') || '<tr><td colspan="5" class="text-muted">No data yet</td></tr>'}</tbody>
-        </table>
-      </div>
-    </div>
-    <div class="row g-3 mt-1">
-      <div class="col-lg-4">
-        <div class="card h-100"><div class="card-header"><i class="fa-solid fa-circle-dot me-2"></i>Top Scorers</div>
-          <div class="card-body">
-            ${leaderboard.topScorers.length ? `<table class="table table-dark table-sm mb-0">
-              <tbody>${leaderboard.topScorers.map((p, i) => `<tr><td>${i + 1}</td><td>${p.name}<div class="small text-muted">${p.teamName}</div></td><td class="text-end fw-bold">${p.points}</td></tr>`).join('')}</tbody>
-            </table>` : '<p class="text-muted small mb-0">No completed matches yet</p>'}
+      <div class="tab-pane fade" id="stats-tab-players" role="tabpanel">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span><i class="fa-solid fa-users me-2"></i>All Players <span class="text-muted small">(${leaderboard.allPlayers.length})</span></span>
+            <input type="text" class="form-control form-control-sm" id="stats-player-search" placeholder="Search player or team..." style="max-width:260px;">
+          </div>
+          <div class="card-body table-responsive">
+            <table class="table table-dark table-hover table-sm mb-0">
+              <thead><tr><th>#</th><th>Player</th><th>Team</th><th class="text-end">Points</th><th class="text-end">Queens</th><th class="text-end">Fouls</th></tr></thead>
+              <tbody id="stats-all-players-body">${leaderboard.allPlayers.length ? leaderboard.allPlayers.map(allPlayersRow).join('') : '<tr><td colspan="6" class="text-muted">No completed matches yet</td></tr>'}</tbody>
+            </table>
           </div>
         </div>
-      </div>
-      <div class="col-lg-4">
-        <div class="card h-100"><div class="card-header"><i class="fa-solid fa-crown me-2"></i>Most Queens Taken</div>
-          <div class="card-body">
-            ${leaderboard.topQueens.length ? `<table class="table table-dark table-sm mb-0">
-              <tbody>${leaderboard.topQueens.map((p, i) => `<tr><td>${i + 1}</td><td>${p.name}<div class="small text-muted">${p.teamName}</div></td><td class="text-end fw-bold">${p.queens}</td></tr>`).join('')}</tbody>
-            </table>` : '<p class="text-muted small mb-0">No Queens taken yet</p>'}
-          </div>
-        </div>
-      </div>
-      <div class="col-lg-4">
-        <div class="card h-100"><div class="card-header"><i class="fa-solid fa-shield-halved me-2"></i>Cleanest Play (Fewest Fouls)</div>
-          <div class="card-body">
-            ${leaderboard.cleanest.length ? `<table class="table table-dark table-sm mb-0">
-              <tbody>${leaderboard.cleanest.map((p, i) => `<tr><td>${i + 1}</td><td>${p.name}<div class="small text-muted">${p.teamName}</div></td><td class="text-end fw-bold">${p.fouls}</td></tr>`).join('')}</tbody>
-            </table>` : '<p class="text-muted small mb-0">No data yet</p>'}
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="card mt-3">
-      <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <span><i class="fa-solid fa-users me-2"></i>All Players</span>
-        <input type="text" class="form-control form-control-sm" id="stats-player-search" placeholder="Search player or team..." style="max-width:260px;">
-      </div>
-      <div class="card-body table-responsive">
-        <table class="table table-dark table-hover table-sm mb-0">
-          <thead><tr><th>#</th><th>Player</th><th>Team</th><th class="text-end">Points</th><th class="text-end">Queens</th><th class="text-end">Fouls</th></tr></thead>
-          <tbody id="stats-all-players-body">${leaderboard.allPlayers.length ? leaderboard.allPlayers.map(allPlayersRow).join('') : '<tr><td colspan="6" class="text-muted">No completed matches yet</td></tr>'}</tbody>
-        </table>
       </div>
     </div>`;
 
