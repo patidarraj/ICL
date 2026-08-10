@@ -268,6 +268,33 @@ a { text-decoration: none; }
   .skeleton-hero::after, .skeleton-stat::after, .skeleton-block::after { animation: none; }
 }
 
+/* Pulsing glow on LIVE badges instead of a static red dot. */
+.badge-live {
+  animation: badge-live-pulse 1.4s ease-in-out infinite;
+}
+@keyframes badge-live-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.55); }
+  50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .badge-live { animation: none; }
+}
+
+/* Hover tilt/glow for team & match cards. */
+.hover-tilt {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.hover-tilt:hover {
+  transform: translateY(-3px) scale(1.015);
+  box-shadow: 0 14px 32px var(--primary-glow, rgba(225,6,0,0.35));
+}
+@media (prefers-reduced-motion: reduce) {
+  .hover-tilt:hover { transform: none; }
+}
+
+/* Animated count-up for stat values. */
+.stat-value.count-up { display: inline-block; }
+
 .team-logo-zoomable {
   cursor: pointer;
   transition: box-shadow 0.2s ease;

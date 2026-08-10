@@ -11,7 +11,7 @@ function statusBadge(f) {
   if (live) {
     const totalA = live.teams.A.players.reduce((s, p) => s + p.points, 0);
     const totalB = live.teams.B.players.reduce((s, p) => s + p.points, 0);
-    return `<span class="badge bg-danger"><i class="fa-solid fa-circle fa-2xs me-1"></i>LIVE ${totalA}-${totalB}</span>`;
+    return `<span class="badge bg-danger badge-live"><i class="fa-solid fa-circle fa-2xs me-1"></i>LIVE ${totalA}-${totalB}</span>`;
   }
   return '<span class="badge bg-secondary">Scheduled</span>';
 }

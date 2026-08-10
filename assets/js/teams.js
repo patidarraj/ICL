@@ -8,7 +8,7 @@ function teamCard(team, fixtures) {
   const remaining = fixtures.filter((f) => f.stage === 'pool' && f.status === 'scheduled' && (f.teamA === team.id || f.teamB === team.id)).length;
   return `
     <div class="col-md-6 col-xl-4">
-      <div class="card team-card h-100">
+      <div class="card team-card hover-tilt h-100">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-start mb-2">
             <div class="d-flex align-items-center gap-2">

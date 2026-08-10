@@ -24,10 +24,10 @@ function summaryCards(teams, fixtures) {
   ];
   return `<div class="row g-3 mb-4">${cards.map((c) => `
     <div class="col-6 col-md-4 col-xl-2">
-      <div class="stat-card card h-100">
+      <div class="stat-card card hover-tilt h-100">
         <div class="card-body text-center">
           <i class="fa-solid ${c.icon} stat-icon text-${c.color}"></i>
-          <div class="stat-value">${c.value}</div>
+          <div class="stat-value count-up" data-count-to="${c.value}">0</div>
           <div class="stat-label">${c.label}</div>
         </div>
       </div>
@@ -51,7 +51,7 @@ function matchRow(f, teamsById) {
   const badge = f.status === 'completed'
     ? `<span class="badge bg-success">Completed</span>`
     : live
-      ? `<span class="badge bg-danger"><i class="fa-solid fa-circle fa-2xs me-1"></i>LIVE ${live.teams.A.players.reduce((s, p) => s + p.points, 0)}-${live.teams.B.players.reduce((s, p) => s + p.points, 0)}</span>`
+      ? `<span class="badge bg-danger badge-live"><i class="fa-solid fa-circle fa-2xs me-1"></i>LIVE ${live.teams.A.players.reduce((s, p) => s + p.points, 0)}-${live.teams.B.players.reduce((s, p) => s + p.points, 0)}</span>`
       : `<span class="badge bg-secondary">Scheduled</span>`;
   return `<tr>
     <td>${f.id}</td><td>${f.pool}</td><td>${a}</td><td>vs</td><td>${b}</td>
@@ -211,6 +211,21 @@ export async function renderDashboard(outlet) {
 
   outlet.querySelector('#dash-view-schedule')?.addEventListener('click', () => goTo('schedule'));
   outlet.querySelector('#dash-view-scoreboard')?.addEventListener('click', () => goTo('scoreboard'));
+
+  const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  outlet.querySelectorAll('.count-up').forEach((el) => {
+    const target = Number(el.dataset.countTo) || 0;
+    if (prefersReducedMotion || !target) { el.textContent = target; return; }
+    const duration = 700;
+    const start = performance.now();
+    const tick = (now) => {
+      const progress = Math.min(1, (now - start) / duration);
+      const eased = 1 - (1 - progress) ** 3;
+      el.textContent = Math.round(eased * target);
+      if (progress < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
 
   outlet.querySelector('#alert-my-team')?.addEventListener('change', (e) => {
     setMyTeamId(e.target.value);
