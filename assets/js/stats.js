@@ -44,7 +44,15 @@ function playerLeaderboard(fixtures, teamsById) {
     topScorers: [...players].sort((a, b) => b.points - a.points).slice(0, 5),
     topQueens: [...players].filter((p) => p.queens > 0).sort((a, b) => b.queens - a.queens).slice(0, 5),
     cleanest: [...players].filter((p) => p.points > 0).sort((a, b) => a.fouls - b.fouls || b.points - a.points).slice(0, 5),
+    allPlayers: [...players].sort((a, b) => b.points - a.points),
   };
+}
+
+function allPlayersRow(p, i) {
+  return `<tr data-name="${p.name.toLowerCase()}" data-team="${p.teamName.toLowerCase()}">
+    <td>${i + 1}</td><td>${p.name}</td><td>${p.teamName}</td>
+    <td class="text-end">${p.points}</td><td class="text-end">${p.queens}</td><td class="text-end">${p.fouls}</td>
+  </tr>`;
 }
 
 export async function renderStats(outlet) {
@@ -140,7 +148,26 @@ export async function renderStats(outlet) {
           </div>
         </div>
       </div>
+    </div>
+    <div class="card mt-3">
+      <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span><i class="fa-solid fa-users me-2"></i>All Players</span>
+        <input type="text" class="form-control form-control-sm" id="stats-player-search" placeholder="Search player or team..." style="max-width:260px;">
+      </div>
+      <div class="card-body table-responsive">
+        <table class="table table-dark table-hover table-sm mb-0">
+          <thead><tr><th>#</th><th>Player</th><th>Team</th><th class="text-end">Points</th><th class="text-end">Queens</th><th class="text-end">Fouls</th></tr></thead>
+          <tbody id="stats-all-players-body">${leaderboard.allPlayers.length ? leaderboard.allPlayers.map(allPlayersRow).join('') : '<tr><td colspan="6" class="text-muted">No completed matches yet</td></tr>'}</tbody>
+        </table>
+      </div>
     </div>`;
+
+  outlet.querySelector('#stats-player-search')?.addEventListener('input', (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    outlet.querySelectorAll('#stats-all-players-body tr[data-name]').forEach((row) => {
+      row.style.display = (row.dataset.name.includes(q) || row.dataset.team.includes(q)) ? '' : 'none';
+    });
+  });
 
   destroyAllCharts();
   renderChart('chart-completion', doughnutConfig(['Completed', 'Remaining'], [completed, remaining], ['#22C55E', '#334155']));
