@@ -247,7 +247,7 @@ function adminPanel(outlet) {
       </li>
       <li class="nav-item" role="presentation">
         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#admin-tab-swaps" type="button" role="tab" aria-selected="false">
-          <i class="fa-solid fa-right-left me-1"></i>Swaps
+          <i class="fa-solid fa-right-left me-1"></i>Swaps &amp; Reschedules
         </button>
       </li>
     </ul>
@@ -362,10 +362,10 @@ function adminPanel(outlet) {
           </div>
         </div>
         <div class="card">
-          <div class="card-header"><i class="fa-solid fa-clock-rotate-left me-2"></i>Swap History</div>
+          <div class="card-header"><i class="fa-solid fa-clock-rotate-left me-2"></i>Swap &amp; Reschedule History</div>
           <div class="card-body table-responsive">
             <table class="table table-dark table-hover align-middle mb-0">
-              <thead><tr><th>When</th><th>Pool</th><th>Team A</th><th>Team B</th><th>Match Change</th><th>By</th></tr></thead>
+              <thead><tr><th>When</th><th>Pool</th><th>Team</th><th>Swapped With</th><th>Change</th><th>By</th></tr></thead>
               <tbody id="admin-swap-history-body"></tbody>
             </table>
           </div>
@@ -396,7 +396,7 @@ function adminPanel(outlet) {
     const t = Object.fromEntries(getTeams().map((x) => [x.id, x]));
 
     const counts = {};
-    log.forEach((entry) => {
+    log.filter((entry) => (entry.type || 'swap') === 'swap').forEach((entry) => {
       [entry.teamAId, entry.teamBId].forEach((id) => { counts[id] = (counts[id] || 0) + 1; });
     });
     const summaryRows = Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([teamId, count]) => {
@@ -405,14 +405,20 @@ function adminPanel(outlet) {
     }).join('');
     outlet.querySelector('#admin-swap-summary-body').innerHTML = summaryRows || '<tr><td colspan="4" class="text-muted">No swaps yet</td></tr>';
 
-    const historyRows = [...log].reverse().map((entry) => `<tr>
-      <td class="text-nowrap small">${new Date(entry.at).toLocaleString()}</td>
-      <td>${entry.pool}</td>
-      <td>${entry.teamAName || entry.teamAId}<div class="small text-muted">${(entry.teamAPlayers || []).join(' & ')}</div></td>
-      <td>${entry.teamBName || entry.teamBId}<div class="small text-muted">${(entry.teamBPlayers || []).join(' & ')}</div></td>
-      <td class="small">${entry.fromMatch} (${entry.fromDate}) &harr; ${entry.toMatch} (${entry.toDate})</td>
-      <td class="small text-muted">${entry.by || '-'}</td>
-    </tr>`).join('');
+    const historyRows = [...log].reverse().map((entry) => {
+      const isSwap = (entry.type || 'swap') === 'swap';
+      const change = isSwap
+        ? `<span class="badge bg-info text-dark me-1">Swap</span>${entry.fromMatch} (${entry.fromDate}) &harr; ${entry.toMatch} (${entry.toDate})`
+        : `<span class="badge bg-secondary me-1">Reschedule</span>${entry.fromDate} ${entry.fromTime || ''} &rarr; ${entry.toDate} ${entry.toTime || ''}`;
+      return `<tr>
+        <td class="text-nowrap small">${new Date(entry.at).toLocaleString()}</td>
+        <td>${entry.pool}</td>
+        <td>${entry.teamAName || entry.teamAId}<div class="small text-muted">${(entry.teamAPlayers || []).join(' & ')}</div></td>
+        <td>${isSwap ? `${entry.teamBName || entry.teamBId}<div class="small text-muted">${(entry.teamBPlayers || []).join(' & ')}</div>` : '<span class="text-muted">—</span>'}</td>
+        <td class="small">${change}</td>
+        <td class="small text-muted">${entry.by || '-'}</td>
+      </tr>`;
+    }).join('');
     outlet.querySelector('#admin-swap-history-body').innerHTML = historyRows || '<tr><td colspan="6" class="text-muted">No swaps yet</td></tr>';
   }
 
@@ -543,8 +549,15 @@ function adminPanel(outlet) {
         if (!date || !time) { notify.warn('Enter both date and time'); return; }
         const fx = getFixtures().map((x) => (x.id === f.id ? { ...x, date, time, day: new Date(date).toLocaleDateString('en-US', { weekday: 'long' }) } : x));
         await saveFixtures(fx);
+        await logTeamSwap({
+          type: 'reschedule', at: new Date().toISOString(), by: getAdminEmail(), pool: f.pool,
+          teamAId: f.teamA, teamAName: t[f.teamA]?.name, teamAPlayers: t[f.teamA]?.players || [],
+          teamBId: f.teamB, teamBName: t[f.teamB]?.name, teamBPlayers: t[f.teamB]?.players || [],
+          fromMatch: f.id, fromDate: f.date, fromTime: f.time, toMatch: f.id, toDate: date, toTime: time,
+        });
         modal.hide();
         refreshMatchesBody(fx, getTeams());
+        renderSwapsBody();
         notify.success('Match rescheduled');
       });
     }));
@@ -604,7 +617,7 @@ function adminPanel(outlet) {
         const chosenTeam = t[chosenTeamId];
         const swapTeam = t[swapTeamId];
         await logTeamSwap({
-          at: new Date().toISOString(), by: getAdminEmail(), pool: f.pool,
+          type: 'swap', at: new Date().toISOString(), by: getAdminEmail(), pool: f.pool,
           teamAId: chosenTeamId, teamAName: chosenTeam?.name, teamAPlayers: chosenTeam?.players || [],
           teamBId: swapTeamId, teamBName: swapTeam?.name, teamBPlayers: swapTeam?.players || [],
           fromMatch: f.id, fromDate: f.date, toMatch: targetMatchId, toDate: matchB.date,
