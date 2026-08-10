@@ -69,6 +69,7 @@ function matchRow(f, teamsById) {
       : '-'}</td>
     <td class="text-nowrap">
       <button class="btn btn-sm btn-outline-secondary btn-reschedule-match" data-id="${f.id}" title="Reschedule"><i class="fa-solid fa-calendar-days"></i></button>
+      ${f.status === 'scheduled' ? `<button class="btn btn-sm btn-outline-info btn-swap-team" data-id="${f.id}" title="Swap one team into a different match"><i class="fa-solid fa-right-left"></i></button>` : ''}
       ${f.status === 'scheduled'
         ? `<button class="btn btn-sm btn-success btn-enter-result" data-id="${f.id}"><i class="fa-solid fa-check"></i> Result</button>`
         : `<button class="btn btn-sm btn-outline-secondary btn-edit-nrr" data-id="${f.id}" title="Set/correct NRR"><i class="fa-solid fa-calculator"></i></button>
@@ -493,6 +494,64 @@ function adminPanel(outlet) {
         modal.hide();
         refreshMatchesBody(fx, getTeams());
         notify.success('Match rescheduled');
+      });
+    }));
+
+    outlet.querySelectorAll('.btn-swap-team').forEach((btn) => btn.addEventListener('click', () => {
+      const f = getFixtures().find((x) => x.id === btn.dataset.id);
+      const t = Object.fromEntries(getTeams().map((x) => [x.id, x]));
+
+      const renderTargets = (chosenTeamId) => {
+        const otherOfA = chosenTeamId === f.teamA ? f.teamB : f.teamA;
+        const candidates = getFixtures().filter((m) => m.status === 'scheduled' && m.pool === f.pool && m.id !== f.id
+          && m.date >= f.date && m.teamA !== chosenTeamId && m.teamB !== chosenTeamId);
+        if (!candidates.length) return '<p class="text-muted small mb-0">No eligible matches in this pool on or after this match\'s date.</p>';
+        const options = [];
+        candidates.forEach((m) => {
+          [[m.teamA, m.teamB], [m.teamB, m.teamA]].forEach(([swapTeam, staysTeam]) => {
+            const dup = swapTeam === otherOfA || staysTeam === chosenTeamId
+              || getFixtures().some((x) => x.id !== f.id && x.id !== m.id
+                && ((x.teamA === chosenTeamId && x.teamB === staysTeam) || (x.teamB === chosenTeamId && x.teamA === staysTeam)));
+            options.push(`<option value="${m.id}|${swapTeam}" ${dup ? 'disabled' : ''}>
+              Swap with ${t[swapTeam]?.name} &middot; ${m.id} vs ${t[staysTeam]?.name} &middot; ${m.date}${dup ? ' (would duplicate a pairing)' : ''}
+            </option>`);
+          });
+        });
+        return `<select class="form-select" id="m-swap-target">${options.join('')}</select>`;
+      };
+
+      openModal(`
+        <div class="modal-header"><h5 class="modal-title">Swap Team &middot; ${t[f.teamA]?.name} vs ${t[f.teamB]?.name}</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <p class="text-muted small">Move one team from this ${f.date} match into a different ${f.pool} match on or after that date. The displaced team takes this match's slot instead.</p>
+          <label class="form-label">Team to move</label>
+          <select class="form-select mb-3" id="m-swap-team">
+            <option value="${f.teamA}">${t[f.teamA]?.name}</option>
+            <option value="${f.teamB}">${t[f.teamB]?.name}</option>
+          </select>
+          <label class="form-label">Swap into</label>
+          <div id="m-swap-targets">${renderTargets(f.teamA)}</div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-primary" id="m-swap-save">Swap</button></div>`);
+
+      modalContent.querySelector('#m-swap-team').addEventListener('change', (e) => {
+        modalContent.querySelector('#m-swap-targets').innerHTML = renderTargets(e.target.value);
+      });
+
+      modalContent.querySelector('#m-swap-save').addEventListener('click', async () => {
+        const chosenTeamId = modalContent.querySelector('#m-swap-team').value;
+        const targetSel = modalContent.querySelector('#m-swap-target');
+        if (!targetSel || !targetSel.value) { notify.warn('No eligible match selected'); return; }
+        const [targetMatchId, swapTeamId] = targetSel.value.split('|');
+        const fx = getFixtures().map((x) => ({ ...x }));
+        const matchA = fx.find((x) => x.id === f.id);
+        const matchB = fx.find((x) => x.id === targetMatchId);
+        if (matchA.teamA === chosenTeamId) matchA.teamA = swapTeamId; else matchA.teamB = swapTeamId;
+        if (matchB.teamA === swapTeamId) matchB.teamA = chosenTeamId; else matchB.teamB = chosenTeamId;
+        await saveFixtures(fx);
+        modal.hide();
+        refreshMatchesBody(fx, getTeams());
+        notify.success('Team swapped between matches');
       });
     }));
 
