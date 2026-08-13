@@ -26,6 +26,32 @@ let cache = { teams: [], fixtures: [], settings: {}, bracket: null, liveScores: 
 let currentUser = null;
 const changeListeners = new Set();
 
+// Cache-then-reconcile: the very first paint on any visit (including repeat visits) can use
+// yesterday's snapshot from localStorage instead of waiting on a live Firestore round-trip —
+// the onSnapshot listeners below still reconcile with fresh data moments later. liveScores is
+// deliberately excluded (changes too fast to be worth caching stale).
+const LOCAL_CACHE_KEY = 'icl_data_cache_v1';
+
+function loadLocalCache() {
+  try {
+    const raw = localStorage.getItem(LOCAL_CACHE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    cache = { ...cache, ...saved };
+  } catch (e) { /* corrupt or unavailable cache — ignore, live data will fill in */ }
+}
+
+function persistLocalCache() {
+  try {
+    const { teams, fixtures, settings, bracket, gallery } = cache;
+    const payload = JSON.stringify({ teams, fixtures, settings, bracket, gallery });
+    if (payload.length > 4_500_000) return; // stay safely under typical 5MB localStorage quota
+    localStorage.setItem(LOCAL_CACHE_KEY, payload);
+  } catch (e) { /* quota exceeded or unavailable — skip, this is a pure optimization */ }
+}
+
+loadLocalCache();
+
 function notifyChange() {
   changeListeners.forEach((fn) => { try { fn(); } catch (e) { console.error(e); } });
 }
@@ -41,12 +67,14 @@ onSnapshot(stateRef, (snap) => {
     const { fixtures, settings, bracket } = snap.data();
     cache = { ...cache, fixtures, settings, bracket };
     notifyChange();
+    persistLocalCache();
   }
 });
 
 onSnapshot(teamsColRef, (snap) => {
   cache = { ...cache, teams: snap.docs.map((d) => ({ id: d.id, ...d.data() })) };
   notifyChange();
+  persistLocalCache();
 });
 
 onSnapshot(liveScoresColRef, (snap) => {
@@ -59,6 +87,7 @@ onSnapshot(liveScoresColRef, (snap) => {
 onSnapshot(galleryColRef, (snap) => {
   cache = { ...cache, gallery: snap.docs.map((d) => ({ id: d.id, ...d.data() })) };
   notifyChange();
+  persistLocalCache();
 });
 
 onAuthStateChanged(auth, (user) => {
