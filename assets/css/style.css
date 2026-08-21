@@ -26,15 +26,18 @@ body {
 
 a { text-decoration: none; }
 
+.header-stack {
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+}
+
 .top-navbar {
   background: linear-gradient(90deg, #0A0A0A 0%, #1A0F0F 100%);
   border-bottom: 1px solid var(--border);
   height: 60px;
   display: flex;
   align-items: center;
-  position: sticky;
-  top: 0;
-  z-index: 1030;
 }
 
 .btn-icon {
@@ -46,7 +49,7 @@ a { text-decoration: none; }
 
 .app-shell {
   display: flex;
-  min-height: calc(100vh - 60px);
+  min-height: calc(100vh - var(--header-h, 60px));
 }
 
 .sidebar {
@@ -55,8 +58,8 @@ a { text-decoration: none; }
   border-right: 1px solid var(--border);
   padding: 1rem 0.75rem;
   position: sticky;
-  top: 60px;
-  height: calc(100vh - 60px);
+  top: var(--header-h, 60px);
+  height: calc(100vh - var(--header-h, 60px));
   overflow-y: auto;
   flex-shrink: 0;
 }
@@ -294,6 +297,30 @@ a { text-decoration: none; }
 
 /* Animated count-up for stat values. */
 .stat-value.count-up { display: inline-block; }
+
+/* Sticky "My Team" bar, pinned under the top navbar on every page. */
+.my-team-bar {
+  background: linear-gradient(90deg, var(--card-bg), var(--card-bg-2));
+  border-bottom: 1px solid var(--border);
+}
+.my-team-bar.is-active { padding: 0.5rem 1rem; }
+.my-team-bar-content {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+}
+.my-team-bar-name { font-weight: 700; }
+.my-team-bar-sep { color: var(--text-muted); }
+.my-team-bar-dismiss {
+  padding: 0 0.4rem;
+  color: var(--text-muted);
+}
+.my-team-bar-dismiss:hover { color: #fff; }
+@media (max-width: 767.98px) {
+  .my-team-bar-content { font-size: 0.8rem; }
+}
 
 .team-logo-zoomable {
   cursor: pointer;

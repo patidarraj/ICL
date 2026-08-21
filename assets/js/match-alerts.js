@@ -18,6 +18,13 @@ export function getMyTeamId() {
 export function setMyTeamId(teamId) {
   if (teamId) localStorage.setItem(MY_TEAM_KEY, teamId);
   else localStorage.removeItem(MY_TEAM_KEY);
+  window.dispatchEvent(new CustomEvent('myteamchange'));
+}
+
+/** Combines a fixture's `date` (YYYY-MM-DD) and `time` ("06:00 PM") into a Date. Exported so the
+ * sticky "My Team" bar can compute the same next-match countdown without duplicating the parsing. */
+export function fixtureDateTime(fixture) {
+  return matchDateTime(fixture);
 }
 
 function getNotifiedIds() {

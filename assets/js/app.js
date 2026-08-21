@@ -12,6 +12,7 @@ import { renderRules } from './rules.js';
 import { renderScoreboard } from './scoreboard.js';
 import { renderGallery } from './gallery.js';
 import { startMatchAlertWatcher } from './match-alerts.js';
+import { initMyTeamBar } from './my-team-bar.js';
 
 // initData() is deliberately NOT awaited here — it does a getDocs() over the whole teams
 // collection (every team's full base64 logo, ~10MB combined) plus the tournament state doc,
@@ -21,6 +22,7 @@ import { startMatchAlertWatcher } from './match-alerts.js';
 // fills in as data streams in, instead of showing a blank screen until it all arrives.
 initData();
 startMatchAlertWatcher();
+initMyTeamBar();
 
 registerRoute('dashboard', renderDashboard);
 registerRoute('schedule', renderSchedule);
