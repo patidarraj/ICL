@@ -1,6 +1,20 @@
-import { getTeams, getFixtures } from './storage.js';
+import { getTeams, getFixtures, getPredictions } from './storage.js';
 import { POOL_NAMES } from './utilities.js';
 import { renderChart, lineConfig, barConfig, doughnutConfig, radarConfig, destroyAllCharts } from './charts.js';
+
+function predictionLeaderboard(fixtures, predictions, teamsById) {
+  const decided = new Set(fixtures.filter((f) => f.status === 'completed' && f.winner && f.winner !== 'draw').map((f) => f.id));
+  const winnerByMatch = Object.fromEntries(fixtures.filter((f) => decided.has(f.id)).map((f) => [f.id, f.winner]));
+  const byTeam = {};
+  predictions.filter((p) => decided.has(p.matchId)).forEach((p) => {
+    if (!byTeam[p.voterTeamId]) byTeam[p.voterTeamId] = { made: 0, correct: 0 };
+    byTeam[p.voterTeamId].made += 1;
+    if (p.votedForTeamId === winnerByMatch[p.matchId]) byTeam[p.voterTeamId].correct += 1;
+  });
+  return Object.entries(byTeam)
+    .map(([teamId, { made, correct }]) => ({ teamId, name: teamsById[teamId]?.name || teamId, made, correct, accuracy: made ? Math.round((correct / made) * 100) : 0 }))
+    .sort((a, b) => b.correct - a.correct || b.accuracy - a.accuracy);
+}
 
 function progressOverDays(fixtures) {
   const completed = fixtures.filter((f) => f.status === 'completed').sort((a, b) => a.date.localeCompare(b.date));
@@ -60,6 +74,7 @@ export async function renderStats(outlet) {
   const fixtures = getFixtures();
   const teamsById = Object.fromEntries(teams.map((t) => [t.id, t]));
   const leaderboard = playerLeaderboard(fixtures, teamsById);
+  const predictors = predictionLeaderboard(fixtures, getPredictions(), teamsById);
 
   const poolWins = POOL_NAMES.map((pool) => teams.filter((t) => t.pool === pool).reduce((s, t) => s + t.won, 0));
   const winPct = teams.map((t) => (t.played ? Math.round((t.won / t.played) * 100) : 0));
@@ -81,6 +96,11 @@ export async function renderStats(outlet) {
       <li class="nav-item" role="presentation">
         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#stats-tab-players" type="button" role="tab" aria-selected="false">
           <i class="fa-solid fa-users me-1"></i>All Players
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#stats-tab-predictors" type="button" role="tab" aria-selected="false">
+          <i class="fa-solid fa-crystal-ball me-1"></i>Predictors
         </button>
       </li>
     </ul>
@@ -174,6 +194,17 @@ export async function renderStats(outlet) {
             <table class="table table-dark table-hover table-sm mb-0">
               <thead><tr><th>#</th><th>Player</th><th>Team</th><th class="text-end">Points</th><th class="text-end">Queens</th><th class="text-end">Fouls</th></tr></thead>
               <tbody id="stats-all-players-body">${leaderboard.allPlayers.length ? leaderboard.allPlayers.map(allPlayersRow).join('') : '<tr><td colspan="6" class="text-muted">No completed matches yet</td></tr>'}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="tab-pane fade" id="stats-tab-predictors" role="tabpanel">
+        <div class="card">
+          <div class="card-header"><i class="fa-solid fa-crystal-ball me-2"></i>Prediction Leaderboard <span class="text-muted small">&middot; teams ranked by matches called correctly</span></div>
+          <div class="card-body table-responsive">
+            <table class="table table-dark table-hover table-sm mb-0">
+              <thead><tr><th>#</th><th>Team</th><th class="text-end">Predictions Made</th><th class="text-end">Correct</th><th class="text-end">Accuracy</th></tr></thead>
+              <tbody>${predictors.length ? predictors.map((p, i) => `<tr><td>${i + 1}</td><td>${p.name}</td><td class="text-end">${p.made}</td><td class="text-end">${p.correct}</td><td class="text-end fw-bold">${p.accuracy}%</td></tr>`).join('') : '<tr><td colspan="5" class="text-muted">No predictions on completed matches yet</td></tr>'}</tbody>
             </table>
           </div>
         </div>

@@ -1,7 +1,8 @@
-import { getTeams, getFixtures, getSettings, getLiveScore } from './storage.js';
+import { getTeams, getFixtures, getSettings, getLiveScore, getMatchPredictions, getMyPrediction, submitPrediction } from './storage.js';
 import { formatDate, POOL_NAMES, toCSV, downloadFile, teamLogoHtml, isoDate, escapeHtml, sortByDateTime } from './utilities.js';
 import { notify } from './notifications.js';
 import { goTo } from './router.js';
+import { getMyTeamId } from './match-alerts.js';
 
 let viewMode = 'list';
 
@@ -39,6 +40,34 @@ function poolAccent(pool) {
   return POOL_ACCENTS[idx >= 0 ? idx % POOL_ACCENTS.length : 0];
 }
 
+function predictionWidget(f, teamsById) {
+  if (f.status === 'completed' || getLiveScore(f.id)) return '';
+  const teamA = teamsById[f.teamA];
+  const teamB = teamsById[f.teamB];
+  const preds = getMatchPredictions(f.id);
+  const total = preds.length;
+  const countFor = (teamId) => preds.filter((p) => p.votedForTeamId === teamId).length;
+  const pctFor = (teamId) => (total ? Math.round((countFor(teamId) / total) * 100) : 0);
+  const myTeamId = getMyTeamId();
+  const myPick = myTeamId ? getMyPrediction(f.id, myTeamId) : null;
+  return `
+    <div class="predict-widget" data-match="${f.id}">
+      <div class="predict-label small text-muted">
+        <i class="fa-solid fa-crystal-ball me-1"></i>Who wins?${total ? ` <span>(${total} vote${total === 1 ? '' : 's'})</span>` : ''}
+      </div>
+      <div class="predict-bars">
+        <button type="button" class="predict-btn ${myPick?.votedForTeamId === f.teamA ? 'is-picked' : ''}" data-team="${f.teamA}" ${!myTeamId ? 'disabled title="Pick your team at the top to vote"' : ''}>
+          <span class="predict-btn-fill" style="width:${pctFor(f.teamA)}%"></span>
+          <span class="predict-btn-name">${teamA?.name || f.teamA}</span><span class="predict-btn-pct">${pctFor(f.teamA)}%</span>
+        </button>
+        <button type="button" class="predict-btn ${myPick?.votedForTeamId === f.teamB ? 'is-picked' : ''}" data-team="${f.teamB}" ${!myTeamId ? 'disabled title="Pick your team at the top to vote"' : ''}>
+          <span class="predict-btn-fill" style="width:${pctFor(f.teamB)}%"></span>
+          <span class="predict-btn-name">${teamB?.name || f.teamB}</span><span class="predict-btn-pct">${pctFor(f.teamB)}%</span>
+        </button>
+      </div>
+    </div>`;
+}
+
 function matchListRow(f, teamsById) {
   const teamA = teamsById[f.teamA];
   const teamB = teamsById[f.teamB];
@@ -46,32 +75,35 @@ function matchListRow(f, teamsById) {
   const aWon = done && f.winner === f.teamA;
   const bWon = done && f.winner === f.teamB;
   return `
-    <div class="schedule-list-row ${done ? 'schedule-list-row-done schedule-list-row-clickable' : ''}" style="--pool-accent:${poolAccent(f.pool)};" ${done ? `data-fixture="${f.id}"` : ''}>
-      <div class="schedule-list-date">
-        <div class="fw-semibold">${formatDate(f.date)}</div>
-        <div class="small text-muted"><i class="fa-regular fa-clock me-1"></i>${f.time}</div>
-      </div>
-      <div class="schedule-list-meta">
-        <span class="badge" style="background:${poolAccent(f.pool)};">${f.pool}</span>
-        <span class="small text-muted">#${f.matchNumber}</span>
-      </div>
-      <div class="schedule-list-teams">
-        <div class="schedule-team ${aWon ? 'winner' : ''}">
-          ${teamLogoHtml(teamA, 'team-logo')}
-          <span>${teamA?.name || f.teamA}</span>
-          ${done ? `<span class="score">${f.scoreA}</span>` : ''}
+    <div class="schedule-list-row ${done ? 'schedule-list-row-done' : ''}" style="--pool-accent:${poolAccent(f.pool)};">
+      <div class="schedule-list-row-main ${done ? 'schedule-list-row-clickable' : ''}" ${done ? `data-fixture="${f.id}"` : ''}>
+        <div class="schedule-list-date">
+          <div class="fw-semibold">${formatDate(f.date)}</div>
+          <div class="small text-muted"><i class="fa-regular fa-clock me-1"></i>${f.time}</div>
         </div>
-        <span class="schedule-vs">VS</span>
-        <div class="schedule-team ${bWon ? 'winner' : ''}">
-          ${teamLogoHtml(teamB, 'team-logo')}
-          <span>${teamB?.name || f.teamB}</span>
-          ${done ? `<span class="score">${f.scoreB}</span>` : ''}
+        <div class="schedule-list-meta">
+          <span class="badge" style="background:${poolAccent(f.pool)};">${f.pool}</span>
+          <span class="small text-muted">#${f.matchNumber}</span>
+        </div>
+        <div class="schedule-list-teams">
+          <div class="schedule-team ${aWon ? 'winner' : ''}">
+            ${teamLogoHtml(teamA, 'team-logo')}
+            <span>${teamA?.name || f.teamA}</span>
+            ${done ? `<span class="score">${f.scoreA}</span>` : ''}
+          </div>
+          <span class="schedule-vs">VS</span>
+          <div class="schedule-team ${bWon ? 'winner' : ''}">
+            ${teamLogoHtml(teamB, 'team-logo')}
+            <span>${teamB?.name || f.teamB}</span>
+            ${done ? `<span class="score">${f.scoreB}</span>` : ''}
+          </div>
+        </div>
+        <div class="schedule-list-status">
+          ${statusBadge(f)}
+          <div class="small text-muted text-truncate"><i class="fa-solid fa-location-dot me-1"></i>${f.venue}</div>
         </div>
       </div>
-      <div class="schedule-list-status">
-        ${statusBadge(f)}
-        <div class="small text-muted text-truncate"><i class="fa-solid fa-location-dot me-1"></i>${f.venue}</div>
-      </div>
+      ${predictionWidget(f, teamsById)}
     </div>`;
 }
 
@@ -107,6 +139,7 @@ function matchTimelineCard(f, teamsById) {
           ${done ? `<span class="score">${f.scoreB}</span>` : ''}
         </div>
       </div>
+      ${predictionWidget(f, teamsById)}
     </div>`;
 }
 
@@ -264,7 +297,19 @@ export async function renderSchedule(outlet) {
         goTo('scoreboard');
       });
     });
+    container.querySelectorAll('.predict-btn').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (btn.disabled) return;
+        const myTeamId = getMyTeamId();
+        const matchId = btn.closest('[data-match]').dataset.match;
+        await submitPrediction(matchId, myTeamId, btn.dataset.team);
+        notify.success('Prediction saved');
+        update();
+      });
+    });
   }
+
+  window.addEventListener('myteamchange', update);
 
   ['pool', 'team', 'date', 'status', 'search'].forEach((key) => {
     outlet.querySelector(`#f-${key}`).addEventListener('input', (e) => {
@@ -293,4 +338,6 @@ export async function renderSchedule(outlet) {
   });
 
   update();
+
+  return () => window.removeEventListener('myteamchange', update);
 }

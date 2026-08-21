@@ -107,16 +107,18 @@
 }
 
 .schedule-list-row {
-  display: grid;
-  grid-template-columns: 110px 90px 1fr 130px;
-  align-items: center;
-  gap: 1rem;
   background: var(--card-bg-2);
   border: 1px solid var(--border);
   border-left: 4px solid var(--pool-accent, var(--primary));
   border-radius: 12px;
   padding: 0.85rem 1.1rem;
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.schedule-list-row-main {
+  display: grid;
+  grid-template-columns: 110px 90px 1fr 130px;
+  align-items: center;
+  gap: 1rem;
 }
 .schedule-list-row:hover {
   transform: translateX(4px);
@@ -150,10 +152,52 @@
 .schedule-list-status .small { margin-top: 0.3rem; }
 
 @media (max-width: 767.98px) {
-  .schedule-list-row {
+  .schedule-list-row-main {
     grid-template-columns: 1fr;
     text-align: left;
   }
   .schedule-list-status { text-align: left; }
   .schedule-list-teams { flex-wrap: wrap; }
+}
+
+/* Prediction game: "who wins?" voting widget on scheduled (not yet live/completed) matches. */
+.predict-widget {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--border);
+}
+.predict-label span { opacity: 0.8; }
+.predict-bars {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+.predict-btn {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  background: var(--bg, #0A0A0A);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+.predict-btn:disabled { cursor: not-allowed; opacity: 0.6; }
+.predict-btn:not(:disabled):hover { border-color: var(--primary); color: #fff; }
+.predict-btn.is-picked { border-color: var(--primary); color: #fff; font-weight: 700; }
+.predict-btn-name, .predict-btn-pct { position: relative; z-index: 1; white-space: nowrap; }
+.predict-btn-fill {
+  position: absolute;
+  inset: 0;
+  width: 0;
+  background: var(--primary-glow, rgba(225,6,0,0.35));
+  transition: width 0.3s ease;
+  z-index: 0;
 }

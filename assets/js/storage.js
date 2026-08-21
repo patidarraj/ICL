@@ -20,9 +20,10 @@ const stateRef = doc(db, 'tournaments', 'main');
 const teamsColRef = collection(db, 'teams');
 const liveScoresColRef = collection(db, 'liveScores');
 const galleryColRef = collection(db, 'gallery');
+const predictionsColRef = collection(db, 'predictions');
 const REFEREE_SESSION_KEY = 'icl_referee_authed';
 
-let cache = { teams: [], fixtures: [], settings: {}, bracket: null, liveScores: {}, gallery: [] };
+let cache = { teams: [], fixtures: [], settings: {}, bracket: null, liveScores: {}, gallery: [], predictions: [] };
 let currentUser = null;
 const changeListeners = new Set();
 
@@ -88,6 +89,11 @@ onSnapshot(galleryColRef, (snap) => {
   cache = { ...cache, gallery: snap.docs.map((d) => ({ id: d.id, ...d.data() })) };
   notifyChange();
   persistLocalCache();
+});
+
+onSnapshot(predictionsColRef, (snap) => {
+  cache = { ...cache, predictions: snap.docs.map((d) => ({ id: d.id, ...d.data() })) };
+  notifyChange();
 });
 
 onAuthStateChanged(auth, (user) => {
@@ -194,6 +200,20 @@ export function rejectTeamLogo(teamId) {
 
 export function getFixtures() { return cache.fixtures || []; }
 export function saveFixtures(fixtures) { return updateDoc(stateRef, { fixtures }); }
+
+// Predictions: one doc per (match, voting team), doc id `${matchId}_${voterTeamId}` so a
+// second vote from the same team on the same match simply overwrites the first — that upsert
+// behavior is what actually enforces "one vote per team per match", not app-side logic.
+export function getPredictions() { return cache.predictions || []; }
+export function getMatchPredictions(matchId) { return getPredictions().filter((p) => p.matchId === matchId); }
+export function getMyPrediction(matchId, voterTeamId) {
+  return getPredictions().find((p) => p.matchId === matchId && p.voterTeamId === voterTeamId) || null;
+}
+export function submitPrediction(matchId, voterTeamId, votedForTeamId) {
+  return setDoc(doc(predictionsColRef, `${matchId}_${voterTeamId}`), {
+    matchId, voterTeamId, votedForTeamId, at: new Date().toISOString(),
+  });
+}
 
 export function getSettings() { return cache.settings || {}; }
 export function saveSettings(settings) { return updateDoc(stateRef, { settings }); }

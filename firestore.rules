@@ -25,5 +25,13 @@ service cloud.firestore {
                     && request.resource.data.photoBase64.size() < 900000;
       allow update, delete: if request.auth != null;
     }
+    match /predictions/{predictionId} {
+      allow read: if true;
+      allow create, update: if request.resource.data.matchId is string
+                    && request.resource.data.voterTeamId is string
+                    && request.resource.data.votedForTeamId is string
+                    && predictionId == request.resource.data.matchId + '_' + request.resource.data.voterTeamId;
+      allow delete: if request.auth != null;
+    }
   }
 }
