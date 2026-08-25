@@ -201,6 +201,35 @@ export function rejectTeamLogo(teamId) {
 export function getFixtures() { return cache.fixtures || []; }
 export function saveFixtures(fixtures) { return updateDoc(stateRef, { fixtures }); }
 
+/**
+ * Each match's playerStats.A/B.players[].name is a snapshot copied from team.players at the
+ * moment that match's live scoring session was first opened (see scoreboard.js) — it is not a
+ * live reference. Fixing a typo in the team roster afterwards does NOT retroactively fix
+ * already-played matches, which is exactly how "Shasank" and "Shashank" end up as two separate
+ * entries in the Statistics player leaderboard (it groups by name). This walks every one of a
+ * team's matches and renames any of `oldNames` to `correctName`, so historical stats merge back
+ * into one player.
+ */
+export function distinctPlayerNamesForTeam(teamId) {
+  const counts = {};
+  getFixtures().forEach((f) => {
+    if (f.teamA !== teamId && f.teamB !== teamId) return;
+    const side = f.teamA === teamId ? 'A' : 'B';
+    (f.playerStats?.[side]?.players || []).forEach((p) => { counts[p.name] = (counts[p.name] || 0) + 1; });
+  });
+  return Object.entries(counts).map(([name, matches]) => ({ name, matches })).sort((a, b) => b.matches - a.matches);
+}
+export async function mergePlayerNameInFixtures(teamId, oldNames, correctName) {
+  const fixtures = getFixtures().map((f) => {
+    if (f.teamA !== teamId && f.teamB !== teamId) return f;
+    const side = f.teamA === teamId ? 'A' : 'B';
+    if (!f.playerStats?.[side]?.players) return f;
+    const players = f.playerStats[side].players.map((p) => (oldNames.includes(p.name) ? { ...p, name: correctName } : p));
+    return { ...f, playerStats: { ...f.playerStats, [side]: { ...f.playerStats[side], players } } };
+  });
+  await saveFixtures(fixtures);
+}
+
 // Predictions: one doc per (match, voting team), doc id `${matchId}_${voterTeamId}` so a
 // second vote from the same team on the same match simply overwrites the first — that upsert
 // behavior is what actually enforces "one vote per team per match", not app-side logic.

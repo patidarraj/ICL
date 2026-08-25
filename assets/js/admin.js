@@ -3,7 +3,7 @@ import {
   isAdminAuthed, loginAdmin, logoutAdmin, refreshStandings, resetTournament, exportBackup, restoreBackup,
   approveTeamLogo, rejectTeamLogo, getLiveScores, deleteLiveScore, updateTeam, removeTeamLogo, regenerateRefereePasscode,
   getAdminEmail, getGalleryPhotos, approveGalleryPhoto, rejectGalleryPhoto, getGalleryUsageBytes, GALLERY_SAFE_BUDGET_BYTES,
-  getSwapLog, logTeamSwap,
+  getSwapLog, logTeamSwap, distinctPlayerNamesForTeam, mergePlayerNameInFixtures,
 } from './storage.js';
 import { uid, downloadFile, escapeHtml, POOL_NAMES, isoDate, VENUE, generateLogoCode, sortByDateTime } from './utilities.js';
 import { notify } from './notifications.js';
@@ -54,6 +54,7 @@ function teamRow(team) {
     </td>
     <td class="text-nowrap">
       <button class="btn btn-sm btn-outline-primary btn-edit-team" data-id="${team.id}"><i class="fa-solid fa-pen"></i></button>
+      <button class="btn btn-sm btn-outline-info btn-fix-player-name" data-id="${team.id}" title="Merge misspelled player names in past match stats"><i class="fa-solid fa-spell-check"></i></button>
       ${team.logoBase64 ? `<button class="btn btn-sm btn-outline-warning btn-remove-logo" data-id="${team.id}" title="Remove this team's logo"><i class="fa-solid fa-image-slash"></i></button>` : ''}
       <button class="btn btn-sm btn-outline-danger btn-delete-team" data-id="${team.id}"><i class="fa-solid fa-trash"></i></button>
     </td>
@@ -449,6 +450,40 @@ function adminPanel(outlet) {
         modal.hide();
         refreshTeamsBody(getTeams());
         notify.success('Team updated');
+      });
+    }));
+
+    outlet.querySelectorAll('.btn-fix-player-name').forEach((btn) => btn.addEventListener('click', () => {
+      const team = getTeams().find((t) => t.id === btn.dataset.id);
+      const variants = distinctPlayerNamesForTeam(team.id);
+      if (variants.length < 2) {
+        openModal(`
+          <div class="modal-header"><h5 class="modal-title">Fix Player Name &middot; ${team.name}</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+          <div class="modal-body"><p class="text-muted small mb-0">Only one spelling (${variants[0]?.name || 'none'}) found in this team's match history — nothing to merge.</p></div>`);
+        return;
+      }
+      openModal(`
+        <div class="modal-header"><h5 class="modal-title">Fix Player Name &middot; ${team.name}</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <p class="text-muted small">Player names in a match's individual scoring are a snapshot taken when that match started — fixing the roster later doesn't fix past matches. Pick the spellings that are actually the same person, and the correct final spelling.</p>
+          <label class="form-label">Spellings found (check the ones to merge)</label>
+          ${variants.map((v, i) => `
+            <div class="form-check">
+              <input class="form-check-input m-fix-check" type="checkbox" value="${escapeHtml(v.name)}" id="m-fix-${i}" ${i < 2 ? 'checked' : ''}>
+              <label class="form-check-label" for="m-fix-${i}">${escapeHtml(v.name)} <span class="text-muted small">(${v.matches} match${v.matches === 1 ? '' : 'es'})</span></label>
+            </div>`).join('')}
+          <label class="form-label mt-3">Correct spelling</label>
+          <input class="form-control" id="m-fix-correct" value="${escapeHtml(variants[0].name)}">
+        </div>
+        <div class="modal-footer"><button class="btn btn-primary" id="m-fix-save">Merge</button></div>`);
+      modalContent.querySelector('#m-fix-save').addEventListener('click', async () => {
+        const checked = [...modalContent.querySelectorAll('.m-fix-check:checked')].map((c) => c.value);
+        const correctName = modalContent.querySelector('#m-fix-correct').value.trim();
+        if (checked.length < 2) { notify.warn('Check at least two spellings to merge'); return; }
+        if (!correctName) { notify.warn('Enter the correct spelling'); return; }
+        await mergePlayerNameInFixtures(team.id, checked, correctName);
+        modal.hide();
+        notify.success(`Merged into "${correctName}" &middot; stats will recompute`);
       });
     }));
 
