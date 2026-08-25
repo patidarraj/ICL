@@ -310,6 +310,70 @@ export function sortStandings(teams) {
   });
 }
 
+/**
+ * Achievement badges — entirely derived from existing teams/fixtures data, no new storage.
+ * Recomputed on every render, so they always reflect the latest results with zero extra writes.
+ */
+export function computeTeamBadges(teams, fixtures) {
+  const badges = {};
+  const add = (teamId, badge) => { (badges[teamId] = badges[teamId] || []).push(badge); };
+  const topTeamId = sortStandings(teams)[0]?.id;
+
+  teams.forEach((team) => {
+    const completed = sortByDateTime(fixtures.filter((f) => f.status === 'completed' && (f.teamA === team.id || f.teamB === team.id)));
+    if (!completed.length) return;
+
+    if (team.played >= 2 && team.lost === 0) {
+      add(team.id, { code: 'unbeaten', icon: 'fa-shield-heart', label: 'Unbeaten', desc: `Unbeaten across ${team.played} matches` });
+    }
+
+    let streak = 0;
+    let best = 0;
+    completed.forEach((f) => {
+      const won = f.winner === team.id;
+      streak = won ? streak + 1 : 0;
+      best = Math.max(best, streak);
+    });
+    if (best >= 3) {
+      add(team.id, { code: 'streak', icon: 'fa-fire', label: `${best}-Win Streak`, desc: `Won ${best} matches in a row` });
+    }
+
+    if ((team.scoreFor || 0) >= 100) {
+      add(team.id, { code: 'century', icon: 'fa-champagne-glasses', label: 'Century Club', desc: `${team.scoreFor} total points scored` });
+    }
+
+    if (team.id !== topTeamId && topTeamId) {
+      const beatLeader = completed.some((f) => f.winner === team.id && (f.teamA === topTeamId || f.teamB === topTeamId));
+      if (beatLeader) add(team.id, { code: 'giant-killer', icon: 'fa-hand-fist', label: 'Giant Killer', desc: 'Beat the team currently on top of the leaderboard' });
+    }
+  });
+
+  // Rank-based badges: cleanest play and most Queens taken, awarded to the #1 team(s) only.
+  const foulStats = teams.map((team) => {
+    const completed = fixtures.filter((f) => f.status === 'completed' && (f.teamA === team.id || f.teamB === team.id));
+    if (!completed.length) return null;
+    const side = (f) => (f.teamA === team.id ? 'A' : 'B');
+    const fouls = completed.reduce((s, f) => s + (f.playerStats?.[side(f)]?.players || []).reduce((s2, p) => s2 + (p.fouls || 0), 0), 0);
+    return { teamId: team.id, avgFouls: fouls / completed.length };
+  }).filter(Boolean);
+  if (foulStats.length) {
+    const minAvg = Math.min(...foulStats.map((s) => s.avgFouls));
+    foulStats.filter((s) => s.avgFouls === minAvg).forEach((s) => add(s.teamId, { code: 'iron-wall', icon: 'fa-shield-halved', label: 'Iron Wall', desc: `Fewest fouls per match (avg ${minAvg.toFixed(1)})` }));
+  }
+
+  const queenStats = teams.map((team) => {
+    const count = fixtures.filter((f) => f.status === 'completed' && f.queenTakenBy
+      && ((f.teamA === team.id && f.queenTakenBy.startsWith('A')) || (f.teamB === team.id && f.queenTakenBy.startsWith('B')))).length;
+    return { teamId: team.id, count };
+  }).filter((s) => s.count > 0);
+  if (queenStats.length) {
+    const maxCount = Math.max(...queenStats.map((s) => s.count));
+    queenStats.filter((s) => s.count === maxCount).forEach((s) => add(s.teamId, { code: 'queen-collector', icon: 'fa-crown', label: 'Queen Collector', desc: `Took the Queen ${maxCount} time${maxCount === 1 ? '' : 's'}` }));
+  }
+
+  return badges;
+}
+
 export function debounce(fn, wait = 250) {
   let t;
   return (...args) => {

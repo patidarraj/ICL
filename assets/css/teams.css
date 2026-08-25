@@ -2,6 +2,27 @@
 .team-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(0,0,0,0.3); }
 .team-players div { margin-bottom: 0.25rem; }
 
+.team-achievements {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+.achievement-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: var(--primary-glow, rgba(225,6,0,0.2));
+  border: 1px solid var(--border);
+  color: var(--text, #E2E8F0);
+  cursor: default;
+}
+.achievement-badge i { color: var(--warning, #FACC15); }
+
 .logo-gallery-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);

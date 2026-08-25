@@ -1,10 +1,17 @@
 import { getTeams, getFixtures } from './storage.js';
-import { POOL_NAMES, teamLogoHtml } from './utilities.js';
+import { POOL_NAMES, teamLogoHtml, computeTeamBadges } from './utilities.js';
 import { goTo } from './router.js';
 
 let filters = { search: '', pool: '' };
 
-function teamCard(team, fixtures) {
+function achievementBadges(team, badgesByTeam) {
+  const badges = badgesByTeam[team.id];
+  if (!badges?.length) return '';
+  return `<div class="team-achievements">${badges.map((b) => `
+    <span class="achievement-badge" title="${b.desc}"><i class="fa-solid ${b.icon}"></i> ${b.label}</span>`).join('')}</div>`;
+}
+
+function teamCard(team, fixtures, badgesByTeam) {
   const remaining = fixtures.filter((f) => f.stage === 'pool' && f.status === 'scheduled' && (f.teamA === team.id || f.teamB === team.id)).length;
   return `
     <div class="col-md-6 col-xl-4">
@@ -17,6 +24,7 @@ function teamCard(team, fixtures) {
             </div>
             <span class="badge bg-primary">${team.pool}</span>
           </div>
+          ${achievementBadges(team, badgesByTeam)}
           <div class="team-players mb-3">
             <div><i class="fa-solid fa-user me-2 text-muted"></i>${team.players[0]}</div>
             <div><i class="fa-solid fa-user me-2 text-muted"></i>${team.players[1]}</div>
@@ -62,6 +70,7 @@ export async function renderTeams(outlet) {
     <div class="row g-3" id="teams-grid"></div>`;
 
   const grid = outlet.querySelector('#teams-grid');
+  const badgesByTeam = computeTeamBadges(teams, fixtures);
 
   function update() {
     const filtered = teams.filter((t) => {
@@ -72,7 +81,7 @@ export async function renderTeams(outlet) {
       }
       return true;
     });
-    grid.innerHTML = filtered.map((t) => teamCard(t, fixtures)).join('') || '<p class="text-muted">No teams found</p>';
+    grid.innerHTML = filtered.map((t) => teamCard(t, fixtures, badgesByTeam)).join('') || '<p class="text-muted">No teams found</p>';
     grid.querySelectorAll('.btn-view-fixtures, .btn-view-results').forEach((btn) => {
       btn.addEventListener('click', () => {
         sessionStorage.setItem('carrom_team_filter', btn.dataset.team);
