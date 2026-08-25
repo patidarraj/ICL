@@ -74,7 +74,8 @@ function matchRow(f, teamsById) {
       ${f.status === 'scheduled' ? `<button class="btn btn-sm btn-outline-info btn-swap-team" data-id="${f.id}" title="Swap one team into a different match"><i class="fa-solid fa-right-left"></i></button>` : ''}
       ${f.status === 'scheduled'
         ? `<button class="btn btn-sm btn-success btn-enter-result" data-id="${f.id}"><i class="fa-solid fa-check"></i> Result</button>`
-        : `<button class="btn btn-sm btn-outline-secondary btn-edit-nrr" data-id="${f.id}" title="Set/correct NRR"><i class="fa-solid fa-calculator"></i></button>
+        : `${f.playerStats ? `<button class="btn btn-sm btn-outline-info btn-edit-scoring" data-id="${f.id}" title="Fix individual player scoring without resetting the match"><i class="fa-solid fa-user-pen"></i></button>` : ''}
+           <button class="btn btn-sm btn-outline-secondary btn-edit-nrr" data-id="${f.id}" title="Set/correct NRR"><i class="fa-solid fa-calculator"></i></button>
            <button class="btn btn-sm btn-outline-warning btn-undo-match" data-id="${f.id}"><i class="fa-solid fa-rotate-left"></i> Undo</button>`}
     </td>
   </tr>`;
@@ -661,6 +662,72 @@ function adminPanel(outlet) {
         refreshMatchesBody(fx, getTeams());
         renderSwapsBody();
         notify.success('Team swapped between matches');
+      });
+    }));
+
+    outlet.querySelectorAll('.btn-edit-scoring').forEach((btn) => btn.addEventListener('click', () => {
+      const f = getFixtures().find((x) => x.id === btn.dataset.id);
+      const t = Object.fromEntries(getTeams().map((x) => [x.id, x]));
+
+      const playerFieldRow = (side, idx, p) => `
+        <tr data-side="${side}" data-idx="${idx}">
+          <td>${escapeHtml(p.name)}</td>
+          <td><input type="number" min="0" class="form-control form-control-sm m-fix-points" value="${p.points}"></td>
+          <td><input type="number" min="0" class="form-control form-control-sm m-fix-dues" value="${p.dues || 0}"></td>
+          <td><input type="number" min="0" class="form-control form-control-sm m-fix-fouls" value="${p.fouls || 0}"></td>
+          <td><input type="number" min="0" class="form-control form-control-sm m-fix-streak" value="${p.streak || 0}"></td>
+        </tr>`;
+
+      const allPlayers = [
+        ...f.playerStats.A.players.map((p, i) => ({ side: 'A', idx: i, p })),
+        ...f.playerStats.B.players.map((p, i) => ({ side: 'B', idx: i, p })),
+      ];
+
+      openModal(`
+        <div class="modal-header"><h5 class="modal-title">Fix Player Scoring &middot; ${t[f.teamA]?.name} vs ${t[f.teamB]?.name}</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <p class="text-muted small">Edits each player's recorded points/dues/fouls/streak directly — no need to undo and re-referee the whole match. Team scores and the winner are recalculated automatically from points. If the winner changes, double-check NRR (the calculator icon) afterward — it isn't recalculated here.</p>
+          <div class="table-responsive">
+            <table class="table table-dark table-sm align-middle mb-3">
+              <thead><tr><th>Player</th><th>Points</th><th>Dues</th><th>Fouls</th><th>Streak</th></tr></thead>
+              <tbody id="m-fix-players">
+                ${f.playerStats.A.players.map((p, i) => playerFieldRow('A', i, p)).join('')}
+                ${f.playerStats.B.players.map((p, i) => playerFieldRow('B', i, p)).join('')}
+              </tbody>
+            </table>
+          </div>
+          <label class="form-label">Queen taken by</label>
+          <select class="form-select" id="m-fix-queen">
+            <option value="">None</option>
+            ${allPlayers.map(({ side, idx, p }) => `<option value="${side}-${idx}" ${f.queenTakenBy === `${side}-${idx}` ? 'selected' : ''}>${escapeHtml(p.name)} (${side === 'A' ? t[f.teamA]?.name : t[f.teamB]?.name})</option>`).join('')}
+          </select>
+        </div>
+        <div class="modal-footer"><button class="btn btn-primary" id="m-fix-save">Save</button></div>`);
+
+      modalContent.querySelector('#m-fix-save').addEventListener('click', async () => {
+        const fx = getFixtures().map((x) => (x.id === f.id ? { ...x, playerStats: { A: { ...x.playerStats.A, players: x.playerStats.A.players.map((p) => ({ ...p })) }, B: { ...x.playerStats.B, players: x.playerStats.B.players.map((p) => ({ ...p })) } } } : x));
+        const match = fx.find((x) => x.id === f.id);
+        modalContent.querySelectorAll('#m-fix-players tr').forEach((row) => {
+          const side = row.dataset.side;
+          const idx = Number(row.dataset.idx);
+          const player = match.playerStats[side].players[idx];
+          player.points = Number(row.querySelector('.m-fix-points').value) || 0;
+          player.dues = Number(row.querySelector('.m-fix-dues').value) || 0;
+          player.fouls = Number(row.querySelector('.m-fix-fouls').value) || 0;
+          player.streak = Number(row.querySelector('.m-fix-streak').value) || 0;
+        });
+        match.queenTakenBy = modalContent.querySelector('#m-fix-queen').value || null;
+        const totalA = match.playerStats.A.players.reduce((s, p) => s + p.points, 0);
+        const totalB = match.playerStats.B.players.reduce((s, p) => s + p.points, 0);
+        match.scoreA = totalA;
+        match.scoreB = totalB;
+        match.winner = totalA === totalB ? 'draw' : (totalA > totalB ? match.teamA : match.teamB);
+        await saveFixtures(fx);
+        const updatedTeams = await refreshStandings();
+        modal.hide();
+        refreshMatchesBody(fx, updatedTeams);
+        refreshTeamsBody(updatedTeams);
+        notify.success('Player scoring updated &middot; standings recalculated');
       });
     }));
 
