@@ -19,10 +19,16 @@ function podiumSpot(team, rank) {
     </div>`;
 }
 
-const QUALIFY_CUTOFF = 8;
+// Qualification is per pool, not a global top-N cut — a global cutoff can end up marking a
+// pool's #3 team "Qualified" (if their points happen to rank high overall) while a different
+// pool's actual #1 misses out, which isn't how the knockout round actually works. Only the
+// #1-ranked team within each individual pool qualifies.
+function poolWinnerIds(teams) {
+  return new Set(POOL_NAMES.map((pool) => sortStandings(teams.filter((t) => t.pool === pool))[0]?.id).filter(Boolean));
+}
 
-function leaderboardRow(t, i) {
-  const qualifies = i < QUALIFY_CUTOFF;
+function leaderboardRow(t, i, qualifiedIds) {
+  const qualifies = qualifiedIds.has(t.id);
   return `<tr class="${qualifies ? 'row-qualified' : ''}">
     <td class="text-muted">#${String(i + 1).padStart(3, '0')}</td>
     <td><div class="d-flex align-items-center gap-2">${teamLogoHtml(t)}<div>${t.name}<div class="small text-muted">${t.players.join(' & ')}</div></div></div></td>
@@ -37,6 +43,7 @@ function leaderboardRow(t, i) {
 function leaderboardPane(teams) {
   const ranked = sortStandings(teams);
   const [first, second, third] = ranked;
+  const qualifiedIds = poolWinnerIds(teams);
   return `
     <div class="leaderboard-glow">
       <div class="leaderboard-podium">
@@ -47,12 +54,12 @@ function leaderboardPane(teams) {
       <div class="card leaderboard-table-card">
         <div class="card-header"><i class="fa-solid fa-list-ol me-2"></i>Full Leaderboard</div>
         <div class="card-body table-responsive p-0">
-          <p class="text-muted small px-3 pt-3 mb-0"><span class="badge bg-success me-1">&nbsp;</span>Top ${QUALIFY_CUTOFF} teams qualify for the knockout round.</p>
+          <p class="text-muted small px-3 pt-3 mb-0"><span class="badge bg-success me-1">&nbsp;</span>The #1 team in each pool qualifies for the knockout round.</p>
           <table class="table table-dark table-hover align-middle mb-0">
             <thead><tr>
               <th>#</th><th>Team</th><th>Pool</th><th>P</th><th>W</th><th>D</th><th>L</th><th>Pts</th><th>NRR</th><th></th>
             </tr></thead>
-            <tbody>${ranked.map(leaderboardRow).join('')}</tbody>
+            <tbody>${ranked.map((t, i) => leaderboardRow(t, i, qualifiedIds)).join('')}</tbody>
           </table>
         </div>
       </div>
