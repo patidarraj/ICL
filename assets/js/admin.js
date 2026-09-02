@@ -4,10 +4,11 @@ import {
   approveTeamLogo, rejectTeamLogo, getLiveScores, deleteLiveScore, updateTeam, removeTeamLogo, regenerateRefereePasscode,
   getAdminEmail, getGalleryPhotos, approveGalleryPhoto, rejectGalleryPhoto, getGalleryUsageBytes, GALLERY_SAFE_BUDGET_BYTES,
   getSwapLog, logTeamSwap, distinctPlayerNamesForTeam, mergePlayerNameInFixtures,
+  getBracket,
 } from './storage.js';
 import { uid, downloadFile, escapeHtml, POOL_NAMES, isoDate, VENUE, generateLogoCode, sortByDateTime } from './utilities.js';
 import { notify } from './notifications.js';
-import { generateBracket } from './bracket.js';
+import { generateBracket, getAllBracketMatches, recordKnockoutResult } from './bracket.js';
 
 function loginForm(outlet, onSuccess) {
   outlet.innerHTML = `
@@ -937,9 +938,34 @@ function adminPanel(outlet) {
     const live = Object.values(getLiveScores()).find((l) => l.matchId === btn.dataset.id);
     if (!live) return;
     const f = getFixtures().find((x) => x.id === live.matchId);
-    if (!f) { notify.error('That match no longer exists'); return; }
     const totalA = live.teams.A.players.reduce((s, p) => s + p.points, 0);
     const totalB = live.teams.B.players.reduce((s, p) => s + p.points, 0);
+
+    // Knockout matches (QF/SF/3rd/Final) aren't fixtures — they live in the bracket document.
+    if (!f) {
+      const bracket = getBracket();
+      const knockoutMatch = getAllBracketMatches(bracket).find((m) => m.id === live.matchId);
+      if (!knockoutMatch) { notify.error('That match no longer exists'); return; }
+      if (live.result.winner === 'draw' || totalA === totalB) {
+        notify.error('Knockout matches need a winner — no draws. Ask the referee to resolve the tie before submitting.');
+        return;
+      }
+      btn.disabled = true;
+      try {
+        await recordKnockoutResult(bracket, live.matchId, totalA, totalB, {
+          playerStats: live.teams, queenTakenBy: live.queenTakenBy || null, confirmedBy: getAdminEmail(),
+        });
+        await deleteLiveScore(live.matchId);
+        notify.success('Knockout result confirmed &middot; bracket updated', 'Match Completed');
+        adminPanel(outlet);
+      } catch (err) {
+        console.error(err);
+        notify.error(`Could not confirm result — ${err.message || 'please try again'}`);
+        btn.disabled = false;
+      }
+      return;
+    }
+
     btn.disabled = true;
     try {
       const fx = getFixtures().map((x) => (x.id === f.id ? { ...x } : x));

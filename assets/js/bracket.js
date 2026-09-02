@@ -1,4 +1,4 @@
-import { getTeams, getFixtures, getBracket, saveBracket } from './storage.js';
+import { getTeams, getFixtures, getBracket, saveBracket, getAdminEmail } from './storage.js';
 import { POOL_NAMES, sortStandings, teamLogoHtml } from './utilities.js';
 import { isAdminAuthed } from './storage.js';
 import { notify } from './notifications.js';
@@ -43,13 +43,25 @@ export async function generateBracket() {
   return bracket;
 }
 
-export async function recordKnockoutResult(bracket, matchId, scoreA, scoreB) {
-  const all = [...bracket.qf, ...bracket.sf, bracket.thirdPlace, bracket.final];
+/** Flat list of every knockout match in the bracket (across all rounds), for lookups by id. */
+export function getAllBracketMatches(bracket) {
+  if (!bracket) return [];
+  return [...bracket.qf, ...bracket.sf, bracket.thirdPlace, bracket.final];
+}
+
+const ROUND_LABELS = { qf: 'Quarterfinal', sf: 'Semifinal', third: '3rd Place Match', final: 'Final' };
+export function roundLabel(round) { return ROUND_LABELS[round] || round; }
+
+export async function recordKnockoutResult(bracket, matchId, scoreA, scoreB, extra = {}) {
+  const all = getAllBracketMatches(bracket);
   const match = all.find((m) => m.id === matchId);
   if (!match || !match.teamA || !match.teamB) return bracket;
   match.scoreA = scoreA; match.scoreB = scoreB;
   match.winner = scoreA > scoreB ? match.teamA : match.teamB;
   match.status = 'completed';
+  if (extra.playerStats) match.playerStats = extra.playerStats;
+  if (extra.queenTakenBy !== undefined) match.queenTakenBy = extra.queenTakenBy;
+  if (extra.confirmedBy) { match.confirmedBy = extra.confirmedBy; match.confirmedAt = new Date().toISOString(); }
   const loser = match.winner === match.teamA ? match.teamB : match.teamA;
 
   if (match.round === 'qf') {
@@ -273,7 +285,7 @@ export async function renderBracket(outlet) {
           notify.warn('Enter valid, non-tied scores');
           return;
         }
-        bracket = await recordKnockoutResult(bracket, card.dataset.match, a, b);
+        bracket = await recordKnockoutResult(bracket, card.dataset.match, a, b, { confirmedBy: getAdminEmail() });
         if (bracket.champion) notify.success(`${teamName(bracket.champion, teamsById)} is the Champion!`, 'Tournament Complete');
         else notify.success('Result recorded, bracket updated');
         render();

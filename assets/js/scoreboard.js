@@ -1,9 +1,20 @@
 import {
   getTeams, getFixtures, getLiveScores, getLiveScore, saveLiveScore,
-  isRefereeAuthed, loginReferee, logoutReferee,
+  isRefereeAuthed, loginReferee, logoutReferee, getBracket,
 } from './storage.js';
 import { notify } from './notifications.js';
 import { isoDate, VENUE } from './utilities.js';
+import { getAllBracketMatches, roundLabel } from './bracket.js';
+
+/** Knockout matches aren't fixtures — they live in the bracket document. This adapts one
+ * into the same {id, teamA, teamB, pool, date, time, stage} shape the rest of this page
+ * already expects, so the whole live-scoring flow works unchanged for both. */
+function scoreableKnockoutMatches() {
+  const bracket = getBracket();
+  return getAllBracketMatches(bracket)
+    .filter((m) => m.status === 'scheduled' && m.teamA && m.teamB)
+    .map((m) => ({ ...m, pool: roundLabel(m.round), date: '', time: 'Knockout' }));
+}
 
 // Every Firestore write (including a referee's own +/- taps) triggers the router's
 // global refreshCurrent(), which fully re-renders this page. Without persisting which
@@ -174,7 +185,7 @@ function featuredMatchCard(f, live) {
 
 /** Shared by the Scoreboard Overview tab and the Dashboard — HTML for whichever match(es) currently have an active/pending scorecard. Empty string if none. */
 export function getFeaturedMatchesHtml() {
-  const fixtures = getFixtures().filter((f) => f.status === 'scheduled');
+  const fixtures = [...getFixtures().filter((f) => f.status === 'scheduled'), ...scoreableKnockoutMatches()];
   const liveScores = getLiveScores();
   const featured = fixtures.filter((f) => liveScores[f.id]);
   return featured.map((f) => featuredMatchCard(f, liveScores[f.id])).join('');
@@ -256,6 +267,7 @@ function stripHtml(matchId, live) {
 function scoreboardHtml(f, live) {
   const totalA = live.teams.A.players.reduce((s, p) => s + p.points, 0);
   const totalB = live.teams.B.players.reduce((s, p) => s + p.points, 0);
+  const isKnockout = Boolean(f.round);
   return `
     ${stripHtml(f.id, live)}
 
@@ -298,9 +310,10 @@ function scoreboardHtml(f, live) {
     <div class="modal-backdrop-x" id="sb-submit-modal">
       <div class="modal-box">
         <h5 class="mb-3"><i class="fa-solid fa-trophy me-2"></i>Submit Match Result</h5>
+        ${isKnockout ? '<p class="text-muted small text-center mb-2">Knockout match — a winner must be picked, no draws.</p>' : ''}
         <div class="winner-options">
           <button class="btn btn-outline-light" data-winner="A" id="sb-winnerA">${live.teams.A.name} Won</button>
-          <button class="btn btn-outline-light" data-winner="draw" id="sb-winnerDraw">Draw</button>
+          ${isKnockout ? '' : '<button class="btn btn-outline-light" data-winner="draw" id="sb-winnerDraw">Draw</button>'}
           <button class="btn btn-outline-light" data-winner="B" id="sb-winnerB">${live.teams.B.name} Won</button>
         </div>
         <div id="sb-nrr-leader-section" style="display:none;">
@@ -383,7 +396,8 @@ function bindScoringActions(outlet, f, live) {
   function renderModal() {
     ['A', 'draw', 'B'].forEach((w) => {
       const id = w === 'draw' ? 'sb-winnerDraw' : `sb-winner${w}`;
-      pane.querySelector(`#${id}`).className = 'btn ' + (pendingWinner === w ? 'btn-primary' : 'btn-outline-light');
+      const el = pane.querySelector(`#${id}`);
+      if (el) el.className = 'btn ' + (pendingWinner === w ? 'btn-primary' : 'btn-outline-light');
     });
     const leaderSection = pane.querySelector('#sb-nrr-leader-section');
     const marginSection = pane.querySelector('#sb-margin-section');
@@ -411,7 +425,7 @@ function bindScoringActions(outlet, f, live) {
   if (openBtn) openBtn.addEventListener('click', () => { pendingWinner = null; pendingNrrLeader = null; pendingMargin = 0; renderModal(); modal.classList.add('show'); });
   pane.querySelector('#sb-close-submit').addEventListener('click', () => modal.classList.remove('show'));
   ['sb-winnerA', 'sb-winnerDraw', 'sb-winnerB'].forEach((id) => {
-    pane.querySelector(`#${id}`).addEventListener('click', (e) => {
+    pane.querySelector(`#${id}`)?.addEventListener('click', (e) => {
       const newWinner = e.currentTarget.dataset.winner;
       if (newWinner === 'draw' && pendingWinner !== 'draw') pendingNrrLeader = null;
       pendingWinner = newWinner;
@@ -442,18 +456,22 @@ async function renderScoringPane(outlet, f, live) {
 
 function renderMatchPicker(outlet) {
   const pane = outlet.querySelector('#sb-pane-scoring');
-  const fixtures = getFixtures().filter((f) => f.status === 'scheduled');
+  const poolFixtures = getFixtures().filter((f) => f.status === 'scheduled');
+  const knockoutMatches = scoreableKnockoutMatches();
+  const fixtures = [...poolFixtures, ...knockoutMatches];
   const teamsById = Object.fromEntries(getTeams().map((t) => [t.id, t]));
   if (!fixtures.length) {
     pane.innerHTML = '<p class="text-muted">No upcoming matches to score.</p>';
     return;
   }
+  const optionHtml = (f) => `<option value="${f.id}">${teamsById[f.teamA]?.name || f.teamA} vs ${teamsById[f.teamB]?.name || f.teamB}${f.date ? ` — ${f.date}` : ''}</option>`;
   pane.innerHTML = `
     <div class="card-x">
       <label class="form-label small text-muted mb-1">Select Match</label>
       <select class="form-select" id="sb-match-select">
         <option value="">Choose a match...</option>
-        ${fixtures.map((f) => `<option value="${f.id}">${teamsById[f.teamA]?.name || f.teamA} vs ${teamsById[f.teamB]?.name || f.teamB} — ${f.date}</option>`).join('')}
+        ${poolFixtures.length ? `<optgroup label="Pool Stage">${poolFixtures.map(optionHtml).join('')}</optgroup>` : ''}
+        ${knockoutMatches.length ? `<optgroup label="Knockout">${knockoutMatches.map((f) => `<option value="${f.id}">${roundLabel(f.round)} — ${teamsById[f.teamA]?.name || f.teamA} vs ${teamsById[f.teamB]?.name || f.teamB}</option>`).join('')}</optgroup>` : ''}
       </select>
     </div>
     <div id="sb-scoreboard-body"></div>`;
@@ -546,7 +564,7 @@ function scoresheetHtml(f, teamsById) {
   return `
     <div class="card mb-3">
       <div class="card-body">
-        <div class="small text-muted mb-1">${f.pool} &middot; ${f.date} &middot; ${f.time}</div>
+        <div class="small text-muted mb-1">${[f.pool, f.date, f.time].filter(Boolean).join(' · ')}</div>
         <div class="fw-bold">${resultSummary(f, teamsById)}</div>
       </div>
     </div>
@@ -557,8 +575,10 @@ function scoresheetHtml(f, teamsById) {
 function renderScoresheetPane(outlet) {
   const teams = getTeams();
   const teamsById = Object.fromEntries(teams.map((t) => [t.id, t]));
-  const completed = getFixtures()
-    .filter((f) => f.status === 'completed')
+  const completedKnockout = getAllBracketMatches(getBracket())
+    .filter((m) => m.status === 'completed')
+    .map((m) => ({ ...m, pool: roundLabel(m.round), date: '', time: '' }));
+  const completed = [...getFixtures().filter((f) => f.status === 'completed'), ...completedKnockout]
     .sort((a, b) => `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`));
 
   if (!uiState.sheetMatchId && completed.length) uiState.sheetMatchId = completed[0].id;
@@ -567,7 +587,7 @@ function renderScoresheetPane(outlet) {
   const pane = outlet.querySelector('#sb-pane-sheet');
   pane.innerHTML = `
     <select class="form-select mb-3" id="sb-sheet-picker">
-      ${completed.length ? completed.map((f) => `<option value="${f.id}" ${f.id === uiState.sheetMatchId ? 'selected' : ''}>${teamsById[f.teamA]?.name} vs ${teamsById[f.teamB]?.name} &middot; ${f.date}</option>`).join('') : '<option>No completed matches yet</option>'}
+      ${completed.length ? completed.map((f) => `<option value="${f.id}" ${f.id === uiState.sheetMatchId ? 'selected' : ''}>${teamsById[f.teamA]?.name} vs ${teamsById[f.teamB]?.name} &middot; ${f.pool}${f.date ? ` &middot; ${f.date}` : ''}</option>`).join('') : '<option>No completed matches yet</option>'}
     </select>
     <div id="sb-sheet-body">${selected ? scoresheetHtml(selected, teamsById) : '<p class="text-muted text-center py-4">No completed matches yet</p>'}</div>`;
 
