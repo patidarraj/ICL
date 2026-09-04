@@ -85,6 +85,107 @@ export async function recordKnockoutResult(bracket, matchId, scoreA, scoreB, ext
   return bracket;
 }
 
+/**
+ * Reverts a completed knockout match back to 'scheduled' — for fixing a data-entry mistake
+ * (wrong winner recorded, wrong scores) without touching anything else. Blocked (returns
+ * `blocked: true`, bracket unchanged) if the winner or loser already advanced into a match
+ * that's itself completed — undo that downstream match first, then this one.
+ */
+export async function undoKnockoutResult(bracket, matchId) {
+  const all = getAllBracketMatches(bracket);
+  const match = all.find((m) => m.id === matchId);
+  if (!match || match.status !== 'completed') return { bracket, blocked: false };
+
+  const downstream = [];
+  if (match.round === 'qf') {
+    const idx = bracket.qf.findIndex((m) => m.id === matchId);
+    downstream.push(bracket.sf[Math.floor(idx / 2)]);
+  } else if (match.round === 'sf') {
+    downstream.push(bracket.final, bracket.thirdPlace);
+  }
+  if (downstream.some((m) => m && m.status === 'completed')) {
+    return { bracket, blocked: true };
+  }
+
+  match.scoreA = null; match.scoreB = null; match.winner = null; match.status = 'scheduled';
+  match.playerStats = null; match.queenTakenBy = null;
+  delete match.confirmedBy;
+  delete match.confirmedAt;
+
+  if (match.round === 'qf') {
+    const idx = bracket.qf.findIndex((m) => m.id === matchId);
+    const sfIndex = Math.floor(idx / 2);
+    const slot = idx % 2 === 0 ? 'teamA' : 'teamB';
+    bracket.sf[sfIndex][slot] = null;
+    bracket.sf[sfIndex].status = 'pending';
+  } else if (match.round === 'sf') {
+    const idx = bracket.sf.findIndex((m) => m.id === matchId);
+    const slot = idx === 0 ? 'teamA' : 'teamB';
+    bracket.final[slot] = null;
+    bracket.final.status = 'pending';
+    bracket.thirdPlace[slot] = null;
+    bracket.thirdPlace.status = 'pending';
+  } else if (match.round === 'final') {
+    bracket.champion = null;
+  }
+  await saveBracket(bracket);
+  return { bracket, blocked: false };
+}
+
+/** Rewrites a completed knockout match's recorded player scoring directly (points/dues/fouls/
+ * streak/Queen), then recalculates the team totals and winner from those points — mirrors the
+ * equivalent pool-match tool in admin.js, without needing a full undo. If the winner flips,
+ * the already-propagated bracket slot (next round / 3rd place / champion) is corrected too,
+ * as long as that downstream match isn't itself already completed. */
+export async function fixKnockoutScoring(bracket, matchId, playerStats, queenTakenBy) {
+  const all = getAllBracketMatches(bracket);
+  const match = all.find((m) => m.id === matchId);
+  if (!match || match.status !== 'completed') return { bracket, blocked: false };
+
+  const oldWinner = match.winner;
+  const totalA = playerStats.A.players.reduce((s, p) => s + p.points, 0);
+  const totalB = playerStats.B.players.reduce((s, p) => s + p.points, 0);
+  if (totalA === totalB) return { bracket, blocked: 'tie' };
+  const newWinner = totalA > totalB ? match.teamA : match.teamB;
+
+  if (newWinner !== oldWinner) {
+    const downstream = [];
+    if (match.round === 'qf') {
+      const idx = bracket.qf.findIndex((m) => m.id === matchId);
+      downstream.push(bracket.sf[Math.floor(idx / 2)]);
+    } else if (match.round === 'sf') {
+      downstream.push(bracket.final, bracket.thirdPlace);
+    }
+    if (downstream.some((m) => m && m.status === 'completed')) return { bracket, blocked: true };
+  }
+
+  match.playerStats = playerStats;
+  match.queenTakenBy = queenTakenBy;
+  match.scoreA = totalA;
+  match.scoreB = totalB;
+  match.winner = newWinner;
+
+  if (newWinner !== oldWinner) {
+    const newLoser = newWinner === match.teamA ? match.teamB : match.teamA;
+    if (match.round === 'qf') {
+      const idx = bracket.qf.findIndex((m) => m.id === matchId);
+      const sfIndex = Math.floor(idx / 2);
+      const slot = idx % 2 === 0 ? 'teamA' : 'teamB';
+      bracket.sf[sfIndex][slot] = newWinner;
+    } else if (match.round === 'sf') {
+      const idx = bracket.sf.findIndex((m) => m.id === matchId);
+      const slot = idx === 0 ? 'teamA' : 'teamB';
+      bracket.final[slot] = newWinner;
+      bracket.thirdPlace[slot] = newLoser;
+    } else if (match.round === 'final') {
+      bracket.champion = newWinner;
+    }
+  }
+
+  await saveBracket(bracket);
+  return { bracket, blocked: false };
+}
+
 function bracketStage(num, title, badge, body) {
   return `
     <div class="bracket-stage">
@@ -200,6 +301,11 @@ function matchCard(match, teamsById, canEdit, onScore) {
           <input type="number" min="0" class="form-control form-control-sm score-b" placeholder="B">
           <button class="btn btn-sm btn-primary btn-submit-score">Save</button>
         </div>` : ''}
+      ${canEdit && done ? `
+        <div class="bracket-fix-actions d-flex gap-1 mt-2">
+          ${match.playerStats ? `<button class="btn btn-sm btn-outline-info btn-fix-knockout-scoring" title="Fix individual player scoring"><i class="fa-solid fa-user-pen"></i></button>` : ''}
+          <button class="btn btn-sm btn-outline-warning btn-undo-knockout" title="Undo this result"><i class="fa-solid fa-rotate-left"></i></button>
+        </div>` : ''}
     </div>`;
 }
 
@@ -228,9 +334,15 @@ export async function renderBracket(outlet) {
     <div class="tab-content">
       <div class="tab-pane fade show active" id="bk-pane-bracket" role="tabpanel"></div>
       <div class="tab-pane fade" id="bk-pane-path" role="tabpanel">${bracketPathExplainer()}</div>
+    </div>
+    <div class="modal fade" id="bkModal" tabindex="-1">
+      <div class="modal-dialog"><div class="modal-content" id="bkModalContent"></div></div>
     </div>`;
 
   const bracketPane = outlet.querySelector('#bk-pane-bracket');
+  const bkModalEl = outlet.querySelector('#bkModal');
+  const bkModal = new bootstrap.Modal(bkModalEl);
+  const bkModalContent = outlet.querySelector('#bkModalContent');
 
   if (locked) {
     const completedPoolMatches = fixtures.filter((f) => f.stage === 'pool' && f.status === 'completed').length;
@@ -289,6 +401,88 @@ export async function renderBracket(outlet) {
         if (bracket.champion) notify.success(`${teamName(bracket.champion, teamsById)} is the Champion!`, 'Tournament Complete');
         else notify.success('Result recorded, bracket updated');
         render();
+      });
+    });
+
+    bracketPane.querySelectorAll('.btn-undo-knockout').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const matchId = btn.closest('.bracket-match').dataset.match;
+        if (!confirm('Undo this knockout result? The match goes back to scheduled.')) return;
+        const result = await undoKnockoutResult(bracket, matchId);
+        if (result.blocked) {
+          notify.error('This team already advanced into a completed later-round match — undo that match first.');
+          return;
+        }
+        bracket = result.bracket;
+        notify.success('Result undone');
+        render();
+      });
+    });
+
+    bracketPane.querySelectorAll('.btn-fix-knockout-scoring').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const matchId = btn.closest('.bracket-match').dataset.match;
+        const match = getAllBracketMatches(bracket).find((m) => m.id === matchId);
+        if (!match?.playerStats) return;
+
+        const playerFieldRow = (side, idx, p) => `
+          <tr data-side="${side}" data-idx="${idx}">
+            <td>${p.name}</td>
+            <td><input type="number" min="0" class="form-control form-control-sm bk-fix-points" value="${p.points}"></td>
+            <td><input type="number" min="0" class="form-control form-control-sm bk-fix-dues" value="${p.dues || 0}"></td>
+            <td><input type="number" min="0" class="form-control form-control-sm bk-fix-fouls" value="${p.fouls || 0}"></td>
+            <td><input type="number" min="0" class="form-control form-control-sm bk-fix-streak" value="${p.streak || 0}"></td>
+          </tr>`;
+        const allPlayers = [
+          ...match.playerStats.A.players.map((p, i) => ({ side: 'A', idx: i, p })),
+          ...match.playerStats.B.players.map((p, i) => ({ side: 'B', idx: i, p })),
+        ];
+
+        bkModalContent.innerHTML = `
+          <div class="modal-header"><h5 class="modal-title">Fix Player Scoring &middot; ${match.id} (${teamName(match.teamA, teamsById)} vs ${teamName(match.teamB, teamsById)})</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+          <div class="modal-body">
+            <p class="text-muted small">Team scores and the winner are recalculated from points. If the winner flips and this team already advanced into a completed later-round match, the change is blocked — undo that match first.</p>
+            <div class="table-responsive">
+              <table class="table table-dark table-sm align-middle mb-3">
+                <thead><tr><th>Player</th><th>Points</th><th>Dues</th><th>Fouls</th><th>Streak</th></tr></thead>
+                <tbody id="bk-fix-players">
+                  ${match.playerStats.A.players.map((p, i) => playerFieldRow('A', i, p)).join('')}
+                  ${match.playerStats.B.players.map((p, i) => playerFieldRow('B', i, p)).join('')}
+                </tbody>
+              </table>
+            </div>
+            <label class="form-label">Queen taken by</label>
+            <select class="form-select" id="bk-fix-queen">
+              <option value="">None</option>
+              ${allPlayers.map(({ side, idx, p }) => `<option value="${side}-${idx}" ${match.queenTakenBy === `${side}-${idx}` ? 'selected' : ''}>${p.name} (${side === 'A' ? teamName(match.teamA, teamsById) : teamName(match.teamB, teamsById)})</option>`).join('')}
+            </select>
+          </div>
+          <div class="modal-footer"><button class="btn btn-primary" id="bk-fix-save">Save</button></div>`;
+        bkModal.show();
+
+        bkModalContent.querySelector('#bk-fix-save').addEventListener('click', async () => {
+          const playerStats = {
+            A: { ...match.playerStats.A, players: match.playerStats.A.players.map((p) => ({ ...p })) },
+            B: { ...match.playerStats.B, players: match.playerStats.B.players.map((p) => ({ ...p })) },
+          };
+          bkModalContent.querySelectorAll('#bk-fix-players tr').forEach((row) => {
+            const side = row.dataset.side;
+            const idx = Number(row.dataset.idx);
+            const player = playerStats[side].players[idx];
+            player.points = Number(row.querySelector('.bk-fix-points').value) || 0;
+            player.dues = Number(row.querySelector('.bk-fix-dues').value) || 0;
+            player.fouls = Number(row.querySelector('.bk-fix-fouls').value) || 0;
+            player.streak = Number(row.querySelector('.bk-fix-streak').value) || 0;
+          });
+          const queenTakenBy = bkModalContent.querySelector('#bk-fix-queen').value || null;
+          const result = await fixKnockoutScoring(bracket, matchId, playerStats, queenTakenBy);
+          if (result.blocked === 'tie') { notify.warn('Scores can\'t end tied in a knockout match'); return; }
+          if (result.blocked) { notify.error('This team already advanced into a completed later-round match — undo that match first.'); return; }
+          bracket = result.bracket;
+          bkModal.hide();
+          notify.success('Scoring updated');
+          render();
+        });
       });
     });
   }
