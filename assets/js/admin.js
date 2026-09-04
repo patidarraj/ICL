@@ -6,7 +6,7 @@ import {
   getSwapLog, logTeamSwap, distinctPlayerNamesForTeam, mergePlayerNameInFixtures,
   getBracket,
 } from './storage.js';
-import { uid, downloadFile, escapeHtml, POOL_NAMES, isoDate, VENUE, generateLogoCode, sortByDateTime } from './utilities.js';
+import { uid, downloadFile, escapeHtml, POOL_NAMES, isoDate, VENUE, generateLogoCode, sortByDateTime, teamNetScore } from './utilities.js';
 import { notify } from './notifications.js';
 import { generateBracket, getAllBracketMatches, recordKnockoutResult } from './bracket.js';
 
@@ -96,8 +96,8 @@ function logoApprovalTile(team) {
 }
 
 function liveScoreTile(live) {
-  const totalA = live.teams.A.players.reduce((s, p) => s + p.points, 0);
-  const totalB = live.teams.B.players.reduce((s, p) => s + p.points, 0);
+  const totalA = teamNetScore(live.teams.A.players);
+  const totalB = teamNetScore(live.teams.B.players);
   const isPending = live.status === 'pending_review';
   const winnerName = isPending ? (live.result.winner === 'draw' ? 'Draw' : live.teams[live.result.winner].name) : null;
   return `
@@ -718,8 +718,8 @@ function adminPanel(outlet) {
           player.streak = Number(row.querySelector('.m-fix-streak').value) || 0;
         });
         match.queenTakenBy = modalContent.querySelector('#m-fix-queen').value || null;
-        const totalA = match.playerStats.A.players.reduce((s, p) => s + p.points, 0);
-        const totalB = match.playerStats.B.players.reduce((s, p) => s + p.points, 0);
+        const totalA = teamNetScore(match.playerStats.A.players);
+        const totalB = teamNetScore(match.playerStats.B.players);
         match.scoreA = totalA;
         match.scoreB = totalB;
         match.winner = totalA === totalB ? 'draw' : (totalA > totalB ? match.teamA : match.teamB);
@@ -938,8 +938,8 @@ function adminPanel(outlet) {
     const live = Object.values(getLiveScores()).find((l) => l.matchId === btn.dataset.id);
     if (!live) return;
     const f = getFixtures().find((x) => x.id === live.matchId);
-    const totalA = live.teams.A.players.reduce((s, p) => s + p.points, 0);
-    const totalB = live.teams.B.players.reduce((s, p) => s + p.points, 0);
+    const totalA = teamNetScore(live.teams.A.players);
+    const totalB = teamNetScore(live.teams.B.players);
 
     // Knockout matches (QF/SF/3rd/Final) aren't fixtures — they live in the bracket document.
     if (!f) {

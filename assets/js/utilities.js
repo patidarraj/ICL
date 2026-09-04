@@ -35,6 +35,21 @@ export function sortByDateTime(fixtures) {
 }
 
 /**
+ * A player's net scoring contribution: coins pocketed (points) minus due coins owed and fouls
+ * committed — both dues and fouls count against the team, not toward it, per the rulebook's
+ * penalty scenarios (a due/foul adds a coin back to the board rather than scoring one). Floored
+ * at 0 so one player's penalties can't drag a teammate's real points negative.
+ */
+export function netPlayerPoints(p) {
+  return Math.max(0, (p.points || 0) - (p.dues || 0) - (p.fouls || 0));
+}
+
+/** A team's official match score — the sum of each player's net points (see netPlayerPoints). */
+export function teamNetScore(players) {
+  return (players || []).reduce((s, p) => s + netPlayerPoints(p), 0);
+}
+
+/**
  * Fixed real player roster, one pair per team. Indices 0, 1, 8, 10 (Aditya, Esha,
  * Shubham/Tejas Hiwarde, Ankit/Megan) are treated as priority teams by generateTeams() —
  * their pool draw guarantees they finish their round-robin matches a round earlier

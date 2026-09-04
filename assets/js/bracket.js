@@ -1,5 +1,5 @@
 import { getTeams, getFixtures, getBracket, saveBracket, getAdminEmail } from './storage.js';
-import { POOL_NAMES, sortStandings, teamLogoHtml } from './utilities.js';
+import { POOL_NAMES, sortStandings, teamLogoHtml, teamNetScore } from './utilities.js';
 import { isAdminAuthed } from './storage.js';
 import { notify } from './notifications.js';
 
@@ -143,8 +143,8 @@ export async function fixKnockoutScoring(bracket, matchId, playerStats, queenTak
   if (!match || match.status !== 'completed') return { bracket, blocked: false };
 
   const oldWinner = match.winner;
-  const totalA = playerStats.A.players.reduce((s, p) => s + p.points, 0);
-  const totalB = playerStats.B.players.reduce((s, p) => s + p.points, 0);
+  const totalA = teamNetScore(playerStats.A.players);
+  const totalB = teamNetScore(playerStats.B.players);
   if (totalA === totalB) return { bracket, blocked: 'tie' };
   const newWinner = totalA > totalB ? match.teamA : match.teamB;
 

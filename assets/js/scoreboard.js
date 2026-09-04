@@ -3,7 +3,7 @@ import {
   isRefereeAuthed, loginReferee, logoutReferee, getBracket,
 } from './storage.js';
 import { notify } from './notifications.js';
-import { isoDate, VENUE } from './utilities.js';
+import { isoDate, VENUE, teamNetScore } from './utilities.js';
 import { getAllBracketMatches, roundLabel } from './bracket.js';
 
 /** Knockout matches aren't fixtures — they live in the bracket document. This adapts one
@@ -140,8 +140,8 @@ function phonePlayerChip(p, key, live) {
 }
 
 function featuredMatchCard(f, live) {
-  const totalA = live.teams.A.players.reduce((s, p) => s + p.points, 0);
-  const totalB = live.teams.B.players.reduce((s, p) => s + p.points, 0);
+  const totalA = teamNetScore(live.teams.A.players);
+  const totalB = teamNetScore(live.teams.B.players);
   const isPending = live.status === 'pending_review';
   const queenTeam = live.queenTakenBy ? live.teams[live.queenTakenBy.split('-')[0]].name : null;
   return `
@@ -265,8 +265,8 @@ function stripHtml(matchId, live) {
 }
 
 function scoreboardHtml(f, live) {
-  const totalA = live.teams.A.players.reduce((s, p) => s + p.points, 0);
-  const totalB = live.teams.B.players.reduce((s, p) => s + p.points, 0);
+  const totalA = teamNetScore(live.teams.A.players);
+  const totalB = teamNetScore(live.teams.B.players);
   const isKnockout = Boolean(f.round);
   return `
     ${stripHtml(f.id, live)}
