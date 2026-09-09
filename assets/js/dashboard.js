@@ -1,9 +1,30 @@
-import { getTeams, getFixtures, getSettings, getLiveScore } from './storage.js';
+import { getTeams, getFixtures, getSettings, getLiveScore, getBracket } from './storage.js';
 import { formatDate, POOL_NAMES, teamLogoHtml, sortByDateTime } from './utilities.js';
 import { goTo } from './router.js';
 import { getMyTeamId, setMyTeamId, notificationsSupported, permissionState, requestPermission } from './match-alerts.js';
 import { notify } from './notifications.js';
 import { getFeaturedMatchesHtml } from './scoreboard.js';
+
+const CONFETTI_COLORS = ['#E10600', '#FACC15', '#22C55E', '#3B82F6', '#F97316', '#fff'];
+
+function championBanner(champion) {
+  const confetti = Array.from({ length: 60 }).map(() => {
+    const left = Math.random() * 100;
+    const delay = Math.random() * 1.2;
+    const duration = 2.6 + Math.random() * 1.8;
+    const color = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+    const drift = (Math.random() * 2 - 1) * 60;
+    return `<span class="confetti-piece" style="left:${left}%; --drift:${drift}px; background:${color}; animation-delay:${delay}s; animation-duration:${duration}s;"></span>`;
+  }).join('');
+  return `
+    <div class="champion-banner mb-4" id="champion-banner">
+      <div class="confetti-burst" id="champion-confetti">${confetti}</div>
+      <i class="fa-solid fa-trophy champion-banner-icon"></i>
+      <div class="champion-banner-label">Season Champions</div>
+      <div class="champion-banner-name">${teamLogoHtml(champion, 'team-logo-lg')} ${champion.name}</div>
+      <div class="champion-banner-players">${champion.players.join(' & ')}</div>
+    </div>`;
+}
 
 function progressCard(fixtures) {
   const total = fixtures.length;
@@ -146,8 +167,10 @@ export async function renderDashboard(outlet) {
   const latestResults = sortByDateTime(fixtures.filter((f) => f.status === 'completed')).slice(-5).reverse();
 
   const featuredHtml = getFeaturedMatchesHtml();
+  const champion = getBracket()?.champion ? teamsById[getBracket().champion] : null;
 
   outlet.innerHTML = `
+    ${champion ? championBanner(champion) : ''}
     <div class="hero-section mb-4">
       <div class="hero-content">
         <h1>${settings.tournamentName}</h1>
@@ -213,6 +236,20 @@ export async function renderDashboard(outlet) {
   outlet.querySelector('#dash-view-scoreboard')?.addEventListener('click', () => goTo('scoreboard'));
 
   const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+  // The confetti burst plays once per champion per browser (not on every single Dashboard
+  // visit forever) — the banner itself stays put permanently as the lasting celebration.
+  if (champion && !prefersReducedMotion) {
+    const seenKey = `carrom_champion_confetti_${champion.id}`;
+    if (!localStorage.getItem(seenKey)) {
+      localStorage.setItem(seenKey, '1');
+      setTimeout(() => outlet.querySelector('#champion-confetti')?.remove(), 5000);
+    } else {
+      outlet.querySelector('#champion-confetti')?.remove();
+    }
+  } else {
+    outlet.querySelector('#champion-confetti')?.remove();
+  }
   outlet.querySelectorAll('.count-up').forEach((el) => {
     const target = Number(el.dataset.countTo) || 0;
     if (prefersReducedMotion || !target) { el.textContent = target; return; }
