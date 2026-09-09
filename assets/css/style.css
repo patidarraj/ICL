@@ -180,6 +180,17 @@ a { text-decoration: none; }
   margin-top: 0.2rem;
 }
 
+.champion-banner-compact {
+  padding: 1.25rem 1rem;
+  border-radius: 18px;
+}
+.champion-banner-compact .champion-banner-icon { font-size: 1.75rem; }
+.champion-banner-compact .champion-banner-name {
+  font-size: 1.15rem;
+  flex-wrap: wrap;
+}
+.champion-banner-compact .champion-banner-players { font-size: 0.8rem; }
+
 .confetti-burst {
   position: absolute;
   inset: 0;

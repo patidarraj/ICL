@@ -8,7 +8,7 @@ import { getFeaturedMatchesHtml } from './scoreboard.js';
 const CONFETTI_COLORS = ['#E10600', '#FACC15', '#22C55E', '#3B82F6', '#F97316', '#fff'];
 
 function championBanner(champion) {
-  const confetti = Array.from({ length: 60 }).map(() => {
+  const confetti = Array.from({ length: 40 }).map(() => {
     const left = Math.random() * 100;
     const delay = Math.random() * 1.2;
     const duration = 2.6 + Math.random() * 1.8;
@@ -17,7 +17,7 @@ function championBanner(champion) {
     return `<span class="confetti-piece" style="left:${left}%; --drift:${drift}px; background:${color}; animation-delay:${delay}s; animation-duration:${duration}s;"></span>`;
   }).join('');
   return `
-    <div class="champion-banner mb-4" id="champion-banner">
+    <div class="champion-banner champion-banner-compact" id="champion-banner">
       <div class="confetti-burst" id="champion-confetti">${confetti}</div>
       <i class="fa-solid fa-trophy champion-banner-icon"></i>
       <div class="champion-banner-label">Season Champions</div>
@@ -80,9 +80,12 @@ function matchRow(f, teamsById) {
   </tr>`;
 }
 
-function nextMatchCard(fixtures, teamsById) {
+function nextMatchCard(fixtures, teamsById, champion) {
   const next = sortByDateTime(fixtures.filter((f) => f.status === 'scheduled'))[0];
-  if (!next) return `<div class="card"><div class="card-body text-center text-muted">All matches completed</div></div>`;
+  if (!next) {
+    if (champion) return championBanner(champion);
+    return `<div class="card"><div class="card-body text-center text-muted">All matches completed</div></div>`;
+  }
   return `
     <div class="card next-match-card">
       <div class="card-body text-center">
@@ -170,7 +173,6 @@ export async function renderDashboard(outlet) {
   const champion = getBracket()?.champion ? teamsById[getBracket().champion] : null;
 
   outlet.innerHTML = `
-    ${champion ? championBanner(champion) : ''}
     <div class="hero-section mb-4">
       <div class="hero-content">
         <h1>${settings.tournamentName}</h1>
@@ -202,7 +204,7 @@ export async function renderDashboard(outlet) {
         </div>`}
       </div>
       <div class="col-lg-4 d-flex flex-column gap-3">
-        ${nextMatchCard(fixtures, teamsById)}
+        ${nextMatchCard(fixtures, teamsById, champion)}
         ${matchAlertsCard(teams)}
         ${countdownToFinal(settings)}
       </div>
