@@ -1,6 +1,7 @@
-import { getTeams, getFixtures, getPredictions } from './storage.js';
+import { getTeams, getFixtures, getPredictions, getBracket } from './storage.js';
 import { POOL_NAMES } from './utilities.js';
 import { renderChart, lineConfig, barConfig, doughnutConfig, radarConfig, destroyAllCharts } from './charts.js';
+import { getAllBracketMatches } from './bracket.js';
 
 function predictionLeaderboard(fixtures, predictions, teamsById) {
   const decided = new Set(fixtures.filter((f) => f.status === 'completed' && f.winner && f.winner !== 'draw').map((f) => f.id));
@@ -73,7 +74,8 @@ export async function renderStats(outlet) {
   const teams = getTeams();
   const fixtures = getFixtures();
   const teamsById = Object.fromEntries(teams.map((t) => [t.id, t]));
-  const leaderboard = playerLeaderboard(fixtures, teamsById);
+  const completedKnockout = getAllBracketMatches(getBracket()).filter((m) => m.status === 'completed');
+  const leaderboard = playerLeaderboard([...fixtures, ...completedKnockout], teamsById);
   const predictors = predictionLeaderboard(fixtures, getPredictions(), teamsById);
 
   const poolWins = POOL_NAMES.map((pool) => teams.filter((t) => t.pool === pool).reduce((s, t) => s + t.won, 0));
